@@ -1,0 +1,171 @@
+# Architecture
+
+## Design target
+
+Fonzytooter is a single-user personal learning application, not a multi-tenant LMS product. Simplicity is a feature.
+
+The system should remain understandable enough that one developer can hold most of it in their head.
+
+## Runtime components
+
+```text
+Browser / installed PWA
+┌─────────────────────────────────────────────┐
+│ React + TypeScript                         │
+│                                             │
+│ App shell                                   │
+│ ├─ curriculum                              │
+│ ├─ reviews                                 │
+│ ├─ exercises                               │
+│ │   └─ CodeMirror + Pyodide Web Worker     │
+│ ├─ progress                                │
+│ └─ global tutor overlay                    │
+└───────────────────┬─────────────────────────┘
+                    │ HTTP / streamed HTTP
+                    ▼
+EC2
+┌─────────────────────────────────────────────┐
+│ Go process                                  │
+│                                             │
+│ HTTP API                                    │
+│ ├─ curriculum metadata                     │
+│ ├─ progress / activity                     │
+│ ├─ reviews / FSRS                          │
+│ └─ tutor orchestration                     │
+│     ├─ context builder                     │
+│     └─ providers                           │
+│         ├─ OpenRouter                      │
+│         └─ Codex                           │
+└───────────────────┬─────────────────────────┘
+                    │
+                    ▼
+                  SQLite
+```
+
+## Content versus state
+
+### Git is authoritative for curriculum content
+
+Version-controlled content includes:
+
+- modules;
+- lessons;
+- learning objectives and prerequisite IDs;
+- curated videos;
+- exercises and their definitions;
+- project/lab descriptions;
+- source metadata and citation IDs.
+
+This content should be reviewable like source code.
+
+### SQLite is authoritative for learner state
+
+Persistent learner state will eventually include:
+
+- objective progress;
+- spaced-repetition scheduling and review history;
+- exercise workspaces and attempts;
+- activity history;
+- notes/bookmarks;
+- tutor conversations;
+- project status;
+- user preferences.
+
+Do not put authored curriculum prose into SQLite merely because it is convenient to query.
+
+## Objective-centered model
+
+A module is an organizational container. A lesson is a teaching artifact. An objective represents a capability the learner is expected to develop.
+
+```text
+lesson ───────────────┐
+video ────────────────┤
+review item ──────────┼──► objective ◄── prerequisite objective
+exercise ─────────────┤
+project/lab ──────────┘
+```
+
+Progress should be explainable in terms of objectives rather than arbitrary page-completion percentages.
+
+## Python execution boundary
+
+There is one in-app Python runtime: Pyodide in the browser.
+
+### Appropriate for Pyodide
+
+- syntax/fundamentals exercises;
+- numerical experiments;
+- small NumPy tasks;
+- calculus/linear-algebra exercises;
+- small classical-ML exercises where supported packages fit comfortably;
+- tiny algorithm implementations and tests.
+
+### Not appropriate for the app runtime
+
+- GPU training;
+- substantial PyTorch work;
+- large datasets;
+- complex native dependencies;
+- multi-file applications;
+- long-running training or profiling work.
+
+Those become repository-based labs/projects and are completed in a normal development environment.
+
+**Do not add a Go-to-Python execution service when Pyodide is outgrown.** Crossing that boundary is intentional.
+
+## Tutor architecture
+
+The embedded tutor is a first-class application feature rather than a detached chatbot.
+
+```text
+current screen ───────┐
+recent activity ──────┤
+objective state ──────┼─► Tutor context builder
+relevant notes ───────┤            │
+curriculum sources ───┘            ▼
+                              Tutor service
+                                   │
+                       ┌───────────┴───────────┐
+                       ▼                       ▼
+                 OpenRouter provider       Codex provider
+                       │                       │
+                       └───────────┬───────────┘
+                                   ▼
+                         normalized TutorEvent
+                                   │
+                                   ▼
+                             streamed to UI
+```
+
+Provider adapters are allowed to differ internally. Normalize the event stream, not the provider request protocol.
+
+## Transport
+
+Use ordinary HTTP for requests and streamed HTTP/SSE-style events for tutor output. The browser sends one tutor turn and the server streams events back.
+
+Do not add WebSockets simply because chat is interactive. Reconsider only when there is a concrete bidirectional persistent-connection requirement.
+
+## Deployment shape
+
+Initial deployment target:
+
+```text
+one EC2 instance
+├─ Go process
+├─ built React assets / reverse proxy arrangement
+└─ SQLite database file
+```
+
+Back up the database file. Do not introduce distributed infrastructure unless the deployment model actually changes.
+
+## Deferred decisions
+
+The following should remain open until implementation pressure clarifies them:
+
+- exact SQLite driver and migration package;
+- exact FSRS library/schema mapping;
+- authentication/reverse-proxy strategy for public internet exposure;
+- how Codex subscription authentication is hosted on EC2;
+- whether GitHub integration is useful for project/lab tracking;
+- offline PWA behavior beyond cached app assets;
+- exact citation rendering UX.

@@ -1,0 +1,5 @@
+# Authoritative curriculum source registry.
+#
+# Add verified sources as lesson content is authored. Do not insert placeholder
+# bibliographic data that could later be mistaken for a real citation.
+sources: {}

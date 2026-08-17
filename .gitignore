@@ -1,0 +1,25 @@
+# Environment
+.env
+.env.*
+!.env.example
+
+# Go
+server/bin/
+server/coverage.out
+
+# Node / Vite
+web/node_modules/
+web/dist/
+web/.vite/
+
+# Runtime data
+*.db
+*.db-shm
+*.db-wal
+data/
+
+# Editors / OS
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
