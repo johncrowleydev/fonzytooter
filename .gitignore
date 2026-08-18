@@ -13,6 +13,8 @@ web/dist/
 web/.vite/
 web/tsconfig.tsbuildinfo
 .playwright-cli/
+.codex-remote-attachments/
+output/
 
 # Runtime data
 *.db
