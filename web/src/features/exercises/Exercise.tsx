@@ -51,30 +51,30 @@ export function Exercise() {
   }
 
   return (
-    <div className="page-stack exercise-page">
+    <div className="grid max-w-[1140px] gap-[29px] max-[640px]:gap-[21px]">
       <button
-        className="back-link"
+        className="justify-self-start border-0 bg-transparent p-0 text-[11px] font-bold text-[var(--muted)] hover:text-[var(--ink)]"
         onClick={() => navigate('/curriculum/neural-networks')}
         type="button"
       >
         ← Neural Networks From Scratch
       </button>
-      <div className="exercise-header">
+      <div className="flex items-start justify-between gap-5 max-[640px]:block">
         <PageIntro compact eyebrow="Exercise" title="Implement gradient descent" />
       </div>
-      <div className="exercise-layout">
-        <main>
-          <Card className="prompt-card">
-            <div className="exercise-tabs">
+      <div className="grid grid-cols-[minmax(0,1fr)_245px] gap-[18px] max-[1120px]:grid-cols-1">
+        <main className="grid gap-3.5">
+          <Card className="overflow-hidden p-0">
+            <div className="flex border-b border-[var(--line)] px-[18px]">
               <button
-                className={activeTab === 'prompt' ? 'active' : ''}
+                className={`mr-[15px] border-0 border-b-2 bg-transparent px-[9px] pb-3 pt-3.5 text-[11px] ${activeTab === 'prompt' ? 'border-[var(--coral)] text-[var(--ink)]' : 'border-transparent text-[var(--faint)]'}`}
                 onClick={() => setActiveTab('prompt')}
                 type="button"
               >
                 Prompt
               </button>
               <button
-                className={activeTab === 'tests' ? 'active' : ''}
+                className={`mr-[15px] border-0 border-b-2 bg-transparent px-[9px] pb-3 pt-3.5 text-[11px] ${activeTab === 'tests' ? 'border-[var(--coral)] text-[var(--ink)]' : 'border-transparent text-[var(--faint)]'}`}
                 onClick={() => setActiveTab('tests')}
                 type="button"
               >
@@ -82,56 +82,66 @@ export function Exercise() {
               </button>
             </div>
             {activeTab === 'prompt' ? (
-              <div className="exercise-prompt">
-                <p>
+              <div className="px-[25px] pb-[21px] pt-[17px]">
+                <p className="m-0 text-xs leading-[1.6] text-[var(--muted)]">
                   Write <code>gradient_descent()</code> so that it repeatedly updates a value using
                   the gradient and a learning rate.
                 </p>
-                <div className="prompt-list">
-                  <span>01</span>
-                  <p>Start from the supplied value.</p>
-                  <span>02</span>
-                  <p>
+                <div className="mt-[15px] grid grid-cols-[24px_1fr] gap-x-2.5 gap-y-[7px]">
+                  <span className="font-mono text-[10px] text-[var(--coral)]">01</span>
+                  <p className="m-0 text-[11px] text-[var(--muted)]">
+                    Start from the supplied value.
+                  </p>
+                  <span className="font-mono text-[10px] text-[var(--coral)]">02</span>
+                  <p className="m-0 text-[11px] text-[var(--muted)]">
                     Take exactly <code>steps</code> updates.
                   </p>
-                  <span>03</span>
-                  <p>Return a value close to the minimum of a simple quadratic.</p>
+                  <span className="font-mono text-[10px] text-[var(--coral)]">03</span>
+                  <p className="m-0 text-[11px] text-[var(--muted)]">
+                    Return a value close to the minimum of a simple quadratic.
+                  </p>
                 </div>
               </div>
             ) : (
-              <div className="exercise-prompt">
-                <p>The checker looks for behavior rather than a magic string.</p>
-                <div className="prompt-list">
-                  <span>✓</span>
-                  <p>Converges on a simple quadratic.</p>
-                  <span>✓</span>
-                  <p>Preserves the input value.</p>
-                  <span>✓</span>
-                  <p>Reaches a loss below the target tolerance.</p>
+              <div className="px-[25px] pb-[21px] pt-[17px]">
+                <p className="m-0 text-xs leading-[1.6] text-[var(--muted)]">
+                  The checker looks for behavior rather than a magic string.
+                </p>
+                <div className="mt-[15px] grid grid-cols-[24px_1fr] gap-x-2.5 gap-y-[7px]">
+                  <span className="font-mono text-[10px] text-[var(--coral)]">✓</span>
+                  <p className="m-0 text-[11px] text-[var(--muted)]">
+                    Converges on a simple quadratic.
+                  </p>
+                  <span className="font-mono text-[10px] text-[var(--coral)]">✓</span>
+                  <p className="m-0 text-[11px] text-[var(--muted)]">Preserves the input value.</p>
+                  <span className="font-mono text-[10px] text-[var(--coral)]">✓</span>
+                  <p className="m-0 text-[11px] text-[var(--muted)]">
+                    Reaches a loss below the target tolerance.
+                  </p>
                 </div>
               </div>
             )}
           </Card>
-          <Card className="editor-card">
-            <div className="editor-header">
+          <Card className="overflow-hidden p-0">
+            <div className="flex items-center justify-between gap-3 border-b border-[var(--line)] px-[18px] py-3.5">
               <div>
-                <p className="eyebrow">workspace.py</p>
-                <span className="editor-status">
-                  <span className="status-dot status-working status-small" />
+                <p className="mb-[5px] font-mono text-xs text-[var(--ink)]">workspace.py</p>
+                <span className="flex items-center gap-1.5 text-[9px] text-[var(--faint)]">
+                  <span className="size-[7px] rounded-full border border-[var(--gold)] bg-[var(--gold)] shadow-[inset_0_0_0_2px_var(--panel)]" />
                   Unsaved changes
                 </span>
               </div>
-              <span className="line-count">Python · 8 lines</span>
+              <span className="font-mono text-[9px] text-[var(--faint)]">Python · 8 lines</span>
             </div>
             <textarea
-              className="code-editor"
+              className="block min-h-[290px] w-full resize-y border-0 bg-[#09131f] px-[22px] py-5 font-mono text-xs leading-[1.75] text-[#c9d5df] outline-0 focus:shadow-[inset_0_0_0_1px_rgba(118,208,192,0.3)] max-[640px]:min-h-[250px] max-[640px]:p-[15px] max-[640px]:text-[11px]"
               spellCheck={false}
               value={code}
               onChange={(event) => setCode(event.target.value)}
               aria-label="Python exercise editor"
             />
-            <div className="editor-footer">
-              <div className="editor-actions">
+            <div className="flex items-center justify-between gap-[15px] border-t border-[var(--line)] px-[17px] py-3 max-[640px]:items-start max-[640px]:flex-col">
+              <div className="flex gap-[7px]">
                 <Button onClick={run}>
                   Run <span>▶</span>
                 </Button>
@@ -140,7 +150,7 @@ export function Exercise() {
                 </Button>
               </div>
               <button
-                className="ask-tutor-inline"
+                className="border-0 bg-transparent p-0 text-[11px] text-[var(--gold)]"
                 onClick={() =>
                   openTutorWithContext({
                     type: 'exercise',
@@ -158,8 +168,8 @@ export function Exercise() {
               </button>
             </div>
           </Card>
-          <Card className="output-card">
-            <div className="output-header">
+          <Card className="overflow-hidden p-0">
+            <div className="flex items-center justify-between gap-3 px-[18px] pt-[15px]">
               <SectionHeading
                 eyebrow="Feedback"
                 title="Output"
@@ -169,19 +179,21 @@ export function Exercise() {
                       {check.passed} passed · {check.failed} failed
                     </Badge>
                   ) : (
-                    <span className="small-muted">Run or check to see output</span>
+                    <span className="text-[10px] text-[var(--faint)]">
+                      Run or check to see output
+                    </span>
                   )
                 }
               />
             </div>
-            <div className="output-body">
+            <div className="min-h-[170px] px-[19px] pb-[19px] pt-3 font-mono text-[11px] leading-[1.8]">
               {output.length ? (
                 output.map((line, index) => (
                   <div
                     key={`${line}-${index}`}
-                    className={`output-line ${line.startsWith('✓') ? 'pass' : line.startsWith('✗') ? 'fail' : ''}`}
+                    className={`flex gap-2 ${line.startsWith('✓') ? 'text-[var(--teal)]' : line.startsWith('✗') ? 'text-[var(--coral)]' : 'text-[var(--muted)]'}`}
                   >
-                    <span className="output-prompt">
+                    <span className="w-[11px] text-[var(--faint)]">
                       {line.startsWith('>')
                         ? ''
                         : line.startsWith('✓')
@@ -194,9 +206,9 @@ export function Exercise() {
                   </div>
                 ))
               ) : (
-                <div className="empty-output">
-                  <span>⌁</span>
-                  <p>
+                <div className="grid min-h-[130px] place-items-center content-center text-center text-[var(--faint)]">
+                  <span className="text-[22px]">⌁</span>
+                  <p className="font-sans text-[11px] leading-[1.5]">
                     Nothing run yet.
                     <br />
                     Output appears here.
@@ -206,13 +218,17 @@ export function Exercise() {
             </div>
           </Card>
         </main>
-        <aside className="exercise-aside">
+        <aside className="grid content-start gap-3.5 max-[1120px]:grid-cols-2 max-[640px]:grid-cols-1">
           <Card>
-            <p className="eyebrow">Objective</p>
-            <h3>Gradient descent</h3>
-            <div className="aside-objective">
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--faint)]">
+              Objective
+            </p>
+            <h3 className="my-[9px] text-base">Gradient descent</h3>
+            <div className="mt-5 flex gap-2 border-t border-[var(--line)] pt-[15px] text-[11px] text-[var(--gold)]">
               <span>◐</span>
-              <strong>Implement an update from a gradient</strong>
+              <strong className="font-medium leading-[1.45] text-[var(--muted)]">
+                Implement an update from a gradient
+              </strong>
             </div>
           </Card>
         </aside>

@@ -69,7 +69,7 @@ export function Card({
 }: PropsWithChildren<{ className?: string; muted?: boolean }>) {
   return (
     <section
-      className={`rounded-[14px] border border-[var(--line)] px-6 py-5 shadow-[0_16px_40px_rgba(0,0,0,0.06)] ${muted ? 'bg-[rgba(18,31,47,0.52)]' : 'bg-[var(--panel)]'} ${className}`}
+      className={`rounded-[14px] border border-[var(--line)] px-6 py-5 shadow-[0_16px_40px_rgba(0,0,0,0.06)] ${muted ? 'bg-[var(--panel-muted)]' : 'bg-[var(--panel)]'} ${className}`}
     >
       {children}
     </section>
@@ -103,7 +103,11 @@ export function SectionHeading({
   return (
     <div className="mb-[17px] flex items-start justify-between gap-[18px]">
       <div>
-        {eyebrow ? <p className="eyebrow">{eyebrow}</p> : null}
+        {eyebrow ? (
+          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--faint)]">
+            {eyebrow}
+          </p>
+        ) : null}
         <h2 className="mt-1.5 text-[18px] font-semibold leading-tight tracking-[-0.025em]">
           {title}
         </h2>
@@ -156,7 +160,7 @@ export function EmptyState({ title, children }: PropsWithChildren<{ title: strin
   return (
     <div className="text-center">
       <span className="block text-xl text-[var(--faint)]">·</span>
-      <h3>{title}</h3>
+      <h3 className="text-lg font-semibold">{title}</h3>
       <p className="text-[var(--muted)]">{children}</p>
     </div>
   )
@@ -171,7 +175,11 @@ export function PageIntro({
 }: PropsWithChildren<{ eyebrow?: string; title: string; detail?: string; compact?: boolean }>) {
   return (
     <header className={`max-w-[720px] ${compact ? 'max-w-none' : ''}`}>
-      {eyebrow ? <p className="eyebrow mb-3">{eyebrow}</p> : null}
+      {eyebrow ? (
+        <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--faint)]">
+          {eyebrow}
+        </p>
+      ) : null}
       <h1
         className={`${compact ? 'text-[clamp(25px,3vw,34px)]' : 'text-[clamp(32px,4vw,50px)]'} m-0 font-semibold leading-none tracking-[-0.055em]`}
       >

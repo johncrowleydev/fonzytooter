@@ -5,6 +5,15 @@ import { TutorButton } from '../features/tutor/TutorButton'
 import { TutorOverlay } from '../features/tutor/TutorOverlay'
 import { useTutor } from '../features/tutor/TutorContext'
 
+const sharedThemeTokens =
+  '[--teal:#76d0c0] [--gold:#e1b86a] [--coral:#ef916e] [--violet:#a99be7] [--blue:#80afe4]'
+
+const themeTokens = {
+  dark: '[--ink:#e9edf3] [--muted:#8d99aa] [--faint:#5f6c7d] [--body:#c2cad5] [--line:rgba(162,181,203,0.14)] [--line-strong:rgba(162,181,203,0.24)] [--panel:#101b2a] [--panel-soft:#0d1725] [--panel-muted:rgba(18,31,47,0.52)] [--canvas:#08111e]',
+  light:
+    '[--ink:#203047] [--muted:#68788b] [--faint:#8b98a8] [--body:#40526a] [--line:rgba(36,58,83,0.14)] [--line-strong:rgba(36,58,83,0.25)] [--panel:#ffffff] [--panel-soft:#f6f9fb] [--panel-muted:rgba(248,250,252,0.9)] [--canvas:#f3f6f9]',
+} as const
+
 export function AppShell({ children }: PropsWithChildren) {
   const { openTutor } = useTutor()
   const [theme, setTheme] = useState<'dark' | 'light'>(() =>
@@ -15,7 +24,7 @@ export function AppShell({ children }: PropsWithChildren) {
 
   return (
     <div
-      className={`theme-${theme} flex min-h-screen bg-[var(--canvas)] text-[var(--ink)] [background-image:radial-gradient(circle_at_80%_-10%,rgba(53,83,107,0.13),transparent_32rem)]`}
+      className={`flex min-h-screen bg-[var(--canvas)] font-sans text-[var(--ink)] [background-image:radial-gradient(circle_at_80%_-10%,rgba(53,83,107,0.13),transparent_32rem)] ${sharedThemeTokens} ${themeTokens[theme]}`}
     >
       <aside
         className={`sticky top-0 hidden h-screen w-[242px] shrink-0 flex-col overflow-hidden border-r border-[var(--line)] px-4 py-6 lg:flex ${theme === 'light' ? 'bg-white/[0.86]' : 'bg-[rgba(9,18,31,0.78)]'}`}
@@ -70,7 +79,7 @@ export function AppShell({ children }: PropsWithChildren) {
           </Link>
           <div className="flex items-center gap-2">
             <button
-              className="grid size-8 place-items-center rounded-full border border-[var(--line-strong)] text-[var(--gold)]"
+              className={`grid size-8 place-items-center rounded-full border border-[var(--line-strong)] text-[var(--gold)] ${theme === 'light' ? 'bg-[rgba(225,184,106,0.1)]' : ''}`}
               onClick={toggleTheme}
               type="button"
               aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
@@ -93,7 +102,7 @@ export function AppShell({ children }: PropsWithChildren) {
         </main>
 
         <nav
-          className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-5 border-t border-[var(--line)] bg-[rgba(9,18,31,0.96)] px-2 py-2 backdrop-blur lg:hidden"
+          className={`fixed inset-x-0 bottom-0 z-20 grid grid-cols-5 border-t border-[var(--line)] px-2 py-2 backdrop-blur lg:hidden ${theme === 'light' ? 'bg-white/[0.96]' : 'bg-[rgba(9,18,31,0.96)]'}`}
           aria-label="Mobile navigation"
         >
           {navItems.map((item) => (
