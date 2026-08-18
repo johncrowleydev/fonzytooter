@@ -8,6 +8,10 @@ Fonzytooter is a personal, single-user AI/ML learning system. It is intentionall
 
 Read the relevant files in `docs/` before making architectural changes. Frontend work must also follow `docs/frontend.md`. API/backend/frontend-contract work must follow `docs/api-contract.md`, and HTTP API design must follow `docs/api-style.md`.
 
+## Review-request authorization
+
+This is a hard boundary: do not request, trigger, re-request, or rerun any code review. This includes posting `@codex review`, requesting GitHub reviewers, or invoking a review-loop workflow. Do so only when the user explicitly asks for a new code review in the current request. Existing review threads, a reviewed commit, pushed fixes, or a request to inspect or resolve comments never constitute authorization.
+
 ## Non-negotiable architectural constraints
 
 1. **Keep it a monolith.** One Go backend, one React frontend, one SQLite database.
