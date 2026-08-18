@@ -2643,6 +2643,9 @@ button:disabled {
   background:
     radial-gradient(circle at 80% -10%, rgba(118, 208, 192, 0.16), transparent 32rem), var(--canvas);
 }
+.theme-light aside {
+  background: rgba(255, 255, 255, 0.86);
+}
 .theme-light .module-row,
 .theme-light .project-row {
   background: rgba(255, 255, 255, 0.75);
