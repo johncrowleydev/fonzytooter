@@ -17,23 +17,32 @@ curriculum/modules/02-linear-algebra/
 
 The exact schema can evolve as real modules are authored. Do not build a generic CMS first.
 
+## Stable IDs
+
+All authored IDs use the same deterministic format: `^[a-z0-9]+(?:[.-][a-z0-9]+)*$`.
+IDs are application identity; directory and filename choices are storage organization.
+
 ## Module metadata
 
 Example shape:
 
 ```yaml
 id: linear-algebra
-name: Linear Algebra
+title: Linear Algebra
+order: 1
 objectives:
-  - linear-algebra.vectors
-  - linear-algebra.matrix-multiplication
-prerequisites: []
+  - id: linear-algebra.vectors
+    title: Work with vectors
+    description: Represent and manipulate vectors.
+    prerequisites: []
 videos:
-  - youtube_id: example
+  - id: linear-algebra-introduction
     title: Example title
-    creator: Example creator
-    objectives:
+    url: https://example.com/video
+    objectiveIds:
       - linear-algebra.vectors
+lessons:
+  - 01-vectors
 ```
 
 Each module should have a curated YouTube playlist/resource sequence. A video may support one or more objectives.
@@ -45,9 +54,18 @@ MDX is used because a lesson needs normal prose plus React-powered interactive m
 Conceptual example:
 
 ```mdx
-# Gradient Descent
+---
+id: 01-vectors
+title: Vectors
+objectiveIds:
+  - linear-algebra.vectors
+sourceIds:
+  - some-stable-source-id
+---
 
-Gradient descent ...
+# Vectors
+
+Vectors ...
 
 <Cite source="some-stable-source-id" section="..." />
 

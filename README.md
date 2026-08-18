@@ -108,6 +108,14 @@ go run ./cmd/fonzytooter
 ```
 
 The API listens on `:8080` by default. Override it with `FONZYTOOTER_ADDR`.
+The development default loads Git-authored curriculum from `../curriculum`;
+override it with `FONZYTOOTER_CURRICULUM_PATH`. Invalid curriculum prevents the
+server from starting. To validate it without starting the API:
+
+```bash
+cd server
+go run ./cmd/curriculum-check ../curriculum
+```
 
 ### Start the web app
 

@@ -1,7 +1,7 @@
 id: orientation
-name: Orientation
+title: Orientation
+order: 0
 objectives: []
-prerequisites: []
 videos: []
 lessons:
   - 01-how-this-course-works
