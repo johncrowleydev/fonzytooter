@@ -34,7 +34,7 @@ function copyGeneratedModule(sourcePath, targetPath) {
   fs.writeFileSync(targetPath, transpile(fs.readFileSync(sourcePath, 'utf8'), sourcePath))
 }
 
-async function importGeneratedClient() {
+async function importGeneratedModule(entryFileName) {
   const tempRoot = fs.mkdtempSync(path.join(webRoot, '.api-runtime-test-'))
   copyGeneratedModule(
     path.join(generatedRoot, 'endpoints.ts'),
@@ -55,11 +55,19 @@ async function importGeneratedClient() {
 
   try {
     return await import(
-      `${pathToFileURL(path.join(tempRoot, 'endpoints.mjs')).href}?test=${Date.now()}`
+      `${pathToFileURL(path.join(tempRoot, entryFileName)).href}?test=${Date.now()}`
     )
   } finally {
     fs.rmSync(tempRoot, { force: true, recursive: true })
   }
+}
+
+async function importGeneratedClient() {
+  return importGeneratedModule('endpoints.mjs')
+}
+
+async function importGeneratedTurnRequestSchema() {
+  return importGeneratedModule('schemas/turnRequest.zod.mjs')
 }
 
 test('generated health fetch rejects an invalid successful JSON response with ZodError', async () => {
@@ -80,6 +88,79 @@ test('generated health fetch rejects an invalid successful JSON response with Zo
   } finally {
     globalThis.fetch = originalFetch
   }
+})
+
+test('generated health fetch validates JSON declared by OpenAPI even with text/plain', async () => {
+  const client = await importGeneratedClient()
+  const originalFetch = globalThis.fetch
+
+  try {
+    globalThis.fetch = async () =>
+      new Response(JSON.stringify({ status: 'ok' }), {
+        status: 200,
+        headers: { 'content-type': 'text/plain' },
+      })
+
+    const response = await client.getHealth()
+    assert.equal(response.data.status, 'ok')
+    assert.notEqual(typeof response.data, 'string')
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
+
+test('generated health fetch validates JSON declared by OpenAPI when Content-Type is missing', async () => {
+  const client = await importGeneratedClient()
+  const originalFetch = globalThis.fetch
+
+  try {
+    globalThis.fetch = async () =>
+      new Response(JSON.stringify({ status: 'ok' }), {
+        status: 200,
+      })
+
+    const response = await client.getHealth()
+    assert.equal(response.data.status, 'ok')
+    assert.notEqual(typeof response.data, 'string')
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
+
+test('generated health fetch rejects extra response properties with ZodError', async () => {
+  const client = await importGeneratedClient()
+  const originalFetch = globalThis.fetch
+
+  try {
+    globalThis.fetch = async () =>
+      new Response(JSON.stringify({ status: 'ok', unexpected: 123 }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      })
+
+    await assert.rejects(
+      () => client.getHealth(),
+      (error) => error?.name === 'ZodError',
+    )
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
+
+test('generated TurnRequest validates non-whitespace messages and closed objects', async () => {
+  const { TurnRequest } = await importGeneratedTurnRequestSchema()
+
+  assert.doesNotThrow(() => TurnRequest.parse({ message: 'hello' }))
+  for (const message of [' ', '   ']) {
+    assert.throws(
+      () => TurnRequest.parse({ message }),
+      (error) => error?.name === 'ZodError',
+    )
+  }
+  assert.throws(
+    () => TurnRequest.parse({ message: 'hello', unexpected: 123 }),
+    (error) => error?.name === 'ZodError',
+  )
 })
 
 test('generated health fetch throws an HTTP error with problem data for non-2xx responses', async () => {

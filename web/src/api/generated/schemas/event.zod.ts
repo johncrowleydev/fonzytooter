@@ -7,7 +7,7 @@
 import * as zod from 'zod'
 import { Usage } from './usage.zod'
 
-export const Event = zod.object({
+export const Event = zod.strictObject({
   error: zod.string().optional(),
   sourceId: zod.string().optional(),
   text: zod.string().optional(),

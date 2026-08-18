@@ -37,7 +37,7 @@ export const pageContextSelectedTextMax = 10000
 
 export const pageContextTitleMax = 300
 
-export const PageContext = zod.object({
+export const PageContext = zod.strictObject({
   code: zod.string().max(pageContextCodeMax).optional(),
   exerciseId: zod.string().max(pageContextExerciseIdMax).optional(),
   exerciseTitle: zod.string().max(pageContextExerciseTitleMax).optional(),

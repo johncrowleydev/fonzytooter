@@ -13,6 +13,7 @@ const BANNED_QUERY_HOOKS = new Set([
   'useSuspenseQuery',
   'useMutation',
 ])
+const TANSTACK_QUERY_MODULE = '@tanstack/react-query'
 
 function isGeneratedPath(relativePath) {
   return relativePath.split(path.sep).join('/').startsWith('api/generated/')
@@ -127,22 +128,106 @@ function isAxiosRequire(node) {
   )
 }
 
+function importDeclarationFor(node) {
+  if (ts.isImportSpecifier(node) || ts.isNamespaceImport(node) || ts.isImportClause(node)) {
+    const importClause = ts.isImportClause(node) ? node : node.parent.parent
+    return ts.isImportDeclaration(importClause.parent) ? importClause.parent : undefined
+  }
+  if (ts.isExportSpecifier(node) && ts.isExportDeclaration(node.parent.parent)) {
+    return node.parent.parent
+  }
+  return undefined
+}
+
+function isTanStackImportDeclaration(node) {
+  return node?.moduleSpecifier && ts.isStringLiteral(node.moduleSpecifier)
+    ? node.moduleSpecifier.text === TANSTACK_QUERY_MODULE
+    : false
+}
+
+function symbolDeclarations(symbol) {
+  return symbol?.declarations ?? []
+}
+
+function isTanStackBinding(symbol, checker, seen = new Set()) {
+  if (!symbol || seen.has(symbol)) return false
+  seen.add(symbol)
+
+  if (
+    symbolDeclarations(symbol).some((declaration) => {
+      const importDeclaration = importDeclarationFor(declaration)
+      return importDeclaration && isTanStackImportDeclaration(importDeclaration)
+    })
+  ) {
+    return true
+  }
+
+  if (symbol.flags & ts.SymbolFlags.Alias) {
+    return isTanStackBinding(checker.getAliasedSymbol(symbol), checker, seen)
+  }
+
+  return false
+}
+
+function isTanStackNamespaceBinding(symbol, checker, seen = new Set()) {
+  if (!symbol || seen.has(symbol)) return false
+  seen.add(symbol)
+
+  if (
+    symbolDeclarations(symbol).some((declaration) => {
+      return (
+        ts.isNamespaceImport(declaration) && isTanStackImportDeclaration(declaration.parent.parent)
+      )
+    })
+  ) {
+    return true
+  }
+
+  if (symbol.flags & ts.SymbolFlags.Alias) {
+    return isTanStackNamespaceBinding(checker.getAliasedSymbol(symbol), checker, seen)
+  }
+
+  return false
+}
+
+function isTanStackHookIdentifier(node, checker) {
+  return (
+    ts.isIdentifier(node) &&
+    BANNED_QUERY_HOOKS.has(node.text) &&
+    isTanStackBinding(checker.getSymbolAtLocation(node), checker)
+  )
+}
+
+function isTanStackNamespaceHookAccess(node, checker) {
+  return (
+    ts.isPropertyAccessExpression(node) &&
+    BANNED_QUERY_HOOKS.has(node.name.text) &&
+    isTanStackNamespaceBinding(checker.getSymbolAtLocation(node.expression), checker)
+  )
+}
+
 export function findApiBoundaryViolations(sourceRoot) {
   const root = path.resolve(sourceRoot)
   const violations = []
+  const sourceFiles = collectSourceFiles(root)
+  const program = ts.createProgram(sourceFiles, {
+    allowJs: false,
+    isolatedModules: true,
+    jsx: ts.JsxEmit.ReactJSX,
+    module: ts.ModuleKind.ESNext,
+    moduleResolution: ts.ModuleResolutionKind.NodeJs,
+    noEmit: true,
+    skipLibCheck: true,
+    target: ts.ScriptTarget.ES2022,
+  })
+  const checker = program.getTypeChecker()
 
-  for (const fileName of collectSourceFiles(root)) {
+  for (const fileName of sourceFiles) {
     const relativePath = path.relative(root, fileName)
     if (isGeneratedPath(relativePath)) continue
     const rawFetchAllowed = isRuntimePath(relativePath)
-    const sourceText = fs.readFileSync(fileName, 'utf8')
-    const sourceFile = ts.createSourceFile(
-      fileName,
-      sourceText,
-      ts.ScriptTarget.Latest,
-      true,
-      path.extname(fileName) === '.tsx' ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
-    )
+    const sourceFile = program.getSourceFile(fileName)
+    if (!sourceFile) continue
 
     function visit(node) {
       if (!rawFetchAllowed && ts.isCallExpression(node) && isRawFetchExpression(node.expression)) {
@@ -196,7 +281,10 @@ export function findApiBoundaryViolations(sourceRoot) {
           ? node.importClause.namedBindings.elements
           : []) {
           const importedName = element.propertyName?.text ?? element.name.text
-          if (BANNED_QUERY_HOOKS.has(importedName)) {
+          if (
+            BANNED_QUERY_HOOKS.has(importedName) &&
+            isTanStackBinding(checker.getSymbolAtLocation(element.name), checker)
+          ) {
             violations.push(
               diagnostic(
                 sourceFile,
@@ -208,7 +296,7 @@ export function findApiBoundaryViolations(sourceRoot) {
         }
       }
 
-      if (ts.isPropertyAccessExpression(node) && BANNED_QUERY_HOOKS.has(node.name.text)) {
+      if (isTanStackNamespaceHookAccess(node, checker)) {
         violations.push(
           diagnostic(
             sourceFile,
@@ -218,11 +306,7 @@ export function findApiBoundaryViolations(sourceRoot) {
         )
       }
 
-      if (
-        ts.isCallExpression(node) &&
-        ts.isIdentifier(node.expression) &&
-        BANNED_QUERY_HOOKS.has(node.expression.text)
-      ) {
+      if (ts.isCallExpression(node) && isTanStackHookIdentifier(node.expression, checker)) {
         violations.push(
           diagnostic(
             sourceFile,

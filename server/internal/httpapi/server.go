@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"reflect"
-	"strings"
 	"time"
 
 	"github.com/danielgtaylor/huma/v2"
@@ -95,12 +94,6 @@ func registerTutorTurn(api huma.API, tutorService *tutor.Service) {
 			},
 		},
 	}, func(ctx context.Context, input *TutorTurnInput) (*huma.StreamResponse, error) {
-		if strings.TrimSpace(input.Body.Message) == "" {
-			return nil, huma.Error422UnprocessableEntity(
-				"message is required",
-				&huma.ErrorDetail{Location: "body.message", Value: input.Body.Message},
-			)
-		}
 		if tutorService == nil {
 			return nil, huma.Error500InternalServerError("tutor service is unavailable")
 		}

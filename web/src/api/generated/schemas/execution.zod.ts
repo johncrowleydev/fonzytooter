@@ -12,7 +12,7 @@ export const executionPassedMin = 0
 
 export const executionSummaryMax = 1000
 
-export const Execution = zod.object({
+export const Execution = zod.strictObject({
   failed: zod.int().min(executionFailedMin),
   passed: zod.int().min(executionPassedMin),
   summary: zod.string().max(executionSummaryMax).optional(),

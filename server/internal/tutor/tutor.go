@@ -33,7 +33,7 @@ type Usage struct {
 
 type TurnRequest struct {
 	ConversationID string       `json:"conversationId,omitempty" maxLength:"200"`
-	Message        string       `json:"message" minLength:"1" maxLength:"10000"`
+	Message        string       `json:"message" minLength:"1" maxLength:"10000" pattern:"[^\\s]" patternDescription:"contain at least one non-whitespace character"`
 	Mode           TutorMode    `json:"mode,omitempty" enum:"explain,socratic,exercise,quiz,explore"`
 	PageContext    *PageContext `json:"pageContext,omitempty"`
 }

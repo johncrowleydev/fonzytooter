@@ -11,10 +11,12 @@ export const turnRequestConversationIdMax = 200
 
 export const turnRequestMessageMax = 10000
 
-export const TurnRequest = zod.object({
+export const turnRequestMessageRegExp = new RegExp('[^\\s]')
+
+export const TurnRequest = zod.strictObject({
   $schema: zod.url().optional().describe('A URL to the JSON Schema for this object.'),
   conversationId: zod.string().max(turnRequestConversationIdMax).optional(),
-  message: zod.string().min(1).max(turnRequestMessageMax),
+  message: zod.string().min(1).max(turnRequestMessageMax).regex(turnRequestMessageRegExp),
   mode: zod.enum(['explain', 'socratic', 'exercise', 'quiz', 'explore']).optional(),
   pageContext: PageContext.optional(),
 })

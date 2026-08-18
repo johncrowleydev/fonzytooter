@@ -113,8 +113,7 @@ export const getHealth = async (options?: RequestInit): Promise<getHealthRespons
     err.status = res.status
     throw err
   }
-  const parsedBody = body ? (contentType.includes('json') ? JSON.parse(body) : body) : {}
-  const data = contentType.includes('json') ? Health.parse(parsedBody) : parsedBody
+  const data = Health.parse(body ? JSON.parse(body) : {})
   return {
     data,
     status: res.status,

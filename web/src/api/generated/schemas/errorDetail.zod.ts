@@ -6,7 +6,7 @@
  */
 import * as zod from 'zod'
 
-export const ErrorDetail = zod.object({
+export const ErrorDetail = zod.strictObject({
   location: zod
     .string()
     .optional()

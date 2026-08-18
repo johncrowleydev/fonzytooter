@@ -275,6 +275,8 @@
           "message": {
             "maxLength": 10000,
             "minLength": 1,
+            "pattern": "[^\\s]",
+            "patternDescription": "contain at least one non-whitespace character",
             "type": "string"
           },
           "mode": {

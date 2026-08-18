@@ -41,6 +41,37 @@ describe('API boundary checker', () => {
     )
   })
 
+  it('rejects named TanStack Query hook imports', () => {
+    assert.ok(
+      checkFixture('tanstack-named').some((violation) =>
+        violation.message.includes('endpoint-level React Query'),
+      ),
+    )
+  })
+
+  it('rejects aliased TanStack Query hook imports', () => {
+    const messages = checkFixture('tanstack-aliased')
+    assert.equal(
+      messages.filter((violation) => violation.message.includes('endpoint-level React Query'))
+        .length,
+      2,
+    )
+  })
+
+  it('rejects namespace TanStack Query hook access', () => {
+    assert.ok(
+      checkFixture('tanstack-namespace').some((violation) =>
+        violation.message.includes('endpoint-level React Query'),
+      ),
+    )
+  })
+
+  it('allows local hooks and unrelated object properties with query hook names', () => {
+    assert.deepEqual(checkFixture('local-hook-import'), [])
+    assert.deepEqual(checkFixture('local-hook-function'), [])
+    assert.deepEqual(checkFixture('local-object-property'), [])
+  })
+
   it('rejects handwritten object-shaped API DTOs', () => {
     assert.ok(
       checkFixture('dto').some((violation) => violation.message.includes('object-shaped API')),

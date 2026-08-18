@@ -6,7 +6,7 @@
  */
 import * as zod from 'zod'
 
-export const Health = zod.object({
+export const Health = zod.strictObject({
   $schema: zod.url().optional().describe('A URL to the JSON Schema for this object.'),
   status: zod.enum(['ok']),
 })

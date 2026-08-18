@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -68,31 +69,32 @@ func TestTutorTurnRouteUsesResourcePathAndStreamsEvents(t *testing.T) {
 
 func TestTutorTurnInvalidInputUsesCommonError(t *testing.T) {
 	app := NewAPI(tutor.NewService(tutor.NewUnavailableProvider()))
-	req := httptest.NewRequest(http.MethodPost, "/api/tutor/turns", strings.NewReader(`{"message":"   "}`))
-	req.Header.Set("Content-Type", "application/json")
-	response := httptest.NewRecorder()
+	for _, message := range []string{" ", "   "} {
+		t.Run(fmt.Sprintf("message %q", message), func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodPost, "/api/tutor/turns", strings.NewReader(fmt.Sprintf(`{"message":%q}`, message)))
+			req.Header.Set("Content-Type", "application/json")
+			response := httptest.NewRecorder()
 
-	app.Handler.ServeHTTP(response, req)
+			app.Handler.ServeHTTP(response, req)
 
-	if response.Code != http.StatusUnprocessableEntity {
-		t.Fatalf("expected 422, got %d: %s", response.Code, response.Body.String())
-	}
-	if got := response.Header().Get("Content-Type"); got != "application/problem+json" {
-		t.Fatalf("expected common problem content type, got %q", got)
-	}
+			if response.Code != http.StatusUnprocessableEntity {
+				t.Fatalf("expected 422, got %d: %s", response.Code, response.Body.String())
+			}
+			if got := response.Header().Get("Content-Type"); got != "application/problem+json" {
+				t.Fatalf("expected common problem content type, got %q", got)
+			}
 
-	var problem map[string]any
-	if err := json.NewDecoder(response.Body).Decode(&problem); err != nil {
-		t.Fatalf("decode problem response: %v", err)
-	}
-	if problem["status"] != float64(http.StatusUnprocessableEntity) {
-		t.Fatalf("expected problem status 422, got %#v", problem["status"])
-	}
-	if problem["detail"] != "message is required" {
-		t.Fatalf("expected stable detail, got %#v", problem["detail"])
-	}
-	if _, ok := problem["error"]; ok {
-		t.Fatalf("unexpected endpoint-specific error field: %#v", problem)
+			var problem map[string]any
+			if err := json.NewDecoder(response.Body).Decode(&problem); err != nil {
+				t.Fatalf("decode problem response: %v", err)
+			}
+			if problem["status"] != float64(http.StatusUnprocessableEntity) {
+				t.Fatalf("expected problem status 422, got %#v", problem["status"])
+			}
+			if _, ok := problem["error"]; ok {
+				t.Fatalf("unexpected endpoint-specific error field: %#v", problem)
+			}
+		})
 	}
 }
 
@@ -151,6 +153,14 @@ func TestOpenAPIContract(t *testing.T) {
 	}
 	if tutorPath.Post.RequestBody == nil || tutorPath.Post.RequestBody.Content["application/json"] == nil {
 		t.Fatal("tutor request body is not documented as JSON")
+	}
+	turnRequestSchema := app.Spec.Components.Schemas.Map()["TurnRequest"]
+	if turnRequestSchema == nil {
+		t.Fatal("TurnRequest schema is not generated")
+	}
+	messageSchema := turnRequestSchema.Properties["message"]
+	if messageSchema == nil || messageSchema.Pattern != "[^\\s]" {
+		t.Fatalf("expected non-whitespace message pattern, got %#v", messageSchema)
 	}
 	streamResponse := tutorPath.Post.Responses["200"].Content["text/event-stream"]
 	if streamResponse == nil {

@@ -32,10 +32,20 @@ export default defineConfig({
         },
         zod: {
           generateReusableSchemas: true,
+          strict: {
+            body: true,
+            response: true,
+          },
           variant: 'classic',
           version: 4,
         },
       },
+    },
+    // Orval 8.24.0 checks Content-Type before its Zod parse even when the
+    // OpenAPI success representation is JSON. Normalize that generated
+    // branch after generation so declared JSON is always parsed and validated.
+    hooks: {
+      afterAllFilesWrite: 'node scripts/enforce-generated-json-validation.mjs',
     },
   },
 })

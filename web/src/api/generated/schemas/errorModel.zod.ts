@@ -9,7 +9,7 @@ import { ErrorDetail } from './errorDetail.zod'
 
 export const errorModelTypeDefault = `about:blank`
 
-export const ErrorModel = zod.object({
+export const ErrorModel = zod.strictObject({
   $schema: zod.url().optional().describe('A URL to the JSON Schema for this object.'),
   detail: zod
     .string()
