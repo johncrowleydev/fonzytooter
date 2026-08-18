@@ -6,7 +6,7 @@ Instructions for coding agents working in this repository.
 
 Fonzytooter is a personal, single-user AI/ML learning system. It is intentionally small. Favor straightforward code and explicit data flow over generalized infrastructure.
 
-Read the relevant files in `docs/` before making architectural changes. Frontend work must also follow `docs/frontend.md`. API/backend/frontend-contract work must follow `docs/api-contract.md`.
+Read the relevant files in `docs/` before making architectural changes. Frontend work must also follow `docs/frontend.md`. API/backend/frontend-contract work must follow `docs/api-contract.md`, and HTTP API design must follow `docs/api-style.md`.
 
 ## Non-negotiable architectural constraints
 
@@ -24,6 +24,7 @@ Read the relevant files in `docs/` before making architectural changes. Frontend
 12. **Sources are required for substantive lesson content.** Never invent citations. Reputable primary or high-quality educational sources should be recorded in `curriculum/sources.yaml` and referenced by stable IDs.
 13. **Avoid speculative infrastructure.** No microservices, Redis, queues, Kubernetes, GraphQL, vector database, event sourcing, generic CMS, or enterprise RBAC without a demonstrated need.
 14. **The API contract is generated end-to-end.** Go operations/types generate OpenAPI; OpenAPI generates the TanStack Query client and Zod schemas. Frontend feature code must not hand-write API DTOs or bypass the generated API boundary with raw `fetch`/Axios. See `docs/api-contract.md`.
+15. **The HTTP API is resource-oriented REST.** Paths identify resources and collections; HTTP methods carry CRUD/state-transition semantics; resource bodies stay resource-shaped; transport metadata belongs in headers; analogous operations use consistent naming and status codes; action/RPC endpoints are avoided. See `docs/api-style.md`.
 
 ## Engineering preferences
 
@@ -36,6 +37,7 @@ Read the relevant files in `docs/` before making architectural changes. Frontend
 - Run `gofmt` on changed Go files.
 - Add tests around real behavior rather than scaffolding abstractions for hypothetical future use.
 - Application API operations should participate in the Huma/OpenAPI contract rather than being separately documented ad-hoc handlers.
+- Before adding a route, model the resource first and verify the requirement cannot be expressed cleanly by extending an existing resource operation. Follow `docs/api-style.md` for paths, verbs, bodies, headers, idempotency, and status codes.
 
 ### TypeScript / React
 
@@ -52,7 +54,7 @@ Read the relevant files in `docs/` before making architectural changes. Frontend
 - **Generated Zod schemas are the frontend runtime API contract and the source for inferred API types via `z.infer`, `z.input`, or `z.output`.**
 - MDX is the lesson-content format.
 
-See `docs/frontend.md` for the complete frontend conventions and `docs/api-contract.md` for API generation/validation rules.
+See `docs/frontend.md` for the complete frontend conventions, `docs/api-contract.md` for API generation/validation rules, and `docs/api-style.md` for HTTP resource design conventions.
 
 ### Python exercises
 
