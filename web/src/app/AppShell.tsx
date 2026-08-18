@@ -4,13 +4,20 @@ import { navItems, type NavItem } from './navigation'
 import { TutorButton } from '../features/tutor/TutorButton'
 import { TutorOverlay } from '../features/tutor/TutorOverlay'
 
-const sharedThemeTokens =
-  '[--teal:#76d0c0] [--gold:#e1b86a] [--coral:#ef916e] [--violet:#a99be7] [--blue:#80afe4]'
+const navLinkStyles = {
+  compact: {
+    active: 'text-brand-teal',
+    inactive: 'text-muted',
+  },
+  desktop: {
+    active: 'border-l-2 border-brand-teal bg-brand-slate/10 text-ink',
+    inactive: 'text-muted hover:bg-brand-slate/10 hover:text-ink',
+  },
+} as const
 
-const themeTokens = {
-  dark: '[--ink:#e9edf3] [--muted:#8d99aa] [--faint:#5f6c7d] [--body:#c2cad5] [--line:rgba(162,181,203,0.14)] [--line-strong:rgba(162,181,203,0.24)] [--panel:#101b2a] [--panel-soft:#0d1725] [--panel-muted:rgba(18,31,47,0.52)] [--canvas:#08111e]',
-  light:
-    '[--ink:#203047] [--muted:#68788b] [--faint:#8b98a8] [--body:#40526a] [--line:rgba(36,58,83,0.14)] [--line-strong:rgba(36,58,83,0.25)] [--panel:#ffffff] [--panel-soft:#f6f9fb] [--panel-muted:rgba(248,250,252,0.9)] [--canvas:#f3f6f9]',
+const navIconStyles = {
+  compact: 'w-5 text-center text-lg leading-none',
+  desktop: 'w-5 text-center text-lg leading-none text-faint',
 } as const
 
 export function AppShell({ children }: PropsWithChildren) {
@@ -22,20 +29,16 @@ export function AppShell({ children }: PropsWithChildren) {
 
   return (
     <div
-      className={`flex min-h-screen bg-[var(--canvas)] font-sans text-[var(--ink)] [background-image:radial-gradient(circle_at_80%_-10%,rgba(53,83,107,0.13),transparent_32rem)] ${sharedThemeTokens} ${themeTokens[theme]}`}
+      data-theme={theme}
+      className="flex min-h-screen bg-canvas font-sans text-ink [background-image:radial-gradient(circle_at_80%_-10%,rgba(53,83,107,0.13),transparent_32rem)]"
     >
-      <aside
-        className={`sticky top-0 hidden h-screen w-[242px] shrink-0 flex-col overflow-hidden border-r border-[var(--line)] px-4 py-6 lg:flex ${theme === 'light' ? 'bg-white/[0.86]' : 'bg-[rgba(9,18,31,0.78)]'}`}
-      >
-        <Link
-          className="mb-14 flex items-center gap-3 px-2 text-left text-[var(--ink)] no-underline"
-          to="/"
-        >
+      <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col overflow-hidden border-r border-line bg-shell px-4 py-6 lg:flex">
+        <Link className="mb-14 flex items-center gap-3 px-2 text-left text-ink no-underline" to="/">
           <BrandMark />
-          <strong className="text-[15px] tracking-[-0.025em]">Fonzytooter</strong>
+          <strong className="text-base tracking-tight">Fonzytooter</strong>
         </Link>
 
-        <div className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--faint)]">
+        <div className="mb-2 px-3 text-2xs font-bold uppercase tracking-widest text-faint">
           Workspace
         </div>
         <nav className="grid gap-1" aria-label="Primary navigation">
@@ -44,29 +47,29 @@ export function AppShell({ children }: PropsWithChildren) {
           ))}
         </nav>
 
-        <div className="min-h-[100px] flex-1" />
+        <div className="min-h-24 flex-1" />
         <ThemeToggle theme={theme} onClick={toggleTheme} />
-        <div className="mt-4 flex items-center gap-2 border-t border-[var(--line)] px-2 pt-3.5">
-          <span className="grid size-7 place-items-center rounded-full bg-[#2f4c64] text-[11px] font-bold">
+        <div className="mt-4 flex items-center gap-2 border-t border-line px-2 pt-3">
+          <span className="grid size-7 place-items-center rounded-full bg-avatar text-xs font-bold">
             F
           </span>
           <span>
-            <strong className="block text-[11px]">Fonzy</strong>
-            <small className="mt-0.5 block text-[10px] text-[var(--faint)]">Learning mode</small>
+            <strong className="block text-xs">Fonzy</strong>
+            <small className="mt-0.5 block text-2xs text-faint">Learning mode</small>
           </span>
-          <span className="ml-auto text-[var(--faint)]">···</span>
+          <span className="ml-auto text-faint">···</span>
         </div>
       </aside>
 
       <div className="min-w-0 flex-1">
-        <header className="flex items-center justify-between border-b border-[var(--line)] px-4 py-4 lg:hidden">
-          <Link className="flex items-center gap-2.5 text-[var(--ink)] no-underline" to="/">
+        <header className="flex items-center justify-between border-b border-line px-4 py-4 lg:hidden">
+          <Link className="flex items-center gap-2.5 text-ink no-underline" to="/">
             <BrandMark />
-            <strong className="text-[15px] tracking-[-0.025em]">Fonzytooter</strong>
+            <strong className="text-base tracking-tight">Fonzytooter</strong>
           </Link>
           <div className="flex items-center gap-2">
             <button
-              className={`grid size-8 place-items-center rounded-full border border-[var(--line-strong)] text-[var(--gold)] ${theme === 'light' ? 'bg-[rgba(225,184,106,0.1)]' : ''}`}
+              className="grid size-8 place-items-center rounded-full border border-line-strong bg-brand-gold/10 text-brand-gold"
               onClick={toggleTheme}
               type="button"
               aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
@@ -76,12 +79,12 @@ export function AppShell({ children }: PropsWithChildren) {
           </div>
         </header>
 
-        <main className="mx-auto max-w-[1380px] px-4 pb-24 pt-8 sm:px-8 lg:px-14 lg:pt-13">
+        <main className="mx-auto max-w-7xl px-4 pb-24 pt-8 sm:px-8 lg:px-14 lg:pt-12">
           {children}
         </main>
 
         <nav
-          className={`fixed inset-x-0 bottom-0 z-20 grid grid-cols-5 border-t border-[var(--line)] px-2 py-2 backdrop-blur lg:hidden ${theme === 'light' ? 'bg-white/[0.96]' : 'bg-[rgba(9,18,31,0.96)]'}`}
+          className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-5 border-t border-line bg-shell-nav px-2 py-2 backdrop-blur lg:hidden"
           aria-label="Mobile navigation"
         >
           {navItems.map((item) => (
@@ -98,7 +101,7 @@ export function AppShell({ children }: PropsWithChildren) {
 
 function BrandMark() {
   return (
-    <span className="grid size-[29px] place-items-center rounded-[9px_9px_9px_3px] bg-[var(--teal)] font-serif text-[19px] font-bold text-[#0b151f]">
+    <span className="grid size-7 place-items-center rounded-[9px_9px_9px_3px] bg-brand-teal font-serif text-xl font-bold text-brand-ink">
       ƒ
     </span>
   )
@@ -107,15 +110,13 @@ function BrandMark() {
 function ThemeToggle({ theme, onClick }: { theme: 'dark' | 'light'; onClick: () => void }) {
   return (
     <button
-      className="mt-2 flex w-full items-center gap-2 rounded-lg border border-[var(--line)] px-3 py-2.5 text-left text-[11px] text-[var(--muted)] transition hover:bg-[rgba(118,208,192,0.08)] hover:text-[var(--ink)]"
+      className="mt-2 flex w-full items-center gap-2 rounded-lg border border-line px-3 py-2.5 text-left text-xs text-muted transition hover:bg-brand-teal/10 hover:text-ink"
       type="button"
       onClick={onClick}
     >
-      <span className="text-[15px] leading-none text-[var(--gold)]">
-        {theme === 'dark' ? '☼' : '☾'}
-      </span>
+      <span className="text-base leading-none text-brand-gold">{theme === 'dark' ? '☼' : '☾'}</span>
       <span>{theme === 'dark' ? 'Light theme' : 'Dark theme'}</span>
-      <kbd className="ml-auto rounded border border-[var(--line)] px-1.5 py-0.5 text-[9px] text-[var(--faint)]">
+      <kbd className="ml-auto rounded border border-line px-1.5 py-0.5 text-2xs text-faint">
         {theme === 'dark' ? '☼' : '☾'}
       </kbd>
     </button>
@@ -128,16 +129,10 @@ function ShellNavLink({ item, compact = false }: { item: NavItem; compact?: bool
       end={item.path === '/'}
       to={item.path}
       className={({ isActive }) =>
-        compact
-          ? `flex min-w-0 flex-col items-center gap-1 rounded-lg px-1 py-1.5 text-[9px] no-underline transition ${isActive ? 'text-[var(--teal)]' : 'text-[var(--muted)]'}`
-          : `flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-[13px] no-underline transition ${isActive ? 'bg-[rgba(142,183,195,0.1)] text-[var(--ink)] shadow-[inset_2px_0_0_var(--teal)]' : 'text-[var(--muted)] hover:bg-[rgba(142,183,195,0.08)] hover:text-[var(--ink)]'}`
+        `${compact ? 'flex min-w-0 flex-col items-center gap-1 rounded-lg px-1 py-1.5 text-2xs' : 'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm'} no-underline transition ${navLinkStyles[compact ? 'compact' : 'desktop'][isActive ? 'active' : 'inactive']}`
       }
     >
-      <span
-        className={`w-[18px] text-center text-[18px] leading-none ${compact ? '' : 'text-[var(--faint)]'}`}
-      >
-        {item.icon}
-      </span>
+      <span className={navIconStyles[compact ? 'compact' : 'desktop']}>{item.icon}</span>
       <span>{item.label}</span>
     </NavLink>
   )

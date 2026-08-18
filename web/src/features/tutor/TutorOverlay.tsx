@@ -4,6 +4,22 @@ import { useTutor } from './TutorContext'
 import type { TutorMessage, TutorMode } from './types'
 import { Button } from '../../components/ui'
 
+const modeButtonStyles = {
+  active: 'border-brand-teal/40 bg-brand-teal/10 text-brand-teal',
+  inactive:
+    'border-line bg-transparent text-faint hover:border-brand-teal/40 hover:bg-brand-teal/10 hover:text-brand-teal',
+} as const
+
+const messageStyles = {
+  user: 'ml-11 bg-brand-slate/15 text-ink',
+  assistant: 'mr-6 border border-line bg-white/5 text-muted',
+} as const
+
+const messageLabelStyles = {
+  user: 'text-brand-teal',
+  assistant: 'text-faint',
+} as const
+
 export function TutorOverlay() {
   const { isOpen, closeTutor, pageContext } = useTutor()
   const [input, setInput] = useState('')
@@ -56,34 +72,34 @@ export function TutorOverlay() {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex justify-end bg-[rgba(3,8,14,0.65)] backdrop-blur-[4px]"
+      className="fixed inset-0 z-50 flex justify-end bg-black/65 backdrop-blur-sm"
       role="dialog"
       aria-modal="true"
       onClick={(event) => {
         if (event.target === event.currentTarget) closeTutor()
       }}
     >
-      <section className="flex h-full w-[min(445px,100%)] flex-col border-l border-[var(--line-strong)] bg-[var(--panel)] shadow-[-25px_0_80px_rgba(0,0,0,0.28)] max-[640px]:w-full">
-        <header className="flex items-center justify-between border-b border-[var(--line)] px-[25px] pb-[18px] pt-[23px] max-[640px]:px-[18px] max-[640px]:pb-3.5 max-[640px]:pt-[18px]">
+      <section className="flex h-full w-full max-w-md flex-col border-l border-line-strong bg-panel shadow-2xl max-sm:max-w-none">
+        <header className="flex items-center justify-between border-b border-line px-6 pb-5 pt-6 max-sm:px-4 max-sm:pb-4 max-sm:pt-5">
           <div>
-            <p className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--faint)]">
+            <p className="mb-1.5 text-2xs font-bold uppercase tracking-widest text-faint">
               Always available
             </p>
-            <h2 className="m-0 text-[21px] tracking-[-0.04em]">
-              Tutor <span className="align-middle text-[10px] text-[var(--teal)]">●</span>
+            <h2 className="m-0 text-2xl tracking-tight">
+              Tutor <span className="align-middle text-2xs text-brand-teal">●</span>
             </h2>
           </div>
           <button
             type="button"
             onClick={closeTutor}
-            className="border-0 bg-transparent p-[3px] text-[19px] text-[var(--faint)] hover:text-[var(--ink)]"
+            className="border-0 bg-transparent p-1 text-xl text-faint hover:text-ink"
             aria-label="Close tutor"
           >
             ×
           </button>
         </header>
 
-        <div className="flex flex-wrap gap-[5px] px-[22px] pb-3.5 pt-[17px] max-[640px]:px-4">
+        <div className="flex flex-wrap gap-1.5 px-5 pb-3.5 pt-4 max-sm:px-4">
           {(
             [
               ['explain', 'Explain'],
@@ -97,31 +113,31 @@ export function TutorOverlay() {
               key={value}
               type="button"
               onClick={() => setMode(value)}
-              className={`rounded-full border px-[9px] py-[7px] text-[9px] ${mode === value ? 'border-[rgba(118,208,192,0.35)] bg-[rgba(118,208,192,0.08)] text-[var(--teal)]' : 'border-[var(--line)] bg-transparent text-[var(--faint)] hover:border-[rgba(118,208,192,0.35)] hover:bg-[rgba(118,208,192,0.08)] hover:text-[var(--teal)]'}`}
+              className={`rounded-full border px-2 py-2 text-2xs ${mode === value ? modeButtonStyles.active : modeButtonStyles.inactive}`}
             >
               {label}
             </button>
           ))}
         </div>
 
-        <div className="flex-1 overflow-y-auto px-[22px] py-[7px] max-[640px]:px-4">
+        <div className="flex-1 overflow-y-auto px-5 py-2 max-sm:px-4">
           {messages.length === 0 ? (
-            <div className="p-[38px_15px] text-center">
-              <span className="block text-[21px] text-[var(--gold)]">✦</span>
-              <p className="text-xs leading-[1.6] text-[var(--muted)]">
+            <div className="p-10 text-center">
+              <span className="block text-2xl text-brand-gold">✦</span>
+              <p className="text-xs leading-relaxed text-muted">
                 Ask about what you are currently studying. I’ll keep the answer anchored to this
                 screen.
               </p>
-              <div className="mt-5 flex flex-wrap justify-center gap-[5px]">
+              <div className="mt-5 flex flex-wrap justify-center gap-1.5">
                 <button
-                  className="rounded-full border border-[var(--line)] bg-transparent px-[9px] py-[7px] text-[9px] text-[var(--faint)] hover:text-[var(--ink)]"
+                  className="rounded-full border border-line bg-transparent px-2 py-2 text-2xs text-faint hover:text-ink"
                   type="button"
                   onClick={() => setInput('Can you explain the key idea here?')}
                 >
                   Explain the key idea
                 </button>
                 <button
-                  className="rounded-full border border-[var(--line)] bg-transparent px-[9px] py-[7px] text-[9px] text-[var(--faint)] hover:text-[var(--ink)]"
+                  className="rounded-full border border-line bg-transparent px-2 py-2 text-2xs text-faint hover:text-ink"
                   type="button"
                   onClick={() => setInput('Give me a hint')}
                 >
@@ -134,10 +150,10 @@ export function TutorOverlay() {
           {messages.map((message) => (
             <div
               key={message.id}
-              className={`my-3 rounded-[10px] px-[13px] py-3 text-xs leading-[1.65] ${message.role === 'user' ? 'ml-11 bg-[rgba(157,185,194,0.12)] text-[var(--ink)]' : 'mr-[25px] border border-[var(--line)] bg-white/[0.025] text-[var(--muted)]'}`}
+              className={`my-3 rounded-lg px-3 py-3 text-xs leading-relaxed ${messageStyles[message.role]}`}
             >
               <span
-                className={`mb-1.5 block text-[9px] uppercase tracking-[0.1em] ${message.role === 'user' ? 'text-[var(--teal)]' : 'text-[var(--faint)]'}`}
+                className={`mb-1.5 block text-2xs uppercase tracking-wide ${messageLabelStyles[message.role]}`}
               >
                 {message.role === 'user' ? 'You' : 'Tutor'}
               </span>
@@ -148,19 +164,16 @@ export function TutorOverlay() {
           ))}
         </div>
 
-        <form
-          onSubmit={handleSubmit}
-          className="border-t border-[var(--line)] px-[22px] pb-5 pt-[15px] max-[640px]:px-4"
-        >
+        <form onSubmit={handleSubmit} className="border-t border-line px-5 pb-5 pt-4 max-sm:px-4">
           <textarea
             value={input}
             onChange={(event) => setInput(event.target.value)}
             placeholder="Ask anything about this screen…"
             rows={3}
-            className="block min-h-[78px] w-full resize-none rounded-[9px] border border-[var(--line-strong)] bg-[var(--panel-soft)] p-[11px] text-xs leading-[1.5] text-[var(--ink)] outline-0 placeholder:text-[var(--faint)] focus:border-[rgba(118,208,192,0.5)]"
+            className="block min-h-20 w-full resize-none rounded-lg border border-line-strong bg-panel-soft p-3 text-xs leading-normal text-ink outline-0 placeholder:text-faint focus:border-brand-teal/50"
           />
-          <div className="mt-[9px] flex items-center justify-between gap-2.5">
-            <span className="text-[9px] text-[var(--faint)]">
+          <div className="mt-2 flex items-center justify-between gap-2.5">
+            <span className="text-2xs text-faint">
               {mode === 'exercise' ? 'Hints, not solutions' : 'Ask a question'}
             </span>
             <Button type="submit" disabled={isThinking || !input.trim()}>
