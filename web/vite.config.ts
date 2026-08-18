@@ -10,6 +10,7 @@ export default defineConfig({
     tailwindcss(),
   ],
   server: {
+    allowedHosts: ['.fonzygrok.com'],
     proxy: {
       '/api': 'http://localhost:8080',
     },

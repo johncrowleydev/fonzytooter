@@ -11,6 +11,8 @@ server/coverage.out
 web/node_modules/
 web/dist/
 web/.vite/
+web/tsconfig.tsbuildinfo
+.playwright-cli/
 
 # Runtime data
 *.db

@@ -9,9 +9,9 @@ export function TutorButton() {
     <button
       type="button"
       onClick={openTutor}
-      className="fixed bottom-5 right-5 rounded-full bg-slate-100 px-5 py-3 text-sm font-semibold text-slate-950 shadow-xl shadow-black/30 transition hover:bg-white"
+      className="tutor-fab"
     >
-      Ask tutor
+      <span className="tutor-spark">✦</span> Tutor
     </button>
   )
 }

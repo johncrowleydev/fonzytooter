@@ -5,6 +5,7 @@ type TutorContextValue = {
   isOpen: boolean
   pageContext: TutorPageContext
   openTutor: () => void
+  openTutorWithContext: (context: TutorPageContext) => void
   closeTutor: () => void
   setPageContext: (context: TutorPageContext) => void
 }
@@ -24,6 +25,10 @@ export function TutorProvider({ children, initialPageContext }: TutorProviderPro
       isOpen,
       pageContext,
       openTutor: () => setIsOpen(true),
+      openTutorWithContext: (context) => {
+        setPageContext(context)
+        setIsOpen(true)
+      },
       closeTutor: () => setIsOpen(false),
       setPageContext,
     }),

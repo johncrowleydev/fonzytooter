@@ -1,19 +1,25 @@
 export type TutorMode = 'explain' | 'socratic' | 'exercise' | 'quiz' | 'explore'
 
+import type { MockCheckResult } from '../../prototype/types'
+
 export type TutorPageContext = {
-  type: 'dashboard' | 'lesson' | 'exercise' | 'review' | 'project'
+  type: 'dashboard' | 'curriculum' | 'lesson' | 'exercise' | 'review' | 'progress' | 'project'
+  title?: string
   moduleId?: string
+  moduleTitle?: string
   lessonId?: string
+  lessonTitle?: string
   objectiveIds?: string[]
   sectionId?: string
   exerciseId?: string
+  exerciseTitle?: string
   selectedText?: string
   code?: string
-  lastExecution?: {
-    passed: number
-    failed: number
-    summary?: string
-  }
+  lastExecution?: MockCheckResult
+  objectiveId?: string
+  objectiveTitle?: string
+  projectId?: string
+  projectTitle?: string
 }
 
 export type TutorEvent = {
