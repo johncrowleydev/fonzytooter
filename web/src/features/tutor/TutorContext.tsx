@@ -5,25 +5,29 @@ type TutorContextValue = {
   isOpen: boolean
   pageContext: TutorPageContext
   openTutor: () => void
+  openTutorWithContext: (context: TutorPageContext) => void
   closeTutor: () => void
   setPageContext: (context: TutorPageContext) => void
 }
 
 const TutorContext = createContext<TutorContextValue | null>(null)
 
-type TutorProviderProps = PropsWithChildren<{
-  initialPageContext: TutorPageContext
-}>
-
-export function TutorProvider({ children, initialPageContext }: TutorProviderProps) {
+export function TutorProvider({ children }: PropsWithChildren) {
   const [isOpen, setIsOpen] = useState(false)
-  const [pageContext, setPageContext] = useState<TutorPageContext>(initialPageContext)
+  const [pageContext, setPageContext] = useState<TutorPageContext>({
+    type: 'dashboard',
+    title: 'Home',
+  })
 
   const value = useMemo<TutorContextValue>(
     () => ({
       isOpen,
       pageContext,
       openTutor: () => setIsOpen(true),
+      openTutorWithContext: (context) => {
+        setPageContext(context)
+        setIsOpen(true)
+      },
       closeTutor: () => setIsOpen(false),
       setPageContext,
     }),

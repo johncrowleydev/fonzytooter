@@ -6,7 +6,7 @@ Instructions for coding agents working in this repository.
 
 Fonzytooter is a personal, single-user AI/ML learning system. It is intentionally small. Favor straightforward code and explicit data flow over generalized infrastructure.
 
-Read the relevant files in `docs/` before making architectural changes.
+Read the relevant files in `docs/` before making architectural changes. Frontend work must also follow `docs/frontend.md`.
 
 ## Non-negotiable architectural constraints
 
@@ -40,10 +40,15 @@ Read the relevant files in `docs/` before making architectural changes.
 - TypeScript should be strict.
 - Prefer explicit types at domain boundaries.
 - Keep components small and feature-oriented.
+- Extract components around meaningful UI/behavior boundaries, not arbitrary line counts.
 - Minimize `useEffect`; use it for synchronization with external systems, not as a general control-flow tool.
 - Avoid global state libraries until React state/context becomes materially painful.
-- Tailwind is the styling layer.
+- **Use React Router for application routing. Do not hand-roll routing with the History API.**
+- **Tailwind is the styling system. Do not add custom CSS unless Tailwind cannot reasonably express the requirement; document the justification when custom CSS is necessary.**
+- **All TypeScript/TSX must be automatically formatted for human readability. Prettier is the standard formatter. Do not compress JSX onto long single lines.**
 - MDX is the lesson-content format.
+
+See `docs/frontend.md` for the complete frontend conventions.
 
 ### Python exercises
 

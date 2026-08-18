@@ -6,7 +6,26 @@ Fonzytooter has one in-app Python execution environment: Pyodide in the browser.
 
 There is intentionally no backend Python runner.
 
-When an exercise no longer fits comfortably in Pyodide, the curriculum should promote it to a repository-based lab/project completed with normal development tools.
+Small, constrained practice and assessment exercises belong in the embedded CodeMirror + Pyodide experience.
+
+Jupyter notebooks are a separate **external learning format** used for exploratory scientific/ML work. They are not embedded in Fonzytooter and do not create a second in-app Python runtime.
+
+When work becomes substantial, multi-file, GPU-dependent, data-heavy, or otherwise uncomfortable in Pyodide, it should become a repository-based lab/project completed with normal development tools.
+
+The intended progression is:
+
+```text
+Fonzytooter embedded exercise
+    -> practice and assessment
+
+Jupyter notebook
+    -> exploration and intuition-building
+
+Git repository + IDE
+    -> engineering, synthesis, and substantial experiments
+```
+
+See [`curriculum.md`](curriculum.md) for the broader curriculum role of each environment.
 
 ## Planned UI
 
@@ -31,7 +50,9 @@ When an exercise no longer fits comfortably in Pyodide, the curriculum should pr
 
 ### Run
 
-Exploratory execution. Capture stdout/stderr and, later, useful renderable artifacts such as plots where practical.
+Exploratory execution inside the scope of a small embedded exercise. Capture stdout/stderr and, later, useful renderable artifacts such as plots where practical.
+
+This is distinct from a Jupyter notebook lab, where open-ended exploration is the actual learning activity.
 
 ### Check
 
@@ -81,6 +102,23 @@ A reasonable approach is:
 - SQLite as the cross-device source of truth for saved workspaces and attempts.
 
 Do not optimize the synchronization protocol until real usage demonstrates a problem.
+
+## Jupyter notebook labs
+
+Jupyter should be introduced early in the Scientific Python curriculum and then used naturally for exploratory work.
+
+Notebook labs are appropriate when the learner should vary parameters, inspect intermediate results, make plots, compare alternatives, or document an experiment rather than simply produce a function that passes tests.
+
+Examples include:
+
+- visualize gradient-descent learning-rate behavior;
+- inspect distributions in a dataset;
+- compare initialization strategies;
+- plot training curves;
+- inspect activations or attention patterns;
+- explore numerical stability or quantization error.
+
+Notebook files should live in Git repositories and be opened using normal Jupyter-compatible tooling. Fonzytooter may link to the lab and track its objectives/status, but should not become a Jupyter server or notebook host.
 
 ## Graduation to real projects
 
