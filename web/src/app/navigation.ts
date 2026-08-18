@@ -11,5 +11,3 @@ export const navItems: NavItem[] = [
   { label: 'Progress', path: '/progress', icon: '◒' },
   { label: 'Projects', path: '/projects', icon: '⌁' },
 ]
-
-import * as React from 'react'

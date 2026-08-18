@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { Badge, Button, Card, PageIntro, SectionHeading } from '../../components/ui'
 import { useTutor } from '../tutor/TutorContext'
 
 export function Lesson() {
-  const navigate = useNavigate()
   const { lessonId = 'backpropagation' } = useParams()
   const { setPageContext, openTutorWithContext } = useTutor()
   const [selectedText, setSelectedText] = useState('')
@@ -48,13 +47,12 @@ export function Lesson() {
   return (
     <div className="grid max-w-none gap-7 max-sm:gap-5">
       <div className="flex items-center gap-2.5 text-2xs text-faint max-sm:gap-2 max-sm:text-2xs">
-        <button
-          className="border-0 bg-transparent p-0 text-muted hover:text-brand-teal"
-          onClick={() => navigate('/curriculum/neural-networks')}
-          type="button"
+        <Link
+          className="text-muted no-underline hover:text-brand-teal"
+          to="/curriculum/neural-networks"
         >
           Neural Networks From Scratch
-        </button>
+        </Link>
         <span>/</span>
         <span>Lesson 04</span>
         <span className="ml-auto text-muted">4 / 7</span>
@@ -137,13 +135,19 @@ export function Lesson() {
           </div>
 
           <div className="mx-auto mt-9 flex max-w-2xl items-center justify-between gap-3 border-t border-line pt-5 max-sm:gap-2">
-            <Button variant="secondary" onClick={() => navigate('/lesson/computational-graphs')}>
+            <Link
+              className="inline-flex items-center justify-center gap-2.5 rounded-lg border border-line-strong bg-brand-slate/10 px-4 py-2.5 text-xs font-bold text-ink no-underline transition hover:bg-brand-slate/20"
+              to="/lesson/computational-graphs"
+            >
               ← Previous
-            </Button>
+            </Link>
             <span className="text-2xs text-faint max-sm:hidden">Lesson 4 of 7</span>
-            <Button onClick={() => navigate('/exercise/gradient-descent-exercise')}>
+            <Link
+              className="inline-flex items-center justify-center gap-2.5 rounded-lg bg-brand-teal px-4 py-2.5 text-xs font-bold text-brand-ink no-underline transition hover:-translate-y-px hover:bg-brand-teal-light"
+              to="/exercise/gradient-descent-exercise"
+            >
               Next: Exercise →
-            </Button>
+            </Link>
           </div>
         </article>
 

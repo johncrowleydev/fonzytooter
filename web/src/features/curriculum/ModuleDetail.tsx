@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { Badge, Card, PageIntro, ProgressBar, SectionHeading, StatusDot } from '../../components/ui'
 import { modules, objectives } from '../../prototype/mockData'
 import { useTutor } from '../tutor/TutorContext'
@@ -12,7 +12,6 @@ const lessonToneByKind = {
 } as const
 
 export function ModuleDetail() {
-  const navigate = useNavigate()
   const { moduleId = 'neural-networks' } = useParams()
   const { setPageContext } = useTutor()
   const module =
@@ -35,13 +34,12 @@ export function ModuleDetail() {
 
   return (
     <div className="grid max-w-6xl gap-7 max-sm:gap-5">
-      <button
-        className="justify-self-start border-0 bg-transparent p-0 text-xs font-bold text-muted hover:text-ink"
-        onClick={() => navigate('/curriculum')}
-        type="button"
+      <Link
+        className="justify-self-start text-xs font-bold text-muted no-underline hover:text-ink"
+        to="/curriculum"
       >
         ← Curriculum
-      </button>
+      </Link>
       <PageIntro
         compact
         eyebrow={`${module.eyebrow} / Module`}
@@ -91,12 +89,16 @@ export function ModuleDetail() {
           <h3 className="my-2 text-lg leading-tight tracking-tight">
             {module.prerequisites?.[0] ?? 'None'}
           </h3>
-          <button
-            className="border-0 bg-transparent p-0 text-xs font-bold text-brand-teal hover:text-ink"
-            onClick={() => module.prerequisites && navigate('/curriculum/mathematical-foundations')}
-          >
-            {module.prerequisites ? 'Review foundation →' : 'Start here →'}
-          </button>
+          {module.prerequisites ? (
+            <Link
+              className="text-xs font-bold text-brand-teal no-underline hover:text-ink"
+              to="/curriculum/mathematical-foundations"
+            >
+              Review foundation →
+            </Link>
+          ) : (
+            <span className="text-xs font-bold text-brand-teal">Start here →</span>
+          )}
         </Card>
       </section>
       <section className="grid grid-cols-2 gap-12 max-xl:grid-cols-1">
@@ -173,7 +175,6 @@ function LessonRow({
   lesson: (typeof modules)[number]['lessons'][number]
   index: number
 }) {
-  const navigate = useNavigate()
   const tone = lessonToneByKind[lesson.kind]
   const path =
     lesson.kind === 'exercise'
@@ -182,10 +183,9 @@ function LessonRow({
         ? '/projects/nn-scratch'
         : `/lesson/${lesson.id}`
   return (
-    <button
-      type="button"
-      className="grid w-full grid-cols-[24px_62px_minmax(0,1fr)_17px] items-center gap-2 border-0 border-t border-line bg-transparent py-3 text-left text-ink max-sm:grid-cols-[24px_62px_minmax(0,1fr)_17px]"
-      onClick={() => navigate(path)}
+    <Link
+      className="grid w-full grid-cols-[24px_62px_minmax(0,1fr)_17px] items-center gap-2 border-0 border-t border-line bg-transparent py-3 text-left text-ink no-underline max-sm:grid-cols-[24px_62px_minmax(0,1fr)_17px]"
+      to={path}
     >
       <span className="text-2xs text-faint">{String(index + 1).padStart(2, '0')}</span>
       <span>
@@ -206,6 +206,6 @@ function LessonRow({
       <span className={`text-right text-faint ${lesson.completed ? 'text-brand-teal' : ''}`}>
         {lesson.completed ? '✓' : '→'}
       </span>
-    </button>
+    </Link>
   )
 }

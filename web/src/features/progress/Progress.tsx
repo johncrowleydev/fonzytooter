@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { Badge, Card, PageIntro, SectionHeading, StatusDot } from '../../components/ui'
 import { objectives } from '../../prototype/mockData'
 import type { MasteryLevel, Objective } from '../../prototype/types'
@@ -27,11 +27,13 @@ const dimensionToneStyles = {
 } as const
 
 export function Progress() {
-  const navigate = useNavigate()
   const { setPageContext } = useTutor()
   const [filter, setFilter] = useState<Filter>('all')
   const [selectedId, setSelectedId] = useState(objectives[4].id)
   const selected = objectives.find((item) => item.id === selectedId) ?? objectives[0]
+  const practicePath = selected.id.includes('backprop')
+    ? '/exercise/gradient-descent-exercise'
+    : '/lesson/backpropagation'
 
   useEffect(() => {
     setPageContext({
@@ -152,18 +154,12 @@ export function Progress() {
                 ? 'Try a new context'
                 : 'Do one small implementation'}
             </h3>
-            <button
-              className="border-0 bg-transparent p-0 text-xs font-bold text-brand-teal hover:text-ink"
-              onClick={() =>
-                navigate(
-                  selected.id.includes('backprop')
-                    ? '/exercise/gradient-descent-exercise'
-                    : '/lesson/backpropagation',
-                )
-              }
+            <Link
+              className="text-xs font-bold text-brand-teal no-underline hover:text-ink"
+              to={practicePath}
             >
               Choose practice →
-            </button>
+            </Link>
           </div>
         </Card>
       </div>

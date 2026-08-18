@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Badge, Button, Card, PageIntro, ProgressBar, SectionHeading } from '../../components/ui'
+import { Link } from 'react-router-dom'
+import { Badge, Card, PageIntro, ProgressBar, SectionHeading } from '../../components/ui'
 import { recentActivity } from '../../prototype/mockData'
 import { useTutor } from '../tutor/TutorContext'
 
@@ -21,7 +21,6 @@ const activityKindIcons = {
 } as const
 
 export function Dashboard() {
-  const navigate = useNavigate()
   const { setPageContext } = useTutor()
   useEffect(() => {
     setPageContext({ type: 'dashboard', title: 'Home' })
@@ -52,9 +51,12 @@ export function Dashboard() {
                 Trace how a small local derivative becomes a useful update across a computational
                 graph.
               </p>
-              <Button onClick={() => navigate('/lesson/backpropagation')}>
+              <Link
+                className="inline-flex items-center justify-center gap-2.5 rounded-lg bg-brand-teal px-4 py-2.5 text-xs font-bold text-brand-ink no-underline transition hover:-translate-y-px hover:bg-brand-teal-light"
+                to="/lesson/backpropagation"
+              >
                 Continue lesson <span>→</span>
-              </Button>
+              </Link>
             </div>
             <div
               className="relative mr-3 ml-5 h-[170px] w-48 opacity-90 max-sm:absolute max-sm:right-[-9px] max-sm:bottom-0 max-sm:m-0 max-sm:origin-bottom-right max-sm:scale-75"
@@ -86,12 +88,12 @@ export function Dashboard() {
                 Ready when you are
               </p>
               <h3 className="my-2 text-lg tracking-tight">14 reviews ready</h3>
-              <button
-                className="border-0 bg-transparent p-0 text-xs font-bold text-brand-teal hover:text-ink"
-                onClick={() => navigate('/review')}
+              <Link
+                className="text-xs font-bold text-brand-teal no-underline hover:text-ink"
+                to="/review"
               >
                 Start review <span>→</span>
-              </button>
+              </Link>
             </div>
           </Card>
           <Card className="flex min-h-32 items-start gap-4 p-5 max-sm:min-h-28">
@@ -115,12 +117,12 @@ export function Dashboard() {
             eyebrow="Current project"
             title="Neural Network From Scratch"
             action={
-              <button
-                className="border-0 bg-transparent p-0 text-xs font-bold text-brand-teal hover:text-ink"
-                onClick={() => navigate('/projects/nn-scratch')}
+              <Link
+                className="text-xs font-bold text-brand-teal no-underline hover:text-ink"
+                to="/projects/nn-scratch"
               >
                 Open project →
-              </button>
+              </Link>
             }
           />
           <p className="text-xs leading-relaxed text-muted">

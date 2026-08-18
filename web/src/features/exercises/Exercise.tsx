@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { Badge, Button, Card, PageIntro, SectionHeading } from '../../components/ui'
 import type { MockCheckResult } from '../../prototype/types'
 import { useTutor } from '../tutor/TutorContext'
@@ -18,7 +18,6 @@ const exerciseTabStyles = {
 } as const
 
 export function Exercise() {
-  const navigate = useNavigate()
   const { exerciseId = 'gradient-descent-exercise' } = useParams()
   const { setPageContext, openTutorWithContext } = useTutor()
   const [code, setCode] = useState(starterCode)
@@ -57,13 +56,12 @@ export function Exercise() {
 
   return (
     <div className="grid max-w-6xl gap-7 max-sm:gap-5">
-      <button
-        className="justify-self-start border-0 bg-transparent p-0 text-xs font-bold text-muted hover:text-ink"
-        onClick={() => navigate('/curriculum/neural-networks')}
-        type="button"
+      <Link
+        className="justify-self-start text-xs font-bold text-muted no-underline hover:text-ink"
+        to="/curriculum/neural-networks"
       >
         ← Neural Networks From Scratch
-      </button>
+      </Link>
       <div className="flex items-start justify-between gap-5 max-sm:block">
         <PageIntro compact eyebrow="Exercise" title="Implement gradient descent" />
       </div>
@@ -135,7 +133,7 @@ export function Exercise() {
               <span className="font-mono text-2xs text-faint">Python · 8 lines</span>
             </div>
             <textarea
-              className="block min-h-[290px] w-full resize-y border-0 bg-slate-950 px-6 py-5 font-mono text-xs leading-relaxed text-slate-200 outline-0 focus:ring-1 focus:ring-brand-teal/30 max-sm:min-h-[250px] max-sm:p-4 max-sm:text-xs"
+              className="block min-h-72 w-full resize-y border-0 bg-slate-950 px-6 py-5 font-mono text-xs leading-relaxed text-slate-200 outline-0 focus:ring-1 focus:ring-brand-teal/30 max-sm:min-h-64 max-sm:p-4 max-sm:text-xs"
               spellCheck={false}
               value={code}
               onChange={(event) => setCode(event.target.value)}

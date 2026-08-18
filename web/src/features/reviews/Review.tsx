@@ -1,11 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { Badge, Button, Card, PageIntro, ProgressBar } from '../../components/ui'
 import { reviewCards } from '../../prototype/mockData'
 import { useTutor } from '../tutor/TutorContext'
 
 export function Review() {
-  const navigate = useNavigate()
   const { setPageContext } = useTutor()
   const [cardIndex, setCardIndex] = useState(0)
   const [revealed, setRevealed] = useState(false)
@@ -35,12 +34,8 @@ export function Review() {
   return (
     <div className="grid max-w-6xl gap-7 max-sm:gap-5">
       <PageIntro compact title="Review">
-        <div className="mt-4 flex gap-2.5 text-2xs text-faint">
-          <span>
-            <strong className="text-brand-teal">{remaining}</strong> remaining
-          </span>
-          <span>·</span>
-          <span>Approx. 8 min</span>
+        <div className="mt-4 text-2xs text-faint">
+          <strong className="text-brand-teal">{remaining}</strong> remaining
         </div>
       </PageIntro>
       <div className="grid grid-cols-[100px_1fr_45px] items-center gap-4 text-2xs text-faint max-sm:grid-cols-[83px_1fr_32px] max-sm:gap-2">
@@ -127,20 +122,12 @@ export function Review() {
           <div className="mt-3 flex items-center gap-2 text-2xs text-faint">
             <span className="mt-1 size-2 shrink-0 rounded-full bg-brand-teal ring-4 ring-brand-teal/10" />
             <strong className="font-medium text-muted">{current.objectiveLabel}</strong>
-            <button
-              className="ml-auto border-0 bg-transparent p-0 text-2xs text-brand-teal"
-              type="button"
-              onClick={() => navigate('/progress')}
-            >
+            <Link className="ml-auto text-2xs text-brand-teal no-underline" to="/progress">
               View objective →
-            </button>
-            <button
-              className="border-0 bg-transparent p-0 text-2xs text-brand-teal"
-              type="button"
-              onClick={() => navigate('/')}
-            >
+            </Link>
+            <Link className="text-2xs text-brand-teal no-underline" to="/">
               Exit
-            </button>
+            </Link>
           </div>
         </div>
       </div>
@@ -149,7 +136,6 @@ export function Review() {
 }
 
 function ReviewComplete({ reviewed, revisit }: { reviewed: number; revisit: number }) {
-  const navigate = useNavigate()
   return (
     <div className="grid min-h-[70vh] max-w-6xl content-center justify-items-center gap-7 text-center max-sm:min-h-[72vh] max-sm:gap-5">
       <div className="grid size-16 place-items-center rounded-full border border-brand-teal/40 bg-brand-teal/10 text-3xl text-brand-teal">
@@ -172,16 +158,20 @@ function ReviewComplete({ reviewed, revisit }: { reviewed: number; revisit: numb
           <strong className="text-2xl max-sm:text-xl">{revisit}</strong>
           <span className="text-2xs uppercase tracking-wide text-faint">worth revisiting</span>
         </div>
-        <div className="grid min-w-32 gap-1 bg-brand-slate/10 p-4 max-sm:min-w-24 max-sm:px-2 max-sm:py-3">
-          <strong className="text-2xl max-sm:text-xl">3m</strong>
-          <span className="text-2xs uppercase tracking-wide text-faint">focused time</span>
-        </div>
       </div>
       <div className="flex gap-2">
-        <Button onClick={() => navigate('/')}>Back home</Button>
-        <Button variant="secondary" onClick={() => navigate('/progress')}>
+        <Link
+          className="inline-flex items-center justify-center gap-2.5 rounded-lg bg-brand-teal px-4 py-2.5 text-xs font-bold text-brand-ink no-underline transition hover:-translate-y-px hover:bg-brand-teal-light"
+          to="/"
+        >
+          Back home
+        </Link>
+        <Link
+          className="inline-flex items-center justify-center gap-2.5 rounded-lg border border-line-strong bg-brand-slate/10 px-4 py-2.5 text-xs font-bold text-ink no-underline transition hover:bg-brand-slate/20"
+          to="/progress"
+        >
           View progress
-        </Button>
+        </Link>
       </div>
     </div>
   )

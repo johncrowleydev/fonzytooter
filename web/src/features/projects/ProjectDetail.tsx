@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import {
   Badge,
   Button,
@@ -19,7 +19,6 @@ const objectiveStateStyles = {
 } as const
 
 export function ProjectDetail() {
-  const navigate = useNavigate()
   const { projectId = 'nn-scratch' } = useParams()
   const { setPageContext } = useTutor()
   const project = projects.find((item) => item.id === projectId) ?? projects[0]
@@ -36,13 +35,12 @@ export function ProjectDetail() {
 
   return (
     <div className="grid max-w-6xl gap-7 max-sm:gap-5">
-      <button
-        className="justify-self-start border-0 bg-transparent p-0 text-xs font-bold text-muted hover:text-ink"
-        onClick={() => navigate('/projects')}
-        type="button"
+      <Link
+        className="justify-self-start text-xs font-bold text-muted no-underline hover:text-ink"
+        to="/projects"
       >
         ← Projects
-      </button>
+      </Link>
       <PageIntro compact eyebrow="Project" title={project.title}>
         <div className="mt-4 flex items-center gap-3 max-sm:items-start max-sm:flex-col max-sm:gap-2">
           <Badge tone="coral">

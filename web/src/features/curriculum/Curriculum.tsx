@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { Badge, Card, PageIntro, ProgressBar, SectionHeading, StatusDot } from '../../components/ui'
 import { modules } from '../../prototype/mockData'
 import { useTutor } from '../tutor/TutorContext'
@@ -99,7 +99,6 @@ export function Curriculum() {
 }
 
 function ModuleRow({ module }: { module: (typeof modules)[number] }) {
-  const navigate = useNavigate()
   const complete = module.lessons.filter((lesson) => lesson.completed).length
   const total = module.lessons.length
   const percent = total
@@ -109,10 +108,9 @@ function ModuleRow({ module }: { module: (typeof modules)[number] }) {
       : 0
   const tone = module.accent as 'teal' | 'gold' | 'coral' | 'violet' | 'blue'
   return (
-    <button
-      type="button"
-      className="grid w-full grid-cols-[90px_minmax(0,1fr)_145px_18px] items-center gap-4 rounded-lg border border-line bg-panel px-4 py-5 text-left text-ink transition hover:translate-x-0.5 hover:border-line-strong hover:bg-panel-soft max-lg:grid-cols-[80px_minmax(0,1fr)_115px_15px] max-lg:gap-3 max-sm:grid-cols-[1fr_15px] max-sm:gap-3 max-sm:px-3.5 max-sm:py-4"
-      onClick={() => navigate(`/curriculum/${module.id}`)}
+    <Link
+      className="grid w-full grid-cols-[90px_minmax(0,1fr)_145px_18px] items-center gap-4 rounded-lg border border-line bg-panel px-4 py-5 text-left text-ink no-underline transition hover:translate-x-0.5 hover:border-line-strong hover:bg-panel-soft max-lg:grid-cols-[80px_minmax(0,1fr)_115px_15px] max-lg:gap-3 max-sm:grid-cols-[1fr_15px] max-sm:gap-3 max-sm:px-3.5 max-sm:py-4"
+      to={`/curriculum/${module.id}`}
     >
       <div
         className={`flex items-center gap-2 text-2xs uppercase tracking-wide max-sm:col-start-1 max-sm:order-0 ${moduleStatusStyles[module.status]}`}
@@ -152,6 +150,6 @@ function ModuleRow({ module }: { module: (typeof modules)[number] }) {
       <span className="text-right text-base text-faint max-sm:col-start-2 max-sm:row-span-3 max-sm:row-start-1">
         →
       </span>
-    </button>
+    </Link>
   )
 }

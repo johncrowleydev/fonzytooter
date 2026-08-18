@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { Badge, Card, PageIntro, ProgressBar, SectionHeading } from '../../components/ui'
 import { projects } from '../../prototype/mockData'
 import { useTutor } from '../tutor/TutorContext'
@@ -28,14 +28,12 @@ export function Projects() {
 }
 
 function ProjectRow({ project }: { project: (typeof projects)[number] }) {
-  const navigate = useNavigate()
   const done = project.objectives.filter((item) => item.state === 'done').length
   const percent = Math.round((done / project.objectives.length) * 100)
   return (
-    <button
-      className="w-full rounded-lg border border-line bg-panel p-5 text-left text-ink hover:border-line-strong hover:bg-panel-soft"
-      type="button"
-      onClick={() => navigate(`/projects/${project.id}`)}
+    <Link
+      className="block w-full rounded-lg border border-line bg-panel p-5 text-left text-ink no-underline hover:border-line-strong hover:bg-panel-soft"
+      to={`/projects/${project.id}`}
     >
       <div className="flex items-center justify-between gap-3">
         <Badge tone={project.status === 'in-progress' ? 'coral' : 'neutral'}>
@@ -56,6 +54,6 @@ function ProjectRow({ project }: { project: (typeof projects)[number] }) {
           {project.repository.replace('github.com/', '')}
         </span>
       </div>
-    </button>
+    </Link>
   )
 }
