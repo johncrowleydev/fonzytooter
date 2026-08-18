@@ -16,6 +16,7 @@
   --ink: #e9edf3;
   --muted: #8d99aa;
   --faint: #5f6c7d;
+  --body: #c2cad5;
   --line: rgba(162, 181, 203, 0.14);
   --line-strong: rgba(162, 181, 203, 0.24);
   --panel: #101b2a;
@@ -792,7 +793,7 @@ button:disabled {
 .lesson-prose {
   margin: 50px auto 0;
   max-width: 630px;
-  color: var(--muted);
+  color: var(--body);
   font-size: 15px;
   line-height: 1.9;
 }
@@ -830,9 +831,10 @@ button:disabled {
   margin: 5px 0 8px;
   font-size: 15px;
   letter-spacing: -0.02em;
+  color: var(--ink);
 }
 .concept-callout p:last-child {
-  color: var(--muted);
+  color: var(--body);
   font-size: 12px;
   line-height: 1.6;
   margin: 0;
@@ -2629,8 +2631,9 @@ button:disabled {
 /* Light theme: the dark theme remains the default. */
 .theme-light {
   --ink: #203047;
-  --muted: #68788b;
-  --faint: #8b98a8;
+  --muted: #52637a;
+  --faint: #697990;
+  --body: #40526a;
   --line: rgba(36, 58, 83, 0.14);
   --line-strong: rgba(36, 58, 83, 0.25);
   --panel: #ffffff;
