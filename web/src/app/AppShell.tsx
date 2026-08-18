@@ -17,7 +17,9 @@ export function AppShell({ children }: PropsWithChildren) {
     <div
       className={`theme-${theme} flex min-h-screen bg-[var(--canvas)] text-[var(--ink)] [background-image:radial-gradient(circle_at_80%_-10%,rgba(53,83,107,0.13),transparent_32rem)]`}
     >
-      <aside className="sticky top-0 hidden h-screen w-[242px] shrink-0 flex-col overflow-hidden border-r border-[var(--line)] bg-[rgba(9,18,31,0.78)] px-4 py-6 lg:flex">
+      <aside
+        className={`sticky top-0 hidden h-screen w-[242px] shrink-0 flex-col overflow-hidden border-r border-[var(--line)] px-4 py-6 lg:flex ${theme === 'light' ? 'bg-white/[0.86]' : 'bg-[rgba(9,18,31,0.78)]'}`}
+      >
         <Link
           className="mb-14 flex items-center gap-3 px-2 text-left text-[var(--ink)] no-underline"
           to="/"
