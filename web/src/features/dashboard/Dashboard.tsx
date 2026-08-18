@@ -1,8 +1,10 @@
 import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { Badge, Card, PageIntro, ProgressBar, SectionHeading } from '../../components/ui'
-import { recentActivity } from '../../prototype/mockData'
+import { getObjectiveSummary, getProjectProgress } from '../../prototype/selectors'
+import { objectives, projects, recentActivity, reviewCards } from '../../prototype/mockData'
 import { useTutor } from '../tutor/TutorContext'
+import { formatDashboardDate, formatDashboardGreeting } from './time'
 
 const activityKindStyles = {
   review: 'bg-brand-teal/10 text-brand-teal',
@@ -20,8 +22,26 @@ const activityKindIcons = {
   project: '✦',
 } as const
 
+const projectObjectiveStyles = {
+  done: 'text-brand-teal',
+  working: 'text-ink',
+  todo: 'text-muted',
+} as const
+
+const projectObjectiveIcons = {
+  done: '✓',
+  working: '◐',
+  todo: '○',
+} as const
+
 export function Dashboard() {
   const { setPageContext } = useTutor()
+  const now = new Date()
+  const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone
+  const currentProject = projects.find((project) => project.status === 'in-progress') ?? projects[0]
+  const projectProgress = getProjectProgress(currentProject)
+  const objectiveSummary = getObjectiveSummary(objectives)
+
   useEffect(() => {
     setPageContext({ type: 'dashboard', title: 'Home' })
   }, [setPageContext])
@@ -29,8 +49,8 @@ export function Dashboard() {
   return (
     <div className="grid max-w-6xl gap-7 max-sm:gap-5">
       <PageIntro
-        eyebrow="Monday, August 17"
-        title="Good evening, Fonzy."
+        eyebrow={formatDashboardDate(now, timeZone)}
+        title={formatDashboardGreeting(now, timeZone)}
         detail="A focused place to pick up where you left off."
       />
 
@@ -87,7 +107,7 @@ export function Dashboard() {
               <p className="mt-px text-2xs font-bold uppercase tracking-widest text-faint">
                 Ready when you are
               </p>
-              <h3 className="my-2 text-lg tracking-tight">14 reviews ready</h3>
+              <h3 className="my-2 text-lg tracking-tight">{reviewCards.length} reviews ready</h3>
               <Link
                 className="text-xs font-bold text-brand-teal no-underline hover:text-ink"
                 to="/review"
@@ -115,30 +135,33 @@ export function Dashboard() {
         <Card className="min-h-72">
           <SectionHeading
             eyebrow="Current project"
-            title="Neural Network From Scratch"
+            title={currentProject.title}
             action={
               <Link
                 className="text-xs font-bold text-brand-teal no-underline hover:text-ink"
-                to="/projects/nn-scratch"
+                to={`/projects/${currentProject.id}`}
               >
                 Open project →
               </Link>
             }
           />
-          <p className="text-xs leading-relaxed text-muted">
-            A repository-based lab for turning the pieces of this module into a small, inspectable
-            implementation.
-          </p>
+          <p className="text-xs leading-relaxed text-muted">{currentProject.description}</p>
           <div className="mt-6 flex items-baseline gap-2">
-            <strong className="text-3xl tracking-tight">3 of 7</strong>
+            <strong className="text-3xl tracking-tight">
+              {projectProgress.done} of {projectProgress.total}
+            </strong>
             <span className="text-xs text-muted">objectives demonstrated</span>
-            <span className="ml-auto text-xs font-bold text-brand-coral">43%</span>
+            <span className="ml-auto text-xs font-bold text-brand-coral">
+              {projectProgress.percent}%
+            </span>
           </div>
-          <ProgressBar value={43} tone="coral" />
+          <ProgressBar value={projectProgress.percent} tone="coral" />
           <div className="flex flex-wrap gap-x-4 gap-y-2 text-2xs text-muted">
-            <span className="text-brand-teal">✓ Forward propagation</span>
-            <span>◐ Gradient computation</span>
-            <span>○ Training loop</span>
+            {currentProject.objectives.map((objective) => (
+              <span className={projectObjectiveStyles[objective.state]} key={objective.label}>
+                {projectObjectiveIcons[objective.state]} {objective.label}
+              </span>
+            ))}
           </div>
         </Card>
         <Card className="min-h-72">
@@ -186,15 +209,15 @@ export function Dashboard() {
         </div>
         <div className="flex gap-7 max-sm:mt-5 max-sm:justify-between">
           <div className="grid gap-1">
-            <strong className="text-2xl tracking-tight">42</strong>
+            <strong className="text-2xl tracking-tight">{objectiveSummary.introduced}</strong>
             <span className="text-2xs uppercase tracking-wide text-faint">introduced</span>
           </div>
           <div className="grid gap-1">
-            <strong className="text-2xl tracking-tight">31</strong>
+            <strong className="text-2xl tracking-tight">{objectiveSummary.recallStrong}</strong>
             <span className="text-2xs uppercase tracking-wide text-faint">recall strong</span>
           </div>
           <div className="grid gap-1">
-            <strong className="text-2xl tracking-tight">18</strong>
+            <strong className="text-2xl tracking-tight">{objectiveSummary.applied}</strong>
             <span className="text-2xs uppercase tracking-wide text-faint">applied</span>
           </div>
         </div>

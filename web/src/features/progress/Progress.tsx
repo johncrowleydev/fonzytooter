@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Badge, Card, PageIntro, SectionHeading, StatusDot } from '../../components/ui'
 import { objectives } from '../../prototype/mockData'
+import { getObjectiveSummary, isReadyToApply } from '../../prototype/selectors'
 import type { MasteryLevel, Objective } from '../../prototype/types'
 import { useTutor } from '../tutor/TutorContext'
 
@@ -31,6 +32,7 @@ export function Progress() {
   const [filter, setFilter] = useState<Filter>('all')
   const [selectedId, setSelectedId] = useState(objectives[4].id)
   const selected = objectives.find((item) => item.id === selectedId) ?? objectives[0]
+  const objectiveSummary = getObjectiveSummary(objectives)
   const practicePath = selected.id.includes('backprop')
     ? '/exercise/gradient-descent-exercise'
     : '/lesson/backpropagation'
@@ -49,7 +51,7 @@ export function Progress() {
       objectives.filter((objective) => {
         if (filter === 'attention')
           return objective.application !== 'strong' || objective.recall !== 'strong'
-        if (filter === 'apply') return objective.application !== 'strong'
+        if (filter === 'apply') return isReadyToApply(objective)
         if (filter === 'strong')
           return objective.application === 'strong' && objective.recall === 'strong'
         return true
@@ -61,16 +63,26 @@ export function Progress() {
     <div className="grid max-w-6xl gap-7 max-sm:gap-5">
       <PageIntro compact title="Progress" />
       <section className="grid grid-cols-4 gap-2.5 max-lg:grid-cols-2 max-sm:grid-cols-2">
-        <SummaryStat value="42" label="Introduced" note="concepts encountered" tone="teal" />
         <SummaryStat
-          value="31"
+          value={objectiveSummary.introduced}
+          label="Introduced"
+          note="concepts encountered"
+          tone="teal"
+        />
+        <SummaryStat
+          value={objectiveSummary.recallStrong}
           label="Recall strong"
           note="retrieval feels available"
           tone="gold"
         />
-        <SummaryStat value="18" label="Applied" note="used in an exercise" tone="coral" />
         <SummaryStat
-          value="7"
+          value={objectiveSummary.applied}
+          label="Applied"
+          note="used in an exercise"
+          tone="coral"
+        />
+        <SummaryStat
+          value={objectiveSummary.transferTested}
           label="Transfer tested"
           note="shown in a new context"
           tone="violet"
@@ -173,7 +185,7 @@ function SummaryStat({
   note,
   tone,
 }: {
-  value: string
+  value: number
   label: string
   note: string
   tone: 'teal' | 'gold' | 'coral' | 'violet'
