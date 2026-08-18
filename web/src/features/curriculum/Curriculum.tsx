@@ -49,7 +49,7 @@ export function Curriculum() {
             return (
               <section key={group} className="grid">
                 <SectionHeading title={group} detail={`${groupModules.length} modules`} />
-                <div className="grid gap-2">
+                <div className="grid gap-2.5">
                   {groupModules.map((module) => (
                     <ModuleRow key={module.id} module={module} />
                   ))}
@@ -99,7 +99,7 @@ function ModuleRow({ module }: { module: (typeof modules)[number] }) {
   return (
     <button
       type="button"
-      className={`grid w-full grid-cols-[90px_minmax(0,1fr)_145px_18px] items-center gap-4 rounded-[10px] border border-[var(--line)] bg-[var(--panel)] px-4 py-[17px] text-left text-[var(--ink)] transition hover:translate-x-0.5 hover:border-[var(--line-strong)] hover:bg-[var(--panel-soft)] max-[860px]:grid-cols-[80px_minmax(0,1fr)_115px_15px] max-[860px]:gap-[11px] max-[640px]:grid-cols-[1fr_15px] max-[640px]:gap-3 max-[640px]:px-3.5 max-[640px]:py-4`}
+      className={`grid w-full grid-cols-[90px_minmax(0,1fr)_145px_18px] items-center gap-4 rounded-[10px] border border-[var(--line)] bg-[var(--panel)] px-4 py-5 text-left text-[var(--ink)] transition hover:translate-x-0.5 hover:border-[var(--line-strong)] hover:bg-[var(--panel-soft)] max-[860px]:grid-cols-[80px_minmax(0,1fr)_115px_15px] max-[860px]:gap-[11px] max-[640px]:grid-cols-[1fr_15px] max-[640px]:gap-3 max-[640px]:px-3.5 max-[640px]:py-4`}
       onClick={() => navigate(`/curriculum/${module.id}`)}
     >
       <div
