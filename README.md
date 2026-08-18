@@ -15,6 +15,7 @@ It is not intended to become a general-purpose LMS. The system exists to support
 - A curated YouTube playlist for each module.
 - Reputable sources cited throughout lesson content.
 - Small in-browser Python exercises using CodeMirror + Pyodide.
+- Jupyter notebook labs for exploratory scientific/ML work and intuition-building.
 - Larger labs and projects move into normal Git repositories and a real IDE.
 - A context-aware AI tutor available from every screen.
 - Tutor inference through OpenRouter and Codex-compatible provider adapters with streamed output.
@@ -51,7 +52,7 @@ It is not intended to become a general-purpose LMS. The system exists to support
 
 The curriculum is versioned content in Git. SQLite stores learner state.
 
-See [`docs/architecture.md`](docs/architecture.md) for the architectural boundaries and [`AGENTS.md`](AGENTS.md) before making structural changes.
+See [`docs/curriculum.md`](docs/curriculum.md) for the high-level AI/ML curriculum plan, [`docs/architecture.md`](docs/architecture.md) for the architectural boundaries, and [`AGENTS.md`](AGENTS.md) before making structural changes.
 
 ## Core concepts
 
@@ -68,6 +69,8 @@ Time matters to spaced-repetition scheduling, but the curriculum itself has no w
 Pyodide is the only Python interpreter built into Fonzytooter. Small learning exercises run in-browser.
 
 If an exercise becomes large enough to require a server-side Python runtime, GPU, large dataset, complex environment, or multi-file project, it is no longer an in-app exercise. It becomes a Git-based lab/project completed in a normal editor or IDE.
+
+Jupyter notebooks sit between those two modes: they are used outside Fonzytooter for exploratory experiments, plots, data inspection, and intuition-building. Fonzytooter does not embed or host Jupyter.
 
 ### Tutor everywhere
 
