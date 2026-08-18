@@ -42,6 +42,23 @@ EC2
                   SQLite
 ```
 
+## Full-stack API contract
+
+The Go API contract flows one way into the frontend:
+
+```text
+Go operations/types
+    -> Huma-generated OpenAPI 3.1
+    -> Orval
+    -> generated TanStack Query client + generated Zod schemas
+```
+
+Do not maintain duplicate handwritten TypeScript DTOs or hand-written frontend request code alongside the Go API. Generated Zod schemas are the frontend runtime contract and the source of inferred API types.
+
+CI will eventually regenerate the OpenAPI and frontend artifacts and fail on drift, and a deterministic frontend boundary check will reject raw application `fetch`/Axios calls and handwritten API-contract types outside explicitly approved infrastructure.
+
+See [`api-contract.md`](api-contract.md) for the complete generation, validation, streaming, and enforcement rules.
+
 ## Content versus state
 
 ### Git is authoritative for curriculum content
@@ -144,6 +161,8 @@ Provider adapters are allowed to differ internally. Normalize the event stream, 
 Use ordinary HTTP for requests and streamed HTTP/SSE-style events for tutor output. The browser sends one tutor turn and the server streams events back.
 
 Do not add WebSockets simply because chat is interactive. Reconsider only when there is a concrete bidirectional persistent-connection requirement.
+
+The tutor stream is the narrow transport exception to the normal generated TanStack Query request path. It must still use the generated OpenAPI/Zod request and event contracts, with raw streaming transport isolated in one API-runtime adapter rather than feature code.
 
 ## Deployment shape
 
