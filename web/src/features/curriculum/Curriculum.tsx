@@ -49,9 +49,11 @@ export function Curriculum() {
             return (
               <section key={group} className="grid">
                 <SectionHeading title={group} detail={`${groupModules.length} modules`} />
-                {groupModules.map((module) => (
-                  <ModuleRow key={module.id} module={module} />
-                ))}
+                <div className="grid gap-2">
+                  {groupModules.map((module) => (
+                    <ModuleRow key={module.id} module={module} />
+                  ))}
+                </div>
               </section>
             )
           })}
