@@ -296,18 +296,6 @@
         ],
         "type": "object"
       },
-      "TutorStreamEvent": {
-        "additionalProperties": false,
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/Event"
-          }
-        },
-        "required": [
-          "data"
-        ],
-        "type": "object"
-      },
       "Usage": {
         "additionalProperties": false,
         "properties": {
@@ -388,7 +376,7 @@
                 "schema": {
                   "description": "Each item describes one possible Server-Sent Event message serialized as UTF-8 text.",
                   "items": {
-                    "$ref": "#/components/schemas/TutorStreamEvent"
+                    "$ref": "#/components/schemas/Event"
                   },
                   "type": "array"
                 }

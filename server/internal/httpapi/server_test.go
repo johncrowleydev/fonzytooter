@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/danielgtaylor/huma/v2"
 	"github.com/johncrowleydev/fonzytooter/server/internal/tutor"
 )
 
@@ -46,11 +47,15 @@ func TestTutorTurnRouteUsesResourcePathAndStreamsEvents(t *testing.T) {
 	if got := response.Header().Get("Content-Type"); got != "text/event-stream" {
 		t.Fatalf("expected SSE content type, got %q", got)
 	}
-	if !strings.Contains(response.Body.String(), `"type":"text_delta"`) {
-		t.Fatalf("expected text delta event, got %s", response.Body.String())
+	body := response.Body.String()
+	if !strings.Contains(body, `data: {"type":"text_delta"`) {
+		t.Fatalf("expected raw text delta event payload, got %s", body)
 	}
-	if !strings.Contains(response.Body.String(), `"type":"completed"`) {
-		t.Fatalf("expected completed event, got %s", response.Body.String())
+	if strings.Contains(body, `data: {"data":`) {
+		t.Fatalf("unexpected nested SSE event payload, got %s", body)
+	}
+	if !strings.Contains(body, `"type":"completed"`) {
+		t.Fatalf("expected completed event, got %s", body)
 	}
 
 	oldReq := httptest.NewRequest(http.MethodPost, "/api/tutor/turn", strings.NewReader(`{"message":"hello"}`))
@@ -147,8 +152,18 @@ func TestOpenAPIContract(t *testing.T) {
 	if tutorPath.Post.RequestBody == nil || tutorPath.Post.RequestBody.Content["application/json"] == nil {
 		t.Fatal("tutor request body is not documented as JSON")
 	}
-	if tutorPath.Post.Responses["200"].Content["text/event-stream"] == nil {
+	streamResponse := tutorPath.Post.Responses["200"].Content["text/event-stream"]
+	if streamResponse == nil {
 		t.Fatal("tutor SSE response is not documented")
+	}
+	if streamResponse.Schema == nil || streamResponse.Schema.Type != huma.TypeArray {
+		t.Fatalf("expected tutor SSE response to be an array stream schema, got %#v", streamResponse.Schema)
+	}
+	if streamResponse.Schema.Items == nil || streamResponse.Schema.Items.Ref != "#/components/schemas/Event" {
+		t.Fatalf("expected tutor SSE items to reference Event directly, got %#v", streamResponse.Schema.Items)
+	}
+	if _, ok := app.Spec.Components.Schemas.Map()["TutorStreamEvent"]; ok {
+		t.Fatal("fake TutorStreamEvent wrapper schema is still advertised")
 	}
 	if tutorPath.Post.Responses["422"].Content["application/problem+json"] == nil {
 		t.Fatal("common validation error response is not documented")

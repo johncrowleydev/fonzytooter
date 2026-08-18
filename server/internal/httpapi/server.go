@@ -31,10 +31,6 @@ type TutorTurnInput struct {
 	Body tutor.TurnRequest
 }
 
-type TutorStreamEvent struct {
-	Data tutor.Event `json:"data"`
-}
-
 // NewAPI constructs the application handler and registers every documented
 // operation on the same Huma API used by the OpenAPI command.
 func NewAPI(tutorService *tutor.Service) *API {
@@ -74,13 +70,12 @@ func registerHealth(api huma.API) {
 }
 
 func registerTutorTurn(api huma.API, tutorService *tutor.Service) {
-	api.OpenAPI().Components.Schemas.Schema(reflect.TypeOf(tutor.Event{}), true, "TutorEvent")
+	eventSchema := api.OpenAPI().Components.Schemas.Schema(reflect.TypeOf(tutor.Event{}), true, "TutorEvent")
 	api.OpenAPI().Components.Schemas.Schema(reflect.TypeOf(tutor.TurnRequest{}), true, "TutorTurnRequest")
-	streamEvent := api.OpenAPI().Components.Schemas.Schema(reflect.TypeOf(TutorStreamEvent{}), true, "TutorStreamEvent")
 	streamSchema := &huma.Schema{
 		Type:        huma.TypeArray,
 		Description: "Each item describes one possible Server-Sent Event message serialized as UTF-8 text.",
-		Items:       streamEvent,
+		Items:       eventSchema,
 	}
 
 	huma.Register[TutorTurnInput, huma.StreamResponse](api, huma.Operation{

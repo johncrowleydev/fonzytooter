@@ -4,8 +4,14 @@ export default defineConfig({
   fonzytooter: {
     input: {
       target: '../openapi/openapi.json',
+      filters: {
+        includeUnreferencedSchemas: true,
+        mode: 'exclude',
+        tags: ['tutor'],
+      },
     },
     output: {
+      clean: true,
       client: 'react-query',
       formatter: 'prettier',
       httpClient: 'fetch',
@@ -16,6 +22,7 @@ export default defineConfig({
       },
       override: {
         fetch: {
+          forceSuccessResponse: true,
           includeHttpResponseReturnType: true,
           runtimeValidation: true,
           serializeResponseHeaders: true,

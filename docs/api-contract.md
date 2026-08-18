@@ -82,11 +82,13 @@ The target configuration is:
 - `client: 'react-query'`;
 - `httpClient: 'fetch'`;
 - TanStack Query generated hooks/functions for ordinary JSON endpoints;
+- tutor/SSE operations excluded from the ordinary endpoint client by tag filtering;
 - Zod-backed generated schemas via `schemas: { type: 'zod' }`;
 - Zod generation pinned to major version 4 rather than auto-detected;
-- generated reusable schemas for OpenAPI component schemas;
+- generated reusable schemas for OpenAPI component schemas, including unreferenced tutor schemas;
 - generated output isolated under `web/src/api/generated/`;
-- runtime validation enabled for generated JSON responses through the generated fetch transport.
+- runtime validation enabled for generated JSON responses through the generated fetch transport;
+- ordinary generated fetch calls throw on non-success HTTP responses.
 
 A representative configuration shape is:
 
@@ -97,8 +99,14 @@ export default defineConfig({
   fonzytooter: {
     input: {
       target: '../openapi/openapi.json',
+      filters: {
+        mode: 'exclude',
+        tags: ['tutor'],
+        includeUnreferencedSchemas: true,
+      },
     },
     output: {
+      clean: true,
       client: 'react-query',
       httpClient: 'fetch',
       target: './src/api/generated/endpoints.ts',
@@ -108,6 +116,9 @@ export default defineConfig({
       },
       override: {
         fetch: {
+          forceSuccessResponse: true,
+          includeHttpResponseReturnType: true,
+          serializeResponseHeaders: true,
           runtimeValidation: true,
         },
         query: {
@@ -190,6 +201,8 @@ The preferred implementation is Orval's generated fetch transport with Zod runti
 
 A successful HTTP status with a payload that violates the OpenAPI/Zod contract is an application error, not a value that should quietly flow through because TypeScript asserted a type at compile time.
 
+Ordinary generated fetch clients use `forceSuccessResponse: true`: they return only successful response shapes, preserve successful status and serialized headers, and throw an HTTP error carrying the status and problem payload for non-success responses. A problem response must therefore never be passed through a successful response schema such as `Health`.
+
 The first implementation must include at least one test that supplies an invalid mock response and proves the generated/runtime boundary rejects it with a Zod validation error.
 
 ## React Query is the normal server-state boundary
@@ -220,12 +233,16 @@ web/src/api/runtime/
 
 Rules for this exception:
 
+- the runtime exception permits raw global `fetch` only;
+- runtime infrastructure still must not import Axios, use `XMLHttpRequest`, construct hard-coded `/api/...` request URLs, use endpoint-level React Query hooks, or declare handwritten object-shaped API DTOs;
 - feature/components still must not call raw `fetch`;
 - there should be one central streaming transport implementation, not per-feature fetch calls;
 - the request body must use the generated request Zod schema/type;
 - every decoded SSE event must be validated with generated Zod before entering application state;
 - endpoint paths and event shapes must come from the OpenAPI/generated contract rather than duplicated handwritten DTOs;
 - the exception must remain specific to transports that genuinely cannot use the generated React Query client.
+
+The tutor operation remains in OpenAPI and its request/event-related component schemas remain generated for the future streaming adapter, but the operation itself is not exposed as an ordinary generated React Query mutation because buffering an SSE response is not a usable streaming transport.
 
 On the Go side, prefer Huma's typed SSE registration/support so the stream's event contract remains part of the same API/schema system.
 

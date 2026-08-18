@@ -4,44 +4,21 @@
  * Fonzytooter API
  * OpenAPI spec version: 0.1.0
  */
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import type {
   DataTag,
   DefinedInitialDataOptions,
   DefinedUseQueryResult,
-  MutationFunction,
   QueryClient,
   QueryFunction,
   QueryKey,
   UndefinedInitialDataOptions,
-  UseMutationOptions,
-  UseMutationResult,
   UseQueryOptions,
   UseQueryResult,
 } from '@tanstack/react-query'
 
 import { Health } from './schemas'
-import type { ErrorModel, TurnRequest, TutorStreamEvent } from './schemas'
-
-// https://stackoverflow.com/questions/49579094/typescript-conditional-types-filter-out-readonly-properties-pick-only-requir/49579497#49579497
-type IfEquals<X, Y, A = X, B = never> =
-  (<T>() => T extends X ? 1 : 2) extends <T>() => T extends Y ? 1 : 2 ? A : B
-
-type WritableKeys<T> = {
-  [P in keyof T]-?: IfEquals<{ [Q in P]: T[P] }, { -readonly [Q in P]: T[P] }, P>
-}[keyof T]
-
-type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (k: infer I) => void
-  ? I
-  : never
-type DistributeReadOnlyOverUnions<T> = T extends any ? NonReadonly<T> : never
-
-type Writable<T> = Pick<T, WritableKeys<T>>
-type NonReadonly<T> = [T] extends [UnionToIntersection<T>]
-  ? {
-      [P in keyof Writable<T>]: T[P] extends object ? NonReadonly<NonNullable<T[P]>> : T[P]
-    }
-  : DistributeReadOnlyOverUnions<T>
+import type { ErrorModel } from './schemas'
 
 export type HTTPStatusCode1xx = 100 | 101 | 102 | 103
 export type HTTPStatusCode2xx = 200 | 201 | 202 | 203 | 204 | 205 | 206 | 207
@@ -113,8 +90,6 @@ export type getHealthResponseError = getHealthResponseDefault & {
   headers: Record<string, string>
 }
 
-export type getHealthResponse = getHealthResponseSuccess | getHealthResponseError
-
 export const getGetHealthUrl = () => {
   return `/api/health`
 }
@@ -122,7 +97,7 @@ export const getGetHealthUrl = () => {
 /**
  * @summary Get API health
  */
-export const getHealth = async (options?: RequestInit): Promise<getHealthResponse> => {
+export const getHealth = async (options?: RequestInit): Promise<getHealthResponseSuccess> => {
   const res = await fetch(getGetHealthUrl(), {
     ...options,
     method: 'GET',
@@ -130,7 +105,14 @@ export const getHealth = async (options?: RequestInit): Promise<getHealthRespons
 
   const contentType = (res.headers.get('content-type') ?? '').toLowerCase()
   const body = [204, 205, 304].includes(res.status) ? null : await res.text()
-
+  if (!res.ok) {
+    const err: globalThis.Error & { info?: getHealthResponseError['data']; status?: number } =
+      new globalThis.Error()
+    const data: getHealthResponseError['data'] = body ? JSON.parse(body) : {}
+    err.info = data
+    err.status = res.status
+    throw err
+  }
   const parsedBody = body ? (contentType.includes('json') ? JSON.parse(body) : body) : {}
   const data = contentType.includes('json') ? Health.parse(parsedBody) : parsedBody
   return {
@@ -139,7 +121,7 @@ export const getHealth = async (options?: RequestInit): Promise<getHealthRespons
     headers: Object.fromEntries(
       [...res.headers.entries()].filter(([name]) => name !== 'set-cookie'),
     ),
-  } as getHealthResponse
+  } as getHealthResponseSuccess
 }
 
 export const getGetHealthQueryKey = () => {
@@ -148,7 +130,7 @@ export const getGetHealthQueryKey = () => {
 
 export const getGetHealthQueryOptions = <
   TData = Awaited<ReturnType<typeof getHealth>>,
-  TError = ErrorModel,
+  TError = globalThis.Error & { info?: ErrorModel; status?: number },
 >(options?: {
   query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getHealth>>, TError, TData>>
   fetch?: RequestInit
@@ -168,9 +150,12 @@ export const getGetHealthQueryOptions = <
 }
 
 export type GetHealthQueryResult = NonNullable<Awaited<ReturnType<typeof getHealth>>>
-export type GetHealthQueryError = ErrorModel
+export type GetHealthQueryError = globalThis.Error & { info?: ErrorModel; status?: number }
 
-export function useGetHealth<TData = Awaited<ReturnType<typeof getHealth>>, TError = ErrorModel>(
+export function useGetHealth<
+  TData = Awaited<ReturnType<typeof getHealth>>,
+  TError = globalThis.Error & { info?: ErrorModel; status?: number },
+>(
   options: {
     query: Partial<UseQueryOptions<Awaited<ReturnType<typeof getHealth>>, TError, TData>> &
       Pick<
@@ -185,7 +170,10 @@ export function useGetHealth<TData = Awaited<ReturnType<typeof getHealth>>, TErr
   },
   queryClient?: QueryClient,
 ): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetHealth<TData = Awaited<ReturnType<typeof getHealth>>, TError = ErrorModel>(
+export function useGetHealth<
+  TData = Awaited<ReturnType<typeof getHealth>>,
+  TError = globalThis.Error & { info?: ErrorModel; status?: number },
+>(
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getHealth>>, TError, TData>> &
       Pick<
@@ -200,7 +188,10 @@ export function useGetHealth<TData = Awaited<ReturnType<typeof getHealth>>, TErr
   },
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
-export function useGetHealth<TData = Awaited<ReturnType<typeof getHealth>>, TError = ErrorModel>(
+export function useGetHealth<
+  TData = Awaited<ReturnType<typeof getHealth>>,
+  TError = globalThis.Error & { info?: ErrorModel; status?: number },
+>(
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getHealth>>, TError, TData>>
     fetch?: RequestInit
@@ -211,7 +202,10 @@ export function useGetHealth<TData = Awaited<ReturnType<typeof getHealth>>, TErr
  * @summary Get API health
  */
 
-export function useGetHealth<TData = Awaited<ReturnType<typeof getHealth>>, TError = ErrorModel>(
+export function useGetHealth<
+  TData = Awaited<ReturnType<typeof getHealth>>,
+  TError = globalThis.Error & { info?: ErrorModel; status?: number },
+>(
   options?: {
     query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getHealth>>, TError, TData>>
     fetch?: RequestInit
@@ -225,141 +219,4 @@ export function useGetHealth<TData = Awaited<ReturnType<typeof getHealth>>, TErr
   }
 
   return withQueryKey(query, queryOptions.queryKey)
-}
-
-export type createTutorTurnResponse200 = {
-  data: TutorStreamEvent[]
-  status: 200
-}
-
-export type createTutorTurnResponse400 = {
-  data: ErrorModel
-  status: 400
-}
-
-export type createTutorTurnResponse422 = {
-  data: ErrorModel
-  status: 422
-}
-
-export type createTutorTurnResponse500 = {
-  data: ErrorModel
-  status: 500
-}
-
-export type createTutorTurnResponse502 = {
-  data: ErrorModel
-  status: 502
-}
-
-export type createTutorTurnResponseSuccess = createTutorTurnResponse200 & {
-  headers: Record<string, string>
-}
-export type createTutorTurnResponseError = (
-  | createTutorTurnResponse400
-  | createTutorTurnResponse422
-  | createTutorTurnResponse500
-  | createTutorTurnResponse502
-) & {
-  headers: Record<string, string>
-}
-
-export type createTutorTurnResponse = createTutorTurnResponseSuccess | createTutorTurnResponseError
-
-export const getCreateTutorTurnUrl = () => {
-  return `/api/tutor/turns`
-}
-
-/**
- * @summary Create a tutor turn and stream its events
- */
-export const createTutorTurn = async (
-  turnRequest: NonReadonly<TurnRequest>,
-  options?: RequestInit,
-): Promise<createTutorTurnResponse> => {
-  const res = await fetch(getCreateTutorTurnUrl(), {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(turnRequest),
-  })
-
-  const contentType = (res.headers.get('content-type') ?? '').toLowerCase()
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text()
-
-  const data: createTutorTurnResponse['data'] = body
-    ? contentType.includes('json')
-      ? JSON.parse(body)
-      : body
-    : {}
-  return {
-    data,
-    status: res.status,
-    headers: Object.fromEntries(
-      [...res.headers.entries()].filter(([name]) => name !== 'set-cookie'),
-    ),
-  } as createTutorTurnResponse
-}
-
-export const getCreateTutorTurnMutationOptions = <
-  TError = ErrorModel,
-  TContext = unknown,
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof createTutorTurn>>,
-    TError,
-    { data: NonReadonly<TurnRequest> },
-    TContext
-  >
-  fetch?: RequestInit
-}): UseMutationOptions<
-  Awaited<ReturnType<typeof createTutorTurn>>,
-  TError,
-  { data: NonReadonly<TurnRequest> },
-  TContext
-> => {
-  const mutationKey = ['createTutorTurn']
-  const { mutation: mutationOptions, fetch: fetchOptions } = options
-    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey }, fetch: undefined }
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof createTutorTurn>>,
-    { data: NonReadonly<TurnRequest> }
-  > = (props) => {
-    const { data } = props ?? {}
-
-    return createTutorTurn(data, fetchOptions)
-  }
-
-  return { mutationFn, ...mutationOptions }
-}
-
-export type CreateTutorTurnMutationResult = NonNullable<Awaited<ReturnType<typeof createTutorTurn>>>
-export type CreateTutorTurnMutationBody = NonReadonly<TurnRequest>
-export type CreateTutorTurnMutationError = ErrorModel
-
-/**
- * @summary Create a tutor turn and stream its events
- */
-export const useCreateTutorTurn = <TError = ErrorModel, TContext = unknown>(
-  options?: {
-    mutation?: UseMutationOptions<
-      Awaited<ReturnType<typeof createTutorTurn>>,
-      TError,
-      { data: NonReadonly<TurnRequest> },
-      TContext
-    >
-    fetch?: RequestInit
-  },
-  queryClient?: QueryClient,
-): UseMutationResult<
-  Awaited<ReturnType<typeof createTutorTurn>>,
-  TError,
-  { data: NonReadonly<TurnRequest> },
-  TContext
-> => {
-  return useMutation(getCreateTutorTurnMutationOptions(options), queryClient)
 }
