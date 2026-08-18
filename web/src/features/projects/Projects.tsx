@@ -33,7 +33,7 @@ function ProjectRow({ project }: { project: (typeof projects)[number] }) {
   const percent = Math.round((done / project.objectives.length) * 100)
   return (
     <button
-      className="w-full rounded-[10px] border border-[var(--line)] bg-[rgba(16,27,42,0.7)] p-[18px] text-left text-[var(--ink)] hover:border-[var(--line-strong)] hover:bg-[rgba(21,37,54,0.82)]"
+      className="w-full rounded-[10px] border border-[var(--line)] bg-[var(--panel)] p-[18px] text-left text-[var(--ink)] hover:border-[var(--line-strong)] hover:bg-[var(--panel-soft)]"
       type="button"
       onClick={() => navigate(`/projects/${project.id}`)}
     >

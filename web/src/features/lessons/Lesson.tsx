@@ -149,8 +149,8 @@ export function Lesson() {
           </div>
         </article>
 
-        <aside className="pt-[175px] max-[1120px]:hidden">
-          <Card className="p-[17px]">
+        <aside className="max-[1120px]:hidden">
+          <Card className="sticky top-6 mt-[175px] p-[17px]">
             <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--faint)]">
               In this lesson
             </p>
@@ -174,26 +174,6 @@ export function Lesson() {
               <span className="text-[9px]">04</span>
               <strong className="text-[10px] font-medium leading-[1.3]">Knowledge check</strong>
             </div>
-          </Card>
-          <Card className="mt-4 p-[18px]">
-            <span className="text-[var(--gold)]">✦</span>
-            <h3 className="my-[13px_7px] text-[13px]">Tutor</h3>
-            <button
-              className="border-0 bg-transparent p-0 text-[11px] font-bold text-[var(--teal)] hover:text-[var(--ink)]"
-              onClick={() =>
-                openTutorWithContext({
-                  type: 'lesson',
-                  title,
-                  lessonId,
-                  lessonTitle: title,
-                  moduleId: 'neural-networks',
-                  moduleTitle: 'Neural Networks From Scratch',
-                  objectiveIds,
-                })
-              }
-            >
-              Open tutor <span>→</span>
-            </button>
           </Card>
         </aside>
       </div>

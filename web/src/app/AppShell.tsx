@@ -3,7 +3,6 @@ import { Link, NavLink } from 'react-router-dom'
 import { navItems, type NavItem } from './navigation'
 import { TutorButton } from '../features/tutor/TutorButton'
 import { TutorOverlay } from '../features/tutor/TutorOverlay'
-import { useTutor } from '../features/tutor/TutorContext'
 
 const sharedThemeTokens =
   '[--teal:#76d0c0] [--gold:#e1b86a] [--coral:#ef916e] [--violet:#a99be7] [--blue:#80afe4]'
@@ -15,7 +14,6 @@ const themeTokens = {
 } as const
 
 export function AppShell({ children }: PropsWithChildren) {
-  const { openTutor } = useTutor()
   const [theme, setTheme] = useState<'dark' | 'light'>(() =>
     window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark',
   )
@@ -47,17 +45,6 @@ export function AppShell({ children }: PropsWithChildren) {
         </nav>
 
         <div className="min-h-[100px] flex-1" />
-        <button
-          className="flex w-full items-center gap-2 rounded-lg border border-[var(--line)] bg-white/[0.025] px-3 py-2.5 text-left text-xs text-[var(--muted)] transition hover:text-[var(--ink)]"
-          type="button"
-          onClick={openTutor}
-        >
-          <span className="text-[var(--gold)]">✦</span>
-          Open tutor
-          <kbd className="ml-auto rounded border border-[var(--line)] px-1.5 py-0.5 text-[9px] text-[var(--faint)]">
-            ⌘K
-          </kbd>
-        </button>
         <ThemeToggle theme={theme} onClick={toggleTheme} />
         <div className="mt-4 flex items-center gap-2 border-t border-[var(--line)] px-2 pt-3.5">
           <span className="grid size-7 place-items-center rounded-full bg-[#2f4c64] text-[11px] font-bold">
@@ -85,14 +72,6 @@ export function AppShell({ children }: PropsWithChildren) {
               aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
             >
               {theme === 'dark' ? '☼' : '☾'}
-            </button>
-            <button
-              className="grid size-8 place-items-center rounded-full border border-[var(--line-strong)] text-[var(--gold)]"
-              onClick={openTutor}
-              type="button"
-              aria-label="Open tutor"
-            >
-              ✦
             </button>
           </div>
         </header>

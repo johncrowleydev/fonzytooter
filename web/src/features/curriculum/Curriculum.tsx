@@ -97,7 +97,7 @@ function ModuleRow({ module }: { module: (typeof modules)[number] }) {
   return (
     <button
       type="button"
-      className={`grid w-full grid-cols-[90px_minmax(0,1fr)_145px_18px] items-center gap-4 rounded-[10px] border border-[var(--line)] bg-[rgba(16,27,42,0.7)] px-4 py-[17px] text-left text-[var(--ink)] transition hover:translate-x-0.5 hover:border-[var(--line-strong)] hover:bg-[rgba(21,37,54,0.82)] max-[860px]:grid-cols-[80px_minmax(0,1fr)_115px_15px] max-[860px]:gap-[11px] max-[640px]:grid-cols-[1fr_15px] max-[640px]:gap-3 max-[640px]:px-3.5 max-[640px]:py-4`}
+      className={`grid w-full grid-cols-[90px_minmax(0,1fr)_145px_18px] items-center gap-4 rounded-[10px] border border-[var(--line)] bg-[var(--panel)] px-4 py-[17px] text-left text-[var(--ink)] transition hover:translate-x-0.5 hover:border-[var(--line-strong)] hover:bg-[var(--panel-soft)] max-[860px]:grid-cols-[80px_minmax(0,1fr)_115px_15px] max-[860px]:gap-[11px] max-[640px]:grid-cols-[1fr_15px] max-[640px]:gap-3 max-[640px]:px-3.5 max-[640px]:py-4`}
       onClick={() => navigate(`/curriculum/${module.id}`)}
     >
       <div
