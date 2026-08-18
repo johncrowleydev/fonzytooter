@@ -2631,8 +2631,8 @@ button:disabled {
 /* Light theme: the dark theme remains the default. */
 .theme-light {
   --ink: #203047;
-  --muted: #52637a;
-  --faint: #697990;
+  --muted: #68788b;
+  --faint: #8b98a8;
   --body: #40526a;
   --line: rgba(36, 58, 83, 0.14);
   --line-strong: rgba(36, 58, 83, 0.25);
