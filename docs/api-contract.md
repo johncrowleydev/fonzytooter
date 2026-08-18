@@ -110,6 +110,11 @@ export default defineConfig({
         fetch: {
           runtimeValidation: true,
         },
+        query: {
+          // React Query's fetch adapter also needs this to retain the runtime
+          // schema import when the generated fetch function calls Schema.parse.
+          runtimeValidation: true,
+        },
         zod: {
           version: 4,
           variant: 'classic',
