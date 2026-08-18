@@ -44,6 +44,60 @@ When custom CSS is added:
 
 A large global stylesheet containing application layout, feature styling, component variants, and responsive rules is contrary to this architecture.
 
+### Use Tailwind design tokens for intentional project-wide values
+
+The ban on unnecessary custom CSS does **not** mean that every project-specific value should be encoded as an arbitrary utility in JSX.
+
+Values that are intentionally part of Fonzytooter's visual language should be defined centrally through Tailwind's theme/design-token facilities and then consumed through normal utilities. Examples include the application palette, semantic foreground/background colors, recurring radii, or other values that are deliberately reused across the product.
+
+Prefer a small, explicit set of project design tokens over repeatedly writing utilities such as `text-[var(--teal)]`, `bg-[var(--panel)]`, or the same raw RGBA value throughout the component tree.
+
+Theme configuration is part of using Tailwind correctly. It is not considered a parallel handcrafted CSS design system.
+
+### Arbitrary-value utilities are an escape hatch
+
+Arbitrary-value utilities such as `w-[242px]`, `mb-[17px]`, `text-[10px]`, `rounded-[14px]`, and `bg-[rgba(...)]` are allowed when a value is genuinely exceptional or cannot reasonably be represented by the project's Tailwind scale or design tokens.
+
+They must **not** be the default way to translate a visual design into Tailwind.
+
+Before using an arbitrary value, prefer in this order:
+
+1. an existing Tailwind utility from the normal spacing, sizing, typography, radius, color, or breakpoint scale;
+2. an existing Fonzytooter design token;
+3. a new shared Tailwind design token when the value is intentionally reused or semantically meaningful;
+4. an arbitrary value only when the value is truly one-off or unusually specific.
+
+Do not preserve prototype pixel values merely because they existed in a mockup or earlier stylesheet. Prefer the nearest sensible Tailwind scale value unless the exact value materially affects the design.
+
+Good arbitrary-value cases include unusual visualization geometry, a genuinely specific grid calculation, or a one-off size that has a concrete design reason. Ordinary margins, gaps, font sizes, radii, colors, and component dimensions should normally use the shared scale or tokens.
+
+### Never dynamically construct Tailwind utility names
+
+Tailwind utility names must never be assembled from runtime fragments such as `` `bg-${tone}-500` ``, `` `text-${color}-600` ``, or string concatenation that produces a utility name only after JavaScript executes.
+
+When props or state select styling, map them to **complete, statically detectable utility strings** instead.
+
+Prefer:
+
+```ts
+const badgeTones = {
+  teal: 'border-teal-300 bg-teal-50 text-teal-700',
+  gold: 'border-amber-300 bg-amber-50 text-amber-700',
+} as const
+
+const className = badgeTones[tone]
+```
+
+over:
+
+```ts
+const className = `border-${tone}-300 bg-${tone}-50 text-${tone}-700`
+```
+
+Finite visual states such as tone, status, activity kind, mastery level, navigation state, and tutor mode should generally be represented with typed lookup maps or other explicit selection between complete class strings rather than nested string-building logic.
+
+Conditional `className` expressions are acceptable when each branch contains complete literal utilities, but avoid large nested ternaries in JSX. Extract meaningful visual variants into typed maps when doing so makes the component easier to read.
+
 ## Formatting: human readability is mandatory
 
 Generated code is still source code intended for humans.
@@ -167,6 +221,10 @@ Before considering frontend work complete, verify:
 - the production Vite build passes;
 - application routing uses React Router rather than custom History API code;
 - styling is expressed in Tailwind except for explicitly justified CSS exceptions;
+- recurring project-wide visual values use Tailwind theme/design tokens rather than repeated arbitrary utilities;
+- arbitrary-value utilities are limited to genuinely exceptional values rather than used as a mechanical translation of prototype CSS;
+- no Tailwind utility names are dynamically constructed from runtime string fragments;
+- finite visual variants use complete statically detectable class strings, preferably through typed maps when that improves readability;
 - JSX is formatted for human readability;
 - feature components have understandable responsibilities;
 - navigation controls use correct link semantics;
