@@ -41,7 +41,9 @@ export function TutorOverlay() {
         mode,
         pageContext,
       })
-      setMessages((current) => current.map((item) => (item.id === assistantID ? { ...item, text: response } : item)))
+      setMessages((current) =>
+        current.map((item) => (item.id === assistantID ? { ...item, text: response } : item)),
+      )
     } catch (error) {
       const text = error instanceof Error ? error.message : 'Tutor request failed.'
       setMessages((current) =>
@@ -58,44 +60,92 @@ export function TutorOverlay() {
         <header className="tutor-header">
           <div>
             <p className="eyebrow">Always available</p>
-            <h2>Tutor <span className="tutor-online">●</span></h2>
+            <h2>
+              Tutor <span className="tutor-online">●</span>
+            </h2>
           </div>
-          <button type="button" onClick={closeTutor} className="icon-button" aria-label="Close tutor">×</button>
+          <button
+            type="button"
+            onClick={closeTutor}
+            className="icon-button"
+            aria-label="Close tutor"
+          >
+            ×
+          </button>
         </header>
 
-        <div className="tutor-context-card">
-          <div className="context-kicker">Current context</div>
-          <div className="context-title">{pageContext.lessonTitle ?? pageContext.exerciseTitle ?? pageContext.projectTitle ?? pageContext.objectiveTitle ?? pageContext.title ?? 'Dashboard'}</div>
-          <div className="context-type"><span className="context-pulse" />{pageContext.type}</div>
-          {pageContext.selectedText ? <div className="context-selection">Selected: “{pageContext.selectedText.slice(0, 110)}{pageContext.selectedText.length > 110 ? '…' : ''}”</div> : null}
-        </div>
-
         <div className="tutor-modes">
-          {([['explain', 'Explain'], ['socratic', 'Socratic'], ['exercise', 'Exercise help'], ['quiz', 'Quiz'], ['explore', 'Explore']] as const).map(([value, label]) => (
-            <button key={value} type="button" onClick={() => setMode(value)} className={mode === value ? 'mode-chip active' : 'mode-chip'}>{label}</button>
+          {(
+            [
+              ['explain', 'Explain'],
+              ['socratic', 'Socratic'],
+              ['exercise', 'Exercise help'],
+              ['quiz', 'Quiz'],
+              ['explore', 'Explore'],
+            ] as const
+          ).map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setMode(value)}
+              className={mode === value ? 'mode-chip active' : 'mode-chip'}
+            >
+              {label}
+            </button>
           ))}
         </div>
 
         <div className="tutor-messages">
-          {messages.length === 0 ? <div className="tutor-empty"><span className="empty-mark">✦</span><p>Ask about what you are currently studying. I’ll keep the answer anchored to this screen.</p><div className="suggestion-row"><button type="button" onClick={() => setInput('Can you explain the key idea here?')}>Explain the key idea</button><button type="button" onClick={() => setInput('Give me a hint')}>Give me a hint</button></div></div> : null}
+          {messages.length === 0 ? (
+            <div className="tutor-empty">
+              <span className="empty-mark">✦</span>
+              <p>
+                Ask about what you are currently studying. I’ll keep the answer anchored to this
+                screen.
+              </p>
+              <div className="suggestion-row">
+                <button
+                  type="button"
+                  onClick={() => setInput('Can you explain the key idea here?')}
+                >
+                  Explain the key idea
+                </button>
+                <button type="button" onClick={() => setInput('Give me a hint')}>
+                  Give me a hint
+                </button>
+              </div>
+            </div>
+          ) : null}
 
           {messages.map((message) => (
-            <div key={message.id} className={message.role === 'user' ? 'tutor-message user' : 'tutor-message assistant'}>
+            <div
+              key={message.id}
+              className={message.role === 'user' ? 'tutor-message user' : 'tutor-message assistant'}
+            >
               <span className="message-role">{message.role === 'user' ? 'You' : 'Tutor'}</span>
-              <div>{message.text || (isThinking && message.role === 'assistant' ? 'Thinking…' : '')}</div>
+              <div>
+                {message.text || (isThinking && message.role === 'assistant' ? 'Thinking…' : '')}
+              </div>
             </div>
           ))}
         </div>
 
         <form onSubmit={handleSubmit} className="tutor-compose">
           <textarea
-              value={input}
-              onChange={(event) => setInput(event.target.value)}
-              placeholder="Ask anything about this screen…"
-              rows={3}
-              className="tutor-input"
-            />
-            <div className="compose-footer"><span className="compose-hint">{mode === 'exercise' ? 'Hints, not solutions' : 'Ask a question'}</span><Button type="submit" disabled={isThinking || !input.trim()}>{isThinking ? 'Thinking…' : 'Send'} <span>↗</span></Button></div>
+            value={input}
+            onChange={(event) => setInput(event.target.value)}
+            placeholder="Ask anything about this screen…"
+            rows={3}
+            className="tutor-input"
+          />
+          <div className="compose-footer">
+            <span className="compose-hint">
+              {mode === 'exercise' ? 'Hints, not solutions' : 'Ask a question'}
+            </span>
+            <Button type="submit" disabled={isThinking || !input.trim()}>
+              {isThinking ? 'Thinking…' : 'Send'} <span>↗</span>
+            </Button>
+          </div>
         </form>
       </section>
     </div>

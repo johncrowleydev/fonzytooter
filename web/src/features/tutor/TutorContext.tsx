@@ -12,13 +12,12 @@ type TutorContextValue = {
 
 const TutorContext = createContext<TutorContextValue | null>(null)
 
-type TutorProviderProps = PropsWithChildren<{
-  initialPageContext: TutorPageContext
-}>
-
-export function TutorProvider({ children, initialPageContext }: TutorProviderProps) {
+export function TutorProvider({ children }: PropsWithChildren) {
   const [isOpen, setIsOpen] = useState(false)
-  const [pageContext, setPageContext] = useState<TutorPageContext>(initialPageContext)
+  const [pageContext, setPageContext] = useState<TutorPageContext>({
+    type: 'dashboard',
+    title: 'Home',
+  })
 
   const value = useMemo<TutorContextValue>(
     () => ({

@@ -24,13 +24,7 @@ export type TutorPageContext = {
 
 export type TutorEvent = {
   type:
-    | 'text_delta'
-    | 'tool_started'
-    | 'tool_completed'
-    | 'citation'
-    | 'usage'
-    | 'completed'
-    | 'error'
+    'text_delta' | 'tool_started' | 'tool_completed' | 'citation' | 'usage' | 'completed' | 'error'
   text?: string
   tool?: string
   sourceId?: string

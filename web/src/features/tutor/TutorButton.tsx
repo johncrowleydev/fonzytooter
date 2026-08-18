@@ -6,11 +6,7 @@ export function TutorButton() {
   if (isOpen) return null
 
   return (
-    <button
-      type="button"
-      onClick={openTutor}
-      className="tutor-fab"
-    >
+    <button type="button" onClick={openTutor} className="tutor-fab">
       <span className="tutor-spark">✦</span> Tutor
     </button>
   )

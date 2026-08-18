@@ -69,4 +69,3 @@ export type MockCheckResult = {
   failed: number
   summary: string
 }
-
