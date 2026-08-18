@@ -59,6 +59,9 @@ export function TutorOverlay() {
       className="fixed inset-0 z-50 flex justify-end bg-[rgba(3,8,14,0.65)] backdrop-blur-[4px]"
       role="dialog"
       aria-modal="true"
+      onClick={(event) => {
+        if (event.target === event.currentTarget) closeTutor()
+      }}
     >
       <section className="flex h-full w-[min(445px,100%)] flex-col border-l border-[var(--line-strong)] bg-[var(--panel)] shadow-[-25px_0_80px_rgba(0,0,0,0.28)] max-[640px]:w-full">
         <header className="flex items-center justify-between border-b border-[var(--line)] px-[25px] pb-[18px] pt-[23px] max-[640px]:px-[18px] max-[640px]:pb-3.5 max-[640px]:pt-[18px]">
