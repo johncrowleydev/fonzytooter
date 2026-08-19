@@ -66,7 +66,6 @@ type Catalog struct {
 	coursesByID  map[string]int
 	modules      []Module
 	modulesByKey map[moduleKey]Module
-	modulesByID  map[string]Module
 	lessonsByKey map[lessonKey]Lesson
 	objectives   map[string]Objective
 	sources      map[string]Source
@@ -89,7 +88,6 @@ func NewEmptyCatalog() *Catalog {
 		coursesByID:  make(map[string]int),
 		modules:      []Module{},
 		modulesByKey: make(map[moduleKey]Module),
-		modulesByID:  make(map[string]Module),
 		lessonsByKey: make(map[lessonKey]Lesson),
 		objectives:   make(map[string]Objective),
 		sources:      make(map[string]Source),
@@ -119,7 +117,6 @@ func newCatalog(courses []Course, sources map[string]Source) *Catalog {
 			clonedModule := cloneModule(module)
 			catalog.modules = append(catalog.modules, clonedModule)
 			catalog.modulesByKey[moduleKey{courseID: course.ID, moduleID: module.ID}] = clonedModule
-			catalog.modulesByID[module.ID] = clonedModule
 			for _, lesson := range module.Lessons {
 				catalog.lessonsByKey[lessonKey{courseID: course.ID, moduleID: module.ID, lessonID: lesson.ID}] = cloneLesson(lesson)
 			}
@@ -181,38 +178,6 @@ func (c *Catalog) LessonByCourse(courseID, moduleID, lessonID string) (Lesson, b
 		return Lesson{}, false
 	}
 	return cloneLesson(lesson), true
-}
-
-// Modules is a transitional compatibility method for the current single-course
-// HTTP API. Course-aware callers should use ModulesByCourse.
-func (c *Catalog) Modules() []Module {
-	if c == nil {
-		return []Module{}
-	}
-	return cloneModules(c.modules)
-}
-
-// ModuleByID is a transitional compatibility method for the current
-// single-course HTTP API. Module IDs remain globally unique in this phase.
-func (c *Catalog) ModuleByID(moduleID string) (Module, bool) {
-	if c == nil {
-		return Module{}, false
-	}
-	module, ok := c.modulesByID[moduleID]
-	if !ok {
-		return Module{}, false
-	}
-	return cloneModule(module), true
-}
-
-// LessonByID is a transitional compatibility method for the current
-// single-course HTTP API. Module IDs remain globally unique in this phase.
-func (c *Catalog) LessonByID(moduleID, lessonID string) (Lesson, bool) {
-	module, ok := c.ModuleByID(moduleID)
-	if !ok {
-		return Lesson{}, false
-	}
-	return c.LessonByCourse(module.CourseID, moduleID, lessonID)
 }
 
 func (c *Catalog) ObjectiveByID(id string) (Objective, bool) {

@@ -43,6 +43,8 @@ type TutorMode string
 type PageContext struct {
 	Type           PageType   `json:"type" enum:"dashboard,curriculum,lesson,exercise,review,progress,project"`
 	Title          string     `json:"title,omitempty" maxLength:"300"`
+	CourseID       string     `json:"courseId,omitempty" maxLength:"200"`
+	CourseTitle    string     `json:"courseTitle,omitempty" maxLength:"300"`
 	ModuleID       string     `json:"moduleId,omitempty" maxLength:"200"`
 	ModuleTitle    string     `json:"moduleTitle,omitempty" maxLength:"300"`
 	LessonID       string     `json:"lessonId,omitempty" maxLength:"200"`

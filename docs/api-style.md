@@ -25,8 +25,9 @@ Use plural resource nouns for collections and stable IDs for individual resource
 Prefer:
 
 ```text
-GET    /api/modules
-GET    /api/modules/{moduleId}
+GET    /api/courses
+GET    /api/courses/{courseId}
+GET    /api/courses/{courseId}/modules/{moduleId}
 GET    /api/objectives/{objectiveId}
 GET    /api/projects
 GET    /api/projects/{projectId}
@@ -35,7 +36,7 @@ GET    /api/projects/{projectId}
 Nested paths are appropriate when they express a real containment or subordinate-resource relationship:
 
 ```text
-GET  /api/modules/{moduleId}/lessons
+GET  /api/courses/{courseId}/modules/{moduleId}/lessons
 GET  /api/objectives/{objectiveId}/reviews
 POST /api/exercises/{exerciseId}/attempts
 ```
@@ -404,13 +405,13 @@ If a resource naturally contains identifiers for related resources, use explicit
 Use nested collection routes when the relationship itself is the useful resource view:
 
 ```text
-GET /api/modules/{moduleId}/objectives
+GET /api/courses/{courseId}/modules/{moduleId}/objectives
 ```
 
 Do not create both nested and top-level variants unless each serves a clear purpose. Often a top-level filtered collection is sufficient:
 
 ```text
-GET /api/objectives?moduleId={moduleId}
+GET /api/objectives?courseId={courseId}&moduleId={moduleId}
 ```
 
 Choose one convention for analogous relationships and reuse it.

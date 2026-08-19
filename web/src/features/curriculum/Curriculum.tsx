@@ -1,68 +1,97 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
-import { Link } from 'react-router-dom'
-import { useListModules } from '../../api/generated/endpoints'
+import { Link, useParams } from 'react-router-dom'
+import { useGetCourse } from '../../api/generated/endpoints'
+import type { CourseResource } from '../../api/generated/schemas/courseResource.zod'
 import type { ModuleSummary } from '../../api/generated/schemas/moduleSummary.zod'
+import { modulePath } from '../../app/routes'
 import { Card, PageIntro, SectionHeading } from '../../components/ui'
 import { useTutor } from '../tutor/TutorContext'
 
 export function Curriculum() {
   const { setPageContext } = useTutor()
+  const { courseId } = useParams()
   const [query, setQuery] = useState('')
-  const modulesQuery = useListModules()
+  const courseQuery = useGetCourse(courseId ?? '', {
+    query: { enabled: Boolean(courseId) },
+  })
+  const course = courseQuery.data?.data
 
   useEffect(() => {
-    setPageContext({ type: 'curriculum', title: 'Curriculum' })
-  }, [setPageContext])
+    if (!course || course.id !== courseId) return
 
-  if (modulesQuery.isPending) {
-    return <CurriculumState title="Loading curriculum" detail="Fetching the available modules…" />
-  }
+    setPageContext({
+      type: 'curriculum',
+      title: course.title,
+      courseId: course.id,
+      courseTitle: course.title,
+    })
+  }, [course, setPageContext])
 
-  if (modulesQuery.isError) {
+  if (!courseId) {
     return (
       <CurriculumState
-        title="Curriculum unavailable"
-        detail={getErrorMessage(modulesQuery.error)}
-        action={<RetryButton onClick={() => void modulesQuery.refetch()} />}
+        title="Course unavailable"
+        detail="This course route is missing its course identity."
       />
     )
   }
 
-  const modules = modulesQuery.data.data
+  if (courseQuery.isPending) {
+    return <CurriculumState title="Loading course" detail="Fetching the available modules…" />
+  }
 
-  if (modules.length === 0) {
+  if (courseQuery.isError) {
+    return (
+      <CurriculumState
+        title="Course unavailable"
+        detail={getErrorMessage(courseQuery.error)}
+        action={<RetryButton onClick={() => void courseQuery.refetch()} />}
+      />
+    )
+  }
+
+  if (!course || course.id !== courseId) {
+    return (
+      <CurriculumState
+        title="Course unavailable"
+        detail="No matching course data was returned for this route."
+      />
+    )
+  }
+
+  if (course.modules.length === 0) {
     return (
       <CurriculumState
         title="No modules yet"
-        detail="Curriculum modules will appear here when they are published."
+        detail={`${course.title} modules will appear here when they are published.`}
       />
     )
   }
 
-  return <CurriculumContent modules={modules} query={query} onQueryChange={setQuery} />
+  return <CurriculumContent course={course} query={query} onQueryChange={setQuery} />
 }
 
 function CurriculumContent({
-  modules,
+  course,
   query,
   onQueryChange,
 }: {
-  modules: ModuleSummary[]
+  course: CourseResource
   query: string
   onQueryChange: (value: string) => void
 }) {
   const filteredModules = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase()
-    if (!normalizedQuery) return modules
+    if (!normalizedQuery) return course.modules
 
-    return modules.filter((module) =>
+    return course.modules.filter((module) =>
       `${module.title} ${module.id}`.toLowerCase().includes(normalizedQuery),
     )
-  }, [modules, query])
+  }, [course.modules, query])
 
   return (
     <div className="grid max-w-6xl gap-7 max-sm:gap-5">
-      <PageIntro compact title="Curriculum" />
+      <PageIntro compact title={course.title} detail={course.description} />
       <div className="flex items-center justify-between gap-4 max-sm:items-stretch max-sm:flex-col">
         <label className="flex w-full max-w-sm items-center gap-2 rounded-lg border border-line bg-panel-soft px-3 py-2 text-faint max-sm:max-w-none">
           <span aria-hidden="true">⌕</span>
@@ -75,7 +104,7 @@ function CurriculumContent({
           />
         </label>
         <span className="text-xs text-muted">
-          {modules.length} {modules.length === 1 ? 'module' : 'modules'}
+          {course.modules.length} {course.modules.length === 1 ? 'module' : 'modules'}
         </span>
       </div>
 
@@ -84,7 +113,7 @@ function CurriculumContent({
         {filteredModules.length > 0 ? (
           <div className="grid gap-2.5">
             {filteredModules.map((module) => (
-              <ModuleRow key={module.id} module={module} />
+              <ModuleRow key={module.id} courseId={course.id} module={module} />
             ))}
           </div>
         ) : (
@@ -97,11 +126,11 @@ function CurriculumContent({
   )
 }
 
-function ModuleRow({ module }: { module: ModuleSummary }) {
+function ModuleRow({ courseId, module }: { courseId: string; module: ModuleSummary }) {
   return (
     <Link
       className="flex items-center gap-4 rounded-lg border border-line bg-panel px-4 py-5 text-ink no-underline transition hover:translate-x-0.5 hover:border-line-strong hover:bg-panel-soft max-sm:gap-3 max-sm:px-3.5 max-sm:py-4"
-      to={`/curriculum/${module.id}`}
+      to={modulePath(courseId, module.id)}
     >
       <span className="w-16 shrink-0 text-2xs font-bold uppercase tracking-wide text-faint">
         Module {String(module.order + 1).padStart(2, '0')}

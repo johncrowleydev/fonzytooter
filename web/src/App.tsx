@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { AppShell } from './app/AppShell'
+import { coursePath, DEFAULT_COURSE_ID } from './app/routes'
 import { Curriculum } from './features/curriculum/Curriculum'
 import { ModuleDetail } from './features/curriculum/ModuleDetail'
 import { Dashboard } from './features/dashboard/Dashboard'
@@ -17,9 +18,16 @@ export function App() {
       <AppShell>
         <Routes>
           <Route path="/" element={<Dashboard />} />
-          <Route path="/curriculum" element={<Curriculum />} />
-          <Route path="/curriculum/:moduleId" element={<ModuleDetail />} />
-          <Route path="/curriculum/:moduleId/lessons/:lessonId" element={<Lesson />} />
+          <Route
+            path="/curriculum"
+            element={<Navigate to={coursePath(DEFAULT_COURSE_ID)} replace />}
+          />
+          <Route path="/courses/:courseId" element={<Curriculum />} />
+          <Route path="/courses/:courseId/modules/:moduleId" element={<ModuleDetail />} />
+          <Route
+            path="/courses/:courseId/modules/:moduleId/lessons/:lessonId"
+            element={<Lesson />}
+          />
           <Route path="/review" element={<Review />} />
           <Route path="/exercise/:exerciseId" element={<Exercise />} />
           <Route path="/progress" element={<Progress />} />

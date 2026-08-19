@@ -1,6 +1,78 @@
 {
   "components": {
     "schemas": {
+      "CourseResource": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/CourseResource.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "modules": {
+            "items": {
+              "$ref": "#/components/schemas/ModuleSummary"
+            },
+            "type": "array"
+          },
+          "order": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "description",
+          "order",
+          "modules"
+        ],
+        "type": "object"
+      },
+      "CourseSummary": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "order": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "description",
+          "order"
+        ],
+        "type": "object"
+      },
+      "CourseSummaryList": {
+        "items": {
+          "$ref": "#/components/schemas/CourseSummary"
+        },
+        "type": "array"
+      },
       "ErrorDetail": {
         "additionalProperties": false,
         "properties": {
@@ -182,6 +254,9 @@
             "description": "Raw MDX source body with YAML frontmatter removed.",
             "type": "string"
           },
+          "courseId": {
+            "type": "string"
+          },
           "id": {
             "type": "string"
           },
@@ -205,6 +280,7 @@
           }
         },
         "required": [
+          "courseId",
           "id",
           "moduleId",
           "title",
@@ -249,6 +325,9 @@
             "readOnly": true,
             "type": "string"
           },
+          "courseId": {
+            "type": "string"
+          },
           "id": {
             "type": "string"
           },
@@ -279,6 +358,7 @@
           }
         },
         "required": [
+          "courseId",
           "id",
           "title",
           "order",
@@ -308,12 +388,6 @@
           "order"
         ],
         "type": "object"
-      },
-      "ModuleSummaryList": {
-        "items": {
-          "$ref": "#/components/schemas/ModuleSummary"
-        },
-        "type": "array"
       },
       "ObjectiveResource": {
         "additionalProperties": false,
@@ -347,6 +421,14 @@
         "properties": {
           "code": {
             "maxLength": 30000,
+            "type": "string"
+          },
+          "courseId": {
+            "maxLength": 200,
+            "type": "string"
+          },
+          "courseTitle": {
+            "maxLength": 300,
             "type": "string"
           },
           "exerciseId": {
@@ -550,15 +632,15 @@
   },
   "openapi": "3.1.0",
   "paths": {
-    "/api/health": {
+    "/api/courses": {
       "get": {
-        "operationId": "getHealth",
+        "operationId": "listCourses",
         "responses": {
           "200": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Health"
+                  "$ref": "#/components/schemas/CourseSummaryList"
                 }
               }
             },
@@ -575,47 +657,85 @@
             "description": "Error"
           }
         },
-        "summary": "Get API health",
-        "tags": [
-          "health"
-        ]
-      }
-    },
-    "/api/modules": {
-      "get": {
-        "operationId": "listModules",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ModuleSummaryList"
-                }
-              }
-            },
-            "description": "OK"
-          },
-          "default": {
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorModel"
-                }
-              }
-            },
-            "description": "Error"
-          }
-        },
-        "summary": "List curriculum modules",
+        "summary": "List curriculum courses",
         "tags": [
           "curriculum"
         ]
       }
     },
-    "/api/modules/{moduleId}": {
+    "/api/courses/{courseId}": {
       "get": {
-        "operationId": "getModule",
+        "operationId": "getCourse",
         "parameters": [
+          {
+            "in": "path",
+            "name": "courseId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CourseResource"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Get a curriculum course",
+        "tags": [
+          "curriculum"
+        ]
+      }
+    },
+    "/api/courses/{courseId}/modules/{moduleId}": {
+      "get": {
+        "operationId": "getCourseModule",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "courseId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
           {
             "in": "path",
             "name": "moduleId",
@@ -667,16 +787,24 @@
             "description": "Internal Server Error"
           }
         },
-        "summary": "Get a curriculum module",
+        "summary": "Get a course module",
         "tags": [
           "curriculum"
         ]
       }
     },
-    "/api/modules/{moduleId}/lessons/{lessonId}": {
+    "/api/courses/{courseId}/modules/{moduleId}/lessons/{lessonId}": {
       "get": {
-        "operationId": "getLesson",
+        "operationId": "getCourseLesson",
         "parameters": [
+          {
+            "in": "path",
+            "name": "courseId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
           {
             "in": "path",
             "name": "moduleId",
@@ -736,9 +864,40 @@
             "description": "Internal Server Error"
           }
         },
-        "summary": "Get a curriculum lesson",
+        "summary": "Get a course lesson",
         "tags": [
           "curriculum"
+        ]
+      }
+    },
+    "/api/health": {
+      "get": {
+        "operationId": "getHealth",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Get API health",
+        "tags": [
+          "health"
         ]
       }
     },

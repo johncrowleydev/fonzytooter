@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import { DEFAULT_COURSE_ID, modulePath } from '../../app/routes'
 import { Badge, Button, Card, PageIntro, SectionHeading } from '../../components/ui'
 import type { MockCheckResult } from '../../prototype/types'
 import { useTutor } from '../tutor/TutorContext'
@@ -58,7 +59,7 @@ export function Exercise() {
     <div className="grid max-w-6xl gap-7 max-sm:gap-5">
       <Link
         className="justify-self-start text-xs font-bold text-muted no-underline hover:text-ink"
-        to="/curriculum/neural-networks"
+        to={modulePath(DEFAULT_COURSE_ID, 'neural-networks')}
       >
         ← Neural Networks From Scratch
       </Link>

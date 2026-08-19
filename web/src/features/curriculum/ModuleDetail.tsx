@@ -1,52 +1,98 @@
 import { useEffect } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { useGetModule } from '../../api/generated/endpoints'
+import { useGetCourse, useGetCourseModule } from '../../api/generated/endpoints'
+import type { CourseResource } from '../../api/generated/schemas/courseResource.zod'
 import type { ModuleResource } from '../../api/generated/schemas/moduleResource.zod'
+import { coursePath, lessonPath } from '../../app/routes'
 import { Badge, Card, PageIntro, SectionHeading } from '../../components/ui'
 import { useTutor } from '../tutor/TutorContext'
 import { safeExternalUrl } from './externalLinks'
 
 export function ModuleDetail() {
-  const { moduleId } = useParams()
-  const moduleQuery = useGetModule(moduleId ?? '', {
-    query: { enabled: Boolean(moduleId) },
+  const { courseId, moduleId } = useParams()
+  const courseQuery = useGetCourse(courseId ?? '', {
+    query: { enabled: Boolean(courseId) },
+  })
+  const moduleQuery = useGetCourseModule(courseId ?? '', moduleId ?? '', {
+    query: { enabled: Boolean(courseId && moduleId) },
   })
   const { setPageContext } = useTutor()
+  const course = courseQuery.data?.data
   const module = moduleQuery.data?.data
 
   useEffect(() => {
-    if (!module) return
+    if (
+      !course ||
+      !module ||
+      course.id !== courseId ||
+      module.courseId !== course.id ||
+      module.id !== moduleId ||
+      !course.modules.some((item) => item.id === module.id)
+    ) {
+      return
+    }
 
     setPageContext({
       type: 'curriculum',
       title: module.title,
+      courseId: course.id,
+      courseTitle: course.title,
       moduleId: module.id,
       moduleTitle: module.title,
       objectiveIds: module.objectives.map((objective) => objective.id),
     })
-  }, [module, setPageContext])
+  }, [course, courseId, module, moduleId, setPageContext])
 
-  if (moduleQuery.isPending) {
-    return <ModuleState title="Loading module" detail="Fetching the module details…" />
-  }
-
-  if (moduleQuery.isError) {
-    return <ModuleState title="Module unavailable" detail={getErrorMessage(moduleQuery.error)} />
-  }
-
-  if (!module) {
+  if (!courseId || !moduleId) {
     return (
       <ModuleState
         title="Module unavailable"
-        detail="No module data was returned for this route."
+        detail="This module route is missing its course or module identity."
       />
     )
   }
 
-  return <ModuleContent module={module} />
+  if (courseQuery.isPending || moduleQuery.isPending) {
+    return (
+      <ModuleState
+        courseId={courseId}
+        title="Loading module"
+        detail="Fetching the module details…"
+      />
+    )
+  }
+
+  if (courseQuery.isError || moduleQuery.isError) {
+    return (
+      <ModuleState
+        courseId={courseId}
+        title="Module unavailable"
+        detail={getErrorMessage(courseQuery.error ?? moduleQuery.error)}
+      />
+    )
+  }
+
+  if (
+    !course ||
+    !module ||
+    course.id !== courseId ||
+    module.courseId !== course.id ||
+    module.id !== moduleId ||
+    !course.modules.some((item) => item.id === module.id)
+  ) {
+    return (
+      <ModuleState
+        courseId={courseId}
+        title="Module unavailable"
+        detail="No matching module data was returned for this course route."
+      />
+    )
+  }
+
+  return <ModuleContent course={course} module={module} />
 }
 
-function ModuleContent({ module }: { module: ModuleResource }) {
+function ModuleContent({ course, module }: { course: CourseResource; module: ModuleResource }) {
   const objectiveTitles = new Map(
     module.objectives.map((objective) => [objective.id, objective.title]),
   )
@@ -55,9 +101,9 @@ function ModuleContent({ module }: { module: ModuleResource }) {
     <div className="grid max-w-6xl gap-7 max-sm:gap-5">
       <Link
         className="justify-self-start text-xs font-bold text-muted no-underline hover:text-ink"
-        to="/curriculum"
+        to={coursePath(course.id)}
       >
-        ← Curriculum
+        ← {course.title}
       </Link>
       <PageIntro
         compact
@@ -116,7 +162,7 @@ function ModuleContent({ module }: { module: ModuleResource }) {
               <Link
                 key={lesson.id}
                 className="grid grid-cols-[35px_minmax(0,1fr)_17px] items-center gap-3 border-t border-line py-3 text-left text-ink no-underline hover:text-brand-teal"
-                to={`/curriculum/${module.id}/lessons/${lesson.id}`}
+                to={lessonPath(course.id, module.id, lesson.id)}
               >
                 <span className="text-2xs text-faint">{String(index + 1).padStart(2, '0')}</span>
                 <span>
@@ -176,12 +222,20 @@ function ModuleContent({ module }: { module: ModuleResource }) {
   )
 }
 
-function ModuleState({ title, detail }: { title: string; detail: string }) {
+function ModuleState({
+  courseId,
+  title,
+  detail,
+}: {
+  courseId?: string
+  title: string
+  detail: string
+}) {
   return (
     <div className="grid max-w-6xl gap-7 max-sm:gap-5">
       <Link
         className="justify-self-start text-xs font-bold text-muted no-underline hover:text-ink"
-        to="/curriculum"
+        to={courseId ? coursePath(courseId) : '/curriculum'}
       >
         ← Curriculum
       </Link>

@@ -70,6 +70,10 @@ async function importGeneratedTurnRequestSchema() {
   return importGeneratedModule('schemas/turnRequest.zod.mjs')
 }
 
+async function importGeneratedPageContextSchema() {
+  return importGeneratedModule('schemas/pageContext.zod.mjs')
+}
+
 test('generated health fetch rejects an invalid successful JSON response with ZodError', async () => {
   const client = await importGeneratedClient()
   const originalFetch = globalThis.fetch
@@ -147,19 +151,24 @@ test('generated health fetch rejects extra response properties with ZodError', a
   }
 })
 
-test('generated curriculum list fetch validates an array response without Content-Type', async () => {
+test('generated course list fetch validates an array response without Content-Type', async () => {
   const client = await importGeneratedClient()
   const originalFetch = globalThis.fetch
-  const moduleSummary = { id: 'python', title: 'Python', order: 0 }
+  const courseSummary = {
+    id: 'ai-ml',
+    title: 'AI & Machine Learning',
+    description: 'Learn AI and machine learning.',
+    order: 0,
+  }
 
   try {
     globalThis.fetch = async () =>
-      new Response(JSON.stringify([moduleSummary]), {
+      new Response(JSON.stringify([courseSummary]), {
         status: 200,
       })
 
-    const response = await client.listModules()
-    assert.deepEqual(response.data, [moduleSummary])
+    const response = await client.listCourses()
+    assert.deepEqual(response.data, [courseSummary])
 
     globalThis.fetch = async () =>
       new Response(JSON.stringify({ id: 'python' }), {
@@ -167,7 +176,7 @@ test('generated curriculum list fetch validates an array response without Conten
         headers: { 'content-type': 'text/plain' },
       })
     await assert.rejects(
-      () => client.listModules(),
+      () => client.listCourses(),
       (error) => error?.name === 'ZodError',
     )
   } finally {
@@ -184,6 +193,7 @@ test('generated curriculum resource fetch rejects invalid JSON with ZodError', a
       new Response(
         JSON.stringify({
           id: 'python',
+          courseId: 'ai-ml',
           title: 'Python',
           order: 0,
           objectives: [],
@@ -195,12 +205,28 @@ test('generated curriculum resource fetch rejects invalid JSON with ZodError', a
       )
 
     await assert.rejects(
-      () => client.getModule('python'),
+      () => client.getCourseModule('ai-ml', 'python'),
       (error) => error?.name === 'ZodError',
     )
   } finally {
     globalThis.fetch = originalFetch
   }
+})
+
+test('generated PageContext accepts explicit course identity', async () => {
+  const { PageContext } = await importGeneratedPageContextSchema()
+
+  const context = PageContext.parse({
+    type: 'curriculum',
+    title: 'Scientific Python',
+    courseId: 'ai-ml',
+    courseTitle: 'AI & Machine Learning',
+    moduleId: 'scientific-python',
+    moduleTitle: 'Scientific Python',
+  })
+
+  assert.equal(context.courseId, 'ai-ml')
+  assert.equal(context.courseTitle, 'AI & Machine Learning')
 })
 
 test('generated TurnRequest validates non-whitespace messages and closed objects', async () => {
