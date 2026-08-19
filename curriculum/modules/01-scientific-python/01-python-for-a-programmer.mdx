@@ -1,0 +1,1022 @@
+---
+id: 01-python-for-a-programmer
+title: Python for a Programmer
+objectiveIds:
+  - python.execution-model
+sourceIds:
+  - python-execution-model
+  - python-data-model
+  - python-typing
+  - python-tutorial
+  - python-design-history
+---
+
+# Python for a Programmer
+
+You do not need to learn programming again.
+
+You already know variables, functions, loops, collections, objects, exceptions, modules, and the difference between code that merely runs and code that you would actually want to maintain.
+
+You also do not need an introduction to the idea that a language can be dynamically typed. If you have spent serious time in JavaScript, rebinding a variable from a number to a string is hardly exotic.
+
+The goal of this lesson is narrower: **learn Python's particular syntax, object model, and idioms well enough that the language itself stops getting in the way.**
+
+Python will often look familiar. That can actually make it more dangerous than a completely unfamiliar language: syntax or behavior that resembles JavaScript, TypeScript, C#, or another language may differ in one important detail.
+
+So instead of walking through Python feature by feature, we will concentrate on those details.
+
+---
+
+## Names, objects, and assignment
+
+Start with something completely unsurprising if you know JavaScript:
+
+```javascript
+let count = 3
+count = "three"
+```
+
+Python allows the same kind of rebinding:
+
+```python
+count = 3
+count = "three"
+```
+
+The useful Python-specific mental model is not simply "dynamic typing." The language reference describes the relationship more precisely:
+
+> **Names refer to objects.**
+
+Every Python object has a type, a value, and an identity. Assignment binds a name to an object.
+
+After:
+
+```python
+count = 3
+```
+
+`count` refers to an integer object.
+
+After:
+
+```python
+count = "three"
+```
+
+that same name refers to a string object instead.
+
+You can inspect the type of the current object:
+
+```python
+count = 3
+
+print(type(count))
+# <class 'int'>
+
+count = "three"
+
+print(type(count))
+# <class 'str'>
+```
+
+This may not feel dramatically different from how you already reason about JavaScript values and references. The reason to make Python's terminology explicit is that it gives us a clean way to discuss mutation, identity, function arguments, NumPy views, and eventually tensor storage.
+
+Keep this picture in mind:
+
+```text
+name ──refers to──► object ──has type, value, identity
+```
+
+---
+
+## Assignment does not mean copy
+
+Predict the output before running this:
+
+```python
+samples = [10, 20, 30]
+backup = samples
+
+samples.append(40)
+
+print(backup)
+```
+
+The output is:
+
+```text
+[10, 20, 30, 40]
+```
+
+This should also feel familiar if you have worked with JavaScript arrays or objects.
+
+The important point is the Python wording:
+
+```python
+backup = samples
+```
+
+does not create another list. It binds another name to the **same list object**.
+
+Conceptually:
+
+```text
+samples ─┐
+         ├──► [10, 20, 30]
+backup ──┘
+```
+
+Then:
+
+```python
+samples.append(40)
+```
+
+mutates that object:
+
+```text
+samples ─┐
+         ├──► [10, 20, 30, 40]
+backup ──┘
+```
+
+If you actually want another list:
+
+```python
+samples = [10, 20, 30]
+backup = samples.copy()
+
+samples.append(40)
+
+print(backup)
+# [10, 20, 30]
+```
+
+Do not file this away as a basic-language curiosity. The distinction between **another reference to the same object** and **new storage containing copied data** becomes important in numerical computing.
+
+NumPy and PyTorch both have operations that may share underlying storage rather than eagerly copying it. We will treat those cases explicitly when we encounter them.
+
+For now, keep one rule:
+
+> Assignment binds a name. Do not assume assignment copies an object.
+
+---
+
+## Python's syntax is sparse on purpose
+
+Here is a small C# function:
+
+```csharp
+double Clamp(double value, double low, double high)
+{
+    if (value < low)
+    {
+        return low;
+    }
+
+    if (value > high)
+    {
+        return high;
+    }
+
+    return value;
+}
+```
+
+The equivalent Python is:
+
+```python
+def clamp(value: float, low: float, high: float) -> float:
+    if value < low:
+        return low
+
+    if value > high:
+        return high
+
+    return value
+```
+
+There are no braces and no semicolons.
+
+A colon introduces an indented block:
+
+```python
+if condition:
+    do_something()
+    do_something_else()
+
+continue_after_block()
+```
+
+Indentation is part of Python's syntax, not merely formatting.
+
+This can look unusual from a brace-delimited language, but it has a useful property: the block structure the interpreter sees and the indentation the human reader sees cannot disagree.
+
+### A short historical detour
+
+This wasn't an arbitrary aesthetic choice.
+
+Python began around the end of 1989 as Guido van Rossum experimented with a successor to ideas from ABC, a teaching language he had worked on earlier. ABC placed unusually high value on clarity and readability. Python inherited some of that philosophy while becoming a much more extensible, general-purpose language aimed at experienced programmers.
+
+Van Rossum later wrote that Python's use of indentation for statement grouping came directly from ABC and defended it specifically as a readability feature.
+
+That ancestry helps explain several Python traits: significant indentation, high-level built-in collections, relatively little punctuation, and a preference for direct expression over ceremony.
+
+You do not have to agree that every Python program is readable.
+
+You will encounter ample evidence to the contrary.
+
+But readability is part of the language's design history rather than a style convention bolted on afterward.
+
+---
+
+## A few syntax translations worth memorizing
+
+Most Python operators are immediately recognizable. A handful of common spellings differ from JavaScript, TypeScript, or C-family languages.
+
+Boolean operators are words:
+
+```python
+ready and enabled
+ready or enabled
+not ready
+```
+
+rather than:
+
+```javascript
+ready && enabled
+ready || enabled
+!ready
+```
+
+The boolean literals are capitalized:
+
+```python
+True
+False
+```
+
+Python's absence-of-value object is:
+
+```python
+None
+```
+
+A common conditional check looks like:
+
+```python
+if result is None:
+    ...
+```
+
+Membership has its own readable operator:
+
+```python
+if "gradient" in topics:
+    ...
+```
+
+String interpolation usually uses f-strings:
+
+```python
+name = "Ada"
+score = 91
+
+message = f"{name} scored {score}"
+```
+
+Python uses `**` for exponentiation:
+
+```python
+square = x ** 2
+cube = x ** 3
+```
+
+JavaScript uses the same operator, but this is worth keeping visually separate from languages where `^` means something else. In Python, `^` is bitwise XOR, not exponentiation.
+
+Division also has two operators worth distinguishing:
+
+```python
+7 / 2
+# 3.5
+
+7 // 2
+# 3
+```
+
+`/` performs true division. `//` performs floor division.
+
+None of these deserve a lesson of their own. They simply need to become visually boring before we start writing mathematical code.
+
+---
+
+## Type hints: think more TypeScript than C#
+
+Consider:
+
+```python
+def double(value: int) -> int:
+    return value * 2
+```
+
+If your only comparison were C#, the annotations might look like runtime-enforced parameter and return types.
+
+A better analogy is TypeScript: **the type information is extremely useful, but the ordinary Python runtime does not enforce it simply because the annotation exists.**
+
+Nothing in the function above prevents this call:
+
+```python
+result = double(2.5)
+
+print(result)
+# 5.0
+```
+
+A static type checker may complain. Your editor may complain. CI may complain if the project runs a type checker.
+
+Python itself simply executes the operation.
+
+So separate these ideas:
+
+```text
+Python object type
+    exists at runtime
+
+Python type annotation
+    records type information for tools and humans
+```
+
+There are important differences between Python's typing ecosystem and TypeScript's type system, and Python libraries sometimes use annotations in sophisticated runtime ways. We do not need those details yet.
+
+For our purposes, the key fact is simple:
+
+> An annotation does not automatically become a runtime type check.
+
+We will use annotations when they improve clarity, without pretending they turn Python into C#.
+
+---
+
+## The collections you will see constantly
+
+Four Python collection-like types will appear immediately in scientific and ML code:
+
+```python
+values = [10, 20, 30]           # list
+point = (3, 7)                  # tuple
+ages = {"Ada": 36, "Alan": 41} # dict
+indices = range(10)             # range
+```
+
+### Lists
+
+A **list** is an ordered, mutable sequence:
+
+```python
+values = [10, 20, 30]
+
+values.append(40)
+values[0] = 99
+
+print(values)
+# [99, 20, 30, 40]
+```
+
+For a JavaScript programmer, a Python list occupies much of the conceptual territory of a normal JS array, although the APIs and semantics are not identical.
+
+### Tuples
+
+A **tuple** is an ordered sequence whose elements cannot be reassigned after creation:
+
+```python
+point = (3, 7)
+
+x = point[0]
+y = point[1]
+```
+
+Unlike a TypeScript tuple type, this is a real runtime Python object with tuple semantics.
+
+Tuples are commonly unpacked:
+
+```python
+x, y = point
+```
+
+Functions and APIs frequently use this style when returning or receiving small fixed groups of values.
+
+### Dictionaries
+
+A **dictionary** maps keys to values:
+
+```python
+scores = {
+    "alice": 91,
+    "bob": 84,
+}
+
+print(scores["alice"])
+# 91
+```
+
+The broad concept should be familiar from maps, dictionaries, and ordinary JavaScript object lookup, while Python's `dict` has its own dedicated runtime type and API.
+
+### Ranges
+
+`range` represents an arithmetic sequence of integers and is commonly used when an index is actually needed:
+
+```python
+for i in range(5):
+    print(i)
+```
+
+which produces:
+
+```text
+0
+1
+2
+3
+4
+```
+
+Notice that the endpoint is excluded.
+
+You will see the same half-open convention in slicing.
+
+---
+
+## Slicing: `start` included, `stop` excluded
+
+Given:
+
+```python
+values = [10, 20, 30, 40, 50]
+```
+
+we can ask for a slice:
+
+```python
+values[1:4]
+```
+
+and get:
+
+```python
+[20, 30, 40]
+```
+
+Index `1` is included.
+
+Index `4` is not.
+
+The general form is:
+
+```python
+sequence[start:stop]
+```
+
+You can omit either side:
+
+```python
+values[:3]
+# [10, 20, 30]
+
+values[2:]
+# [30, 40, 50]
+```
+
+Negative indices count backward from the end:
+
+```python
+values[-1]
+# 50
+
+values[-2]
+# 40
+```
+
+Python slicing goes further than this, including a third `step` component, but we do not need to memorize every variation yet.
+
+This syntax becomes especially important once we start indexing arrays, matrices, batches, and datasets.
+
+### Predict before running
+
+What does this produce?
+
+```python
+values = [2, 4, 6, 8, 10]
+
+result = values[1:-1]
+
+print(result)
+```
+
+Work it out from the indices before running it.
+
+---
+
+## Iteration usually means "give me the values"
+
+A common C-family habit is to reach immediately for an index.
+
+You can do that in Python:
+
+```python
+values = [10, 20, 30]
+
+for i in range(len(values)):
+    print(values[i])
+```
+
+But if the index itself has no meaning, don't manufacture one.
+
+Just iterate over the values:
+
+```python
+for value in values:
+    print(value)
+```
+
+When you genuinely need both the index and value, use `enumerate`:
+
+```python
+for index, value in enumerate(values):
+    print(index, value)
+```
+
+If you need to traverse two sequences together, `zip` is often the direct expression of that idea:
+
+```python
+names = ["Alice", "Bob", "Charlie"]
+scores = [91, 84, 95]
+
+for name, score in zip(names, scores):
+    print(name, score)
+```
+
+The theme should feel familiar if you use modern JavaScript array APIs, LINQ, iterators, or functional collection operations:
+
+> Prefer expressing what you are iterating over instead of manually managing machinery around the iteration.
+
+That does not mean "never write a normal loop." It means Python gives you higher-level iteration tools, and scientific Python code uses them constantly.
+
+---
+
+## Comprehensions: map/filter ideas in Python syntax
+
+Suppose we want the square of every number in a list.
+
+A straightforward loop works:
+
+```python
+values = [1, 2, 3, 4]
+
+squares = []
+
+for value in values:
+    squares.append(value ** 2)
+```
+
+Python has a compact syntax for this common transformation:
+
+```python
+squares = [value ** 2 for value in values]
+```
+
+Read it approximately as:
+
+> Give me `value ** 2` for each `value` in `values`.
+
+If you think naturally in JavaScript `map`:
+
+```javascript
+const squares = values.map(value => value ** 2)
+```
+
+or LINQ:
+
+```csharp
+var squares = values
+    .Select(value => value * value)
+    .ToList();
+```
+
+then the underlying idea is already familiar.
+
+Comprehensions can also filter:
+
+```python
+values = [-3, -1, 0, 2, 5]
+
+positive = [value for value in values if value > 0]
+```
+
+producing:
+
+```python
+[2, 5]
+```
+
+That is broadly analogous to a filter operation.
+
+Do not treat comprehensions as a challenge to compress the most logic possible onto one line.
+
+This is clear:
+
+```python
+squares = [value ** 2 for value in values]
+```
+
+This quickly stops being clear:
+
+```python
+result = [f(x, y) for x in xs if p(x) for y in ys if q(x, y)]
+```
+
+A normal loop is not a failure.
+
+Readable Python beats clever Python.
+
+---
+
+## `==` and `is` answer different questions
+
+Python gives equality and identity separate operators.
+
+`==` asks whether two objects are **equal in value** according to their equality semantics:
+
+```python
+a = [1, 2, 3]
+b = [1, 2, 3]
+
+print(a == b)
+# True
+```
+
+`is` asks whether two references identify the **same object**:
+
+```python
+print(a is b)
+# False
+```
+
+Now:
+
+```python
+c = a
+
+print(a is c)
+# True
+```
+
+Conceptually:
+
+```text
+a ─┐
+   ├──► [1, 2, 3]
+c ─┘
+
+b ─────► [1, 2, 3]
+```
+
+The two list objects have equal contents.
+
+Only `a` and `c` refer to the same object.
+
+If you know JavaScript, you are already accustomed to primitive/value equality behaving differently from object reference identity. Python simply exposes the distinction with explicit operators in places where both concepts matter.
+
+One case you will see constantly is `None`:
+
+```python
+result = None
+
+if result is None:
+    print("No result")
+```
+
+Use `is None` and `is not None` for that identity check rather than reaching for `is` as a general replacement for `==`.
+
+---
+
+## Imports bind names too
+
+Python organizes reusable code into modules and packages.
+
+You can import a module:
+
+```python
+import math
+
+result = math.sqrt(25)
+```
+
+or import a particular name:
+
+```python
+from math import sqrt
+
+result = sqrt(25)
+```
+
+Imports fit the same name-binding model we started with.
+
+After:
+
+```python
+import math
+```
+
+`math` is a name bound to the imported module object.
+
+Scientific Python has several conventional aliases. The most important one for us will be:
+
+```python
+import numpy as np
+```
+
+After that, `np` is simply the local name by which the program refers to the NumPy module.
+
+The alias is not NumPy-specific magic. It is ordinary Python import syntax plus a strong community convention.
+
+We will start using NumPy soon.
+
+---
+
+## One function difference that can surprise a JavaScript programmer
+
+We will spend the next lesson thinking much more carefully about functions.
+
+There is one Python behavior worth learning immediately because the superficially equivalent JavaScript syntax behaves differently.
+
+In JavaScript:
+
+```javascript
+function record(value, values = []) {
+    values.push(value)
+    return values
+}
+```
+
+omitting `values` creates a fresh default array for each call.
+
+Now consider this Python:
+
+```python
+def record(value, values=[]):
+    values.append(value)
+    return values
+```
+
+What do you predict?
+
+```python
+print(record(1))
+print(record(2))
+print(record(3))
+```
+
+A JavaScript-trained intuition may suggest:
+
+```text
+[1]
+[2]
+[3]
+```
+
+Instead:
+
+```text
+[1]
+[1, 2]
+[1, 2, 3]
+```
+
+Python evaluates default argument expressions when the function definition is executed, not freshly for every call. The same default list object is therefore reused.
+
+The usual pattern is:
+
+```python
+def record(value, values=None):
+    if values is None:
+        values = []
+
+    values.append(value)
+    return values
+```
+
+Now each call that omits `values` creates a new list.
+
+This particular rule is easy enough to memorize.
+
+The more useful debugging habit is broader:
+
+> When Python behaves strangely, ask what objects exist, when they were created, and which names refer to them.
+
+That question resolves a surprising number of apparent mysteries.
+
+---
+
+## From application code to numerical code
+
+Let's translate something familiar.
+
+Suppose we have four measurements and want to subtract their mean from each value.
+
+In JavaScript:
+
+```javascript
+const samples = [12.0, 15.0, 9.0, 18.0]
+
+const mean = samples.reduce((sum, sample) => sum + sample, 0) / samples.length
+
+const centered = samples.map(sample => sample - mean)
+```
+
+Or in C#:
+
+```csharp
+double[] samples = [12.0, 15.0, 9.0, 18.0];
+
+double mean = samples.Average();
+
+double[] centered = samples
+    .Select(sample => sample - mean)
+    .ToArray();
+```
+
+Plain Python expresses the same element-by-element idea:
+
+```python
+samples = [12.0, 15.0, 9.0, 18.0]
+
+mean = sum(samples) / len(samples)
+
+centered = [sample - mean for sample in samples]
+
+print(centered)
+```
+
+The result is:
+
+```python
+[-1.5, 1.5, -4.5, 4.5]
+```
+
+Nothing revolutionary happened. We changed syntax, but we are still thinking about a collection and transforming its elements one at a time.
+
+Now look ahead at the NumPy version:
+
+```python
+import numpy as np
+
+samples = np.array([12.0, 15.0, 9.0, 18.0])
+
+centered = samples - samples.mean()
+```
+
+Don't worry about understanding NumPy yet.
+
+Just notice the change in expression.
+
+We are no longer explicitly saying:
+
+> For every sample, subtract the mean.
+
+Instead we write:
+
+```python
+samples - samples.mean()
+```
+
+as though `samples` itself were a mathematical object on which subtraction makes sense.
+
+That transition—from manipulating individual values in collections to expressing operations over whole numerical structures—is where this module is headed.
+
+It is one of the central shifts from ordinary application programming into scientific computing.
+
+---
+
+## Check your mental model
+
+Before moving on, you should be able to explain these without relying on memorized syntax alone.
+
+### 1. What changed?
+
+Given:
+
+```python
+x = 10
+x = "ten"
+```
+
+Did one object change from an integer into a string, or did the name `x` become bound to a different object?
+
+### 2. What gets copied?
+
+Given:
+
+```python
+a = [1, 2]
+b = a
+b.append(3)
+```
+
+Why does `a` now contain `3`?
+
+What would you do if you wanted an independent list?
+
+### 3. What does the annotation guarantee at runtime?
+
+```python
+def scale(value: float) -> float:
+    return value * 2
+```
+
+Does Python itself prevent someone from passing an integer, a string, or a custom object?
+
+If not, what are the annotations useful for?
+
+### 4. Predict the transformation
+
+What is the value of `result`?
+
+```python
+values = [1, 2, 3, 4, 5]
+
+result = [value * 10 for value in values[1:4] if value % 2 == 0]
+```
+
+Do not run it until you can trace:
+
+```text
+the slice
+    ↓
+the filter
+    ↓
+the transformation
+```
+
+### 5. Equality or identity?
+
+Why can these both be true?
+
+```python
+a == b
+a is not b
+```
+
+What question is each operator answering?
+
+### 6. Predict the default-argument behavior
+
+Without running it, explain why the two languages differ here:
+
+```javascript
+function add(value, values = []) {
+    values.push(value)
+    return values
+}
+```
+
+```python
+def add(value, values=[]):
+    values.append(value)
+    return values
+```
+
+What object exists in each language, and when is it created?
+
+---
+
+## What you should carry forward
+
+You do not need to memorize all of Python from this lesson.
+
+You need the right foundation for everything that follows.
+
+Think in terms of **names bound to objects** when Python's reference or mutation behavior matters.
+
+Remember that assignment may give you another reference to the same mutable object rather than a copy.
+
+Treat type annotations more like useful TypeScript-style static information than C#-style runtime enforcement.
+
+Get comfortable with Python's half-open slices, direct iteration, `enumerate`, `zip`, and simple comprehensions.
+
+Keep equality (`==`) separate from identity (`is`).
+
+Remember the mutable-default-argument difference before it becomes a debugging session.
+
+And above all, don't confuse "Pythonic" with clever or compressed.
+
+Our goal is not to become Python language enthusiasts.
+
+Our goal is to make Python transparent enough that, when we eventually write something like:
+
+```python
+weights -= learning_rate * gradient
+```
+
+our attention can be on **what the mathematics means**, not on what the programming language is doing.
+
+Next, we will use Python functions as a bridge between programming and mathematics—and make the word *function* precise enough to support the math that machine learning will require.
