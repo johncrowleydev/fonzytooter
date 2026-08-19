@@ -1,5 +1,9 @@
 import type { ComponentPropsWithoutRef } from 'react'
 import type { MDXComponents } from 'mdx/types'
+import { CompositionPipeline } from '../components/CompositionPipeline'
+import { InverseExplorer } from '../components/InverseExplorer'
+import { MappingLab } from '../components/MappingLab'
+import { MappingPropertiesLab } from '../components/MappingPropertiesLab'
 import { MutableDefaultExplorer } from '../components/MutableDefaultExplorer'
 import { PythonMentalModelCheck } from '../components/PythonMentalModelCheck'
 import { ReferenceBindingExplorer } from '../components/ReferenceBindingExplorer'
@@ -145,6 +149,10 @@ export const lessonMdxComponents = {
   pre: LessonPreformatted,
   strong: LessonStrong,
   ul: LessonUnorderedList,
+  CompositionPipeline,
+  InverseExplorer,
+  MappingLab,
+  MappingPropertiesLab,
   MutableDefaultExplorer,
   PythonMentalModelCheck,
   ReferenceBindingExplorer,
