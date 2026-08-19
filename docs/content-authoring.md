@@ -4,10 +4,10 @@
 
 Curriculum content is stored in Git under `curriculum/`.
 
-A module may contain:
+A course owns its modules. For example:
 
 ```text
-curriculum/modules/02-linear-algebra/
+curriculum/courses/ai-ml/modules/02-linear-algebra/
 ├── module.yaml
 ├── 01-vectors.mdx
 ├── 02-matrices.mdx

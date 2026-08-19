@@ -53,40 +53,48 @@ func validateSources(sources map[string]sourceAuthoring, errors *errorCollector)
 	}
 }
 
-func validateModules(modules []moduleFile, sources map[string]sourceAuthoring, errors *errorCollector) {
+func validateCourses(courses []courseFile, sources map[string]sourceAuthoring, errors *errorCollector) {
+	courseIDs := map[string]string{}
+	courseOrders := map[int]string{}
 	moduleIDs := map[string]string{}
-	moduleOrders := map[int]string{}
 	objectiveIDs := map[string]string{}
 	objectivePaths := map[string]string{}
+	modules := []moduleFile{}
 
-	for _, module := range modules {
-		if !module.metadataOK {
-			continue
-		}
-		metadataPath := module.path
-		metadata := module.metadata
-		if !stableIDPattern.MatchString(metadata.ID) {
-			errors.addf(metadataPath, "invalid module id %q", metadata.ID)
-		}
-		if previous, ok := moduleIDs[metadata.ID]; ok {
-			errors.addf(metadataPath, "duplicate module id %q (already declared in %s)", metadata.ID, previous)
-		} else {
-			moduleIDs[metadata.ID] = metadataPath
-		}
-		if strings.TrimSpace(metadata.Title) == "" {
-			errors.addf(metadataPath, "module %q has empty title", metadata.ID)
-		}
-		if metadata.Order == nil {
-			errors.addf(metadataPath, "module %q is missing required order", metadata.ID)
-		} else if previous, ok := moduleOrders[*metadata.Order]; ok {
-			errors.addf(metadataPath, "duplicate module order %d (already declared in %s)", *metadata.Order, previous)
-		} else {
-			moduleOrders[*metadata.Order] = metadataPath
+	for _, course := range courses {
+		if course.metadataOK {
+			metadata := course.metadata
+			if !stableIDPattern.MatchString(metadata.ID) {
+				errors.addf(course.path, "invalid course id %q", metadata.ID)
+			}
+			if previous, ok := courseIDs[metadata.ID]; ok {
+				errors.addf(course.path, "duplicate course id %q (already declared in %s)", metadata.ID, previous)
+			} else {
+				courseIDs[metadata.ID] = course.path
+			}
+			if strings.TrimSpace(metadata.Title) == "" {
+				errors.addf(course.path, "course %q has empty title", metadata.ID)
+			}
+			if strings.TrimSpace(metadata.Description) == "" {
+				errors.addf(course.path, "course %q has empty description", metadata.ID)
+			}
+			if metadata.Order == nil {
+				errors.addf(course.path, "course %q is missing required order", metadata.ID)
+			} else if previous, ok := courseOrders[*metadata.Order]; ok {
+				errors.addf(course.path, "duplicate course order %d (already declared in %s)", *metadata.Order, previous)
+			} else {
+				courseOrders[*metadata.Order] = course.path
+			}
 		}
 
-		validateModuleObjectives(metadata, metadataPath, objectiveIDs, objectivePaths, errors)
-		validateModuleVideos(metadata, metadataPath, errors)
-		validateModuleLessonReferences(module, errors)
+		moduleOrders := map[int]string{}
+		for _, module := range course.modules {
+			modules = append(modules, module)
+			if !module.metadataOK {
+				continue
+			}
+			validateModule(module, moduleIDs, moduleOrders, objectiveIDs, objectivePaths, errors)
+		}
 	}
 
 	for _, module := range modules {
@@ -95,6 +103,33 @@ func validateModules(modules []moduleFile, sources map[string]sourceAuthoring, e
 	validateObjectiveReferences(modules, objectiveIDs, errors)
 	validatePrerequisiteCycles(modules, objectiveIDs, objectivePaths, errors)
 	validateVideoObjectiveReferences(modules, objectiveIDs, errors)
+}
+
+func validateModule(module moduleFile, moduleIDs map[string]string, moduleOrders map[int]string, objectiveIDs, objectivePaths map[string]string, errors *errorCollector) {
+	metadataPath := module.path
+	metadata := module.metadata
+	if !stableIDPattern.MatchString(metadata.ID) {
+		errors.addf(metadataPath, "invalid module id %q", metadata.ID)
+	}
+	if previous, ok := moduleIDs[metadata.ID]; ok {
+		errors.addf(metadataPath, "duplicate module id %q (already declared in %s)", metadata.ID, previous)
+	} else {
+		moduleIDs[metadata.ID] = metadataPath
+	}
+	if strings.TrimSpace(metadata.Title) == "" {
+		errors.addf(metadataPath, "module %q has empty title", metadata.ID)
+	}
+	if metadata.Order == nil {
+		errors.addf(metadataPath, "module %q is missing required order", metadata.ID)
+	} else if previous, ok := moduleOrders[*metadata.Order]; ok {
+		errors.addf(metadataPath, "duplicate module order %d (already declared in %s)", *metadata.Order, previous)
+	} else {
+		moduleOrders[*metadata.Order] = metadataPath
+	}
+
+	validateModuleObjectives(metadata, metadataPath, objectiveIDs, objectivePaths, errors)
+	validateModuleVideos(metadata, metadataPath, errors)
+	validateModuleLessonReferences(module, errors)
 }
 
 func validateModuleObjectives(metadata moduleAuthoring, metadataPath string, objectiveIDs, objectivePaths map[string]string, errors *errorCollector) {

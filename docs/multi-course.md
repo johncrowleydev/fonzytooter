@@ -53,7 +53,7 @@ The global source registry may remain shared across courses so the same authorit
 
 ## Git-authored content layout
 
-The current `curriculum/modules/` layout is a single-course shape. The multi-course implementation should move toward a structure similar to:
+The former `curriculum/modules/` layout was a single-course shape. Authored curriculum now uses this course-aware structure:
 
 ```text
 curriculum/

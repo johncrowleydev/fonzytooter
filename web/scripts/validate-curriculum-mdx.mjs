@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { compile } from '@mdx-js/mdx'
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url))
-const curriculumModulesDirectory = path.resolve(scriptDirectory, '../../curriculum/modules')
+const curriculumCoursesDirectory = path.resolve(scriptDirectory, '../../curriculum/courses')
 
 async function collectMdxFiles(directory) {
   const entries = await fs.readdir(directory, { withFileTypes: true })
@@ -34,7 +34,7 @@ function errorMessage(error) {
   return error instanceof Error ? error.message : String(error)
 }
 
-const files = await collectMdxFiles(curriculumModulesDirectory)
+const files = await collectMdxFiles(curriculumCoursesDirectory)
 const failures = []
 
 for (const filePath of files) {
