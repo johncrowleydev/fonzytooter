@@ -167,7 +167,11 @@ export function ReferenceBindingExplorer() {
       </div>
 
       <pre className="overflow-x-auto rounded-lg border border-line bg-slate-950 p-4 font-mono text-xs leading-relaxed text-slate-200">
-        <code>{`samples = [10, 20, 30]\nbackup = samples`}</code>
+        <code>
+          {bindingState.isCopied
+            ? `samples = [10, 20, 30]\nbackup = samples\nbackup = samples.copy()`
+            : `samples = [10, 20, 30]\nbackup = samples`}
+        </code>
       </pre>
 
       <div className="flex flex-wrap gap-2 border-t border-line pt-4">
