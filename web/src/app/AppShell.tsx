@@ -1,5 +1,5 @@
 import { useState, type PropsWithChildren } from 'react'
-import { Link, NavLink } from 'react-router-dom'
+import { Link, NavLink, useLocation } from 'react-router-dom'
 import { navItems, type NavItem } from './navigation'
 import { TutorButton } from '../features/tutor/TutorButton'
 import { TutorOverlay } from '../features/tutor/TutorOverlay'
@@ -124,13 +124,21 @@ function ThemeToggle({ theme, onClick }: { theme: 'dark' | 'light'; onClick: () 
 }
 
 function ShellNavLink({ item, compact = false }: { item: NavItem; compact?: boolean }) {
+  const { pathname } = useLocation()
+
   return (
     <NavLink
       end={item.path === '/'}
       to={item.path}
-      className={({ isActive }) =>
-        `${compact ? 'flex min-w-0 flex-col items-center gap-1 rounded-lg px-1 py-1.5 text-2xs' : 'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm'} no-underline transition ${navLinkStyles[compact ? 'compact' : 'desktop'][isActive ? 'active' : 'inactive']}`
-      }
+      className={({ isActive }) => {
+        const isSectionActive =
+          isActive ||
+          (item.activePathPrefix !== undefined &&
+            (pathname === item.activePathPrefix ||
+              pathname.startsWith(`${item.activePathPrefix}/`)))
+
+        return `${compact ? 'flex min-w-0 flex-col items-center gap-1 rounded-lg px-1 py-1.5 text-2xs' : 'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm'} no-underline transition ${navLinkStyles[compact ? 'compact' : 'desktop'][isSectionActive ? 'active' : 'inactive']}`
+      }}
     >
       <span className={navIconStyles[compact ? 'compact' : 'desktop']}>{item.icon}</span>
       <span>{item.label}</span>

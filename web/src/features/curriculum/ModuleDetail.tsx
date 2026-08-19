@@ -19,29 +19,26 @@ export function ModuleDetail() {
   const { setPageContext } = useTutor()
   const course = courseQuery.data?.data
   const module = moduleQuery.data?.data
+  const matchingCourse = course?.id === courseId ? course : undefined
+  const matchingModule =
+    matchingCourse &&
+    module?.courseId === matchingCourse.id &&
+    module.id === moduleId &&
+    matchingCourse.modules.some((item) => item.id === module.id)
+      ? module
+      : undefined
 
   useEffect(() => {
-    if (
-      !course ||
-      !module ||
-      course.id !== courseId ||
-      module.courseId !== course.id ||
-      module.id !== moduleId ||
-      !course.modules.some((item) => item.id === module.id)
-    ) {
-      return
-    }
-
     setPageContext({
       type: 'curriculum',
-      title: module.title,
-      courseId: course.id,
-      courseTitle: course.title,
-      moduleId: module.id,
-      moduleTitle: module.title,
-      objectiveIds: module.objectives.map((objective) => objective.id),
+      title: matchingModule?.title ?? matchingCourse?.title ?? 'Curriculum',
+      courseId,
+      courseTitle: matchingCourse?.title,
+      moduleId,
+      moduleTitle: matchingModule?.title,
+      objectiveIds: matchingModule?.objectives.map((objective) => objective.id),
     })
-  }, [course, courseId, module, moduleId, setPageContext])
+  }, [courseId, matchingCourse, matchingModule, moduleId, setPageContext])
 
   if (!courseId || !moduleId) {
     return (
@@ -55,7 +52,7 @@ export function ModuleDetail() {
   if (courseQuery.isPending || moduleQuery.isPending) {
     return (
       <ModuleState
-        courseId={courseId}
+        courseId={matchingCourse?.id}
         title="Loading module"
         detail="Fetching the module details…"
       />
@@ -65,7 +62,7 @@ export function ModuleDetail() {
   if (courseQuery.isError || moduleQuery.isError) {
     return (
       <ModuleState
-        courseId={courseId}
+        courseId={matchingCourse?.id}
         title="Module unavailable"
         detail={getErrorMessage(courseQuery.error ?? moduleQuery.error)}
       />
@@ -82,7 +79,7 @@ export function ModuleDetail() {
   ) {
     return (
       <ModuleState
-        courseId={courseId}
+        courseId={matchingCourse?.id}
         title="Module unavailable"
         detail="No matching module data was returned for this course route."
       />

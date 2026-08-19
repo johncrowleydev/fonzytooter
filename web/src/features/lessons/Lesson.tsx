@@ -24,37 +24,38 @@ export function Lesson() {
   const course = courseQuery.data?.data
   const module = moduleQuery.data?.data
   const lesson = lessonQuery.data?.data
+  const matchingCourse = course?.id === courseId ? course : undefined
+  const matchingModule =
+    matchingCourse &&
+    module?.courseId === matchingCourse.id &&
+    module.id === moduleId &&
+    matchingCourse.modules.some((item) => item.id === module.id)
+      ? module
+      : undefined
+  const matchingLesson =
+    matchingModule &&
+    lesson &&
+    lesson.courseId === matchingCourse?.id &&
+    lesson.moduleId === matchingModule.id &&
+    lesson.id === lessonId
+      ? lesson
+      : undefined
   const lessonIndex =
     module && lesson ? module.lessons.findIndex((item) => item.id === lesson.id) : -1
 
   useEffect(() => {
-    if (
-      !course ||
-      !module ||
-      !lesson ||
-      course.id !== courseId ||
-      module.courseId !== course.id ||
-      module.id !== moduleId ||
-      lesson.courseId !== course.id ||
-      lesson.moduleId !== module.id ||
-      lesson.id !== lessonId ||
-      !course.modules.some((item) => item.id === module.id)
-    ) {
-      return
-    }
-
     setPageContext({
       type: 'lesson',
-      title: lesson.title,
-      courseId: course.id,
-      courseTitle: course.title,
-      lessonId: lesson.id,
-      lessonTitle: lesson.title,
-      moduleId: module.id,
-      moduleTitle: module.title,
-      objectiveIds: lesson.objectiveIds,
+      title: matchingLesson?.title ?? matchingModule?.title ?? matchingCourse?.title ?? 'Lesson',
+      courseId,
+      courseTitle: matchingCourse?.title,
+      lessonId,
+      lessonTitle: matchingLesson?.title,
+      moduleId,
+      moduleTitle: matchingModule?.title,
+      objectiveIds: matchingLesson?.objectiveIds,
     })
-  }, [course, courseId, lesson, lessonId, module, moduleId, setPageContext])
+  }, [courseId, lessonId, matchingCourse, matchingLesson, matchingModule, moduleId, setPageContext])
 
   if (!courseId || !moduleId || !lessonId) {
     return (
@@ -68,7 +69,7 @@ export function Lesson() {
   if (courseQuery.isPending || moduleQuery.isPending || lessonQuery.isPending) {
     return (
       <LessonState
-        courseId={courseId}
+        courseId={matchingCourse?.id}
         title="Loading lesson"
         detail="Fetching the lesson and its module context…"
       />
@@ -79,7 +80,7 @@ export function Lesson() {
     return (
       <LessonState
         title="Lesson unavailable"
-        courseId={courseId}
+        courseId={matchingCourse?.id}
         detail={getErrorMessage(courseQuery.error ?? moduleQuery.error ?? lessonQuery.error)}
       />
     )
@@ -88,7 +89,7 @@ export function Lesson() {
   if (!course || !module || !lesson) {
     return (
       <LessonState
-        courseId={courseId}
+        courseId={matchingCourse?.id}
         title="Lesson unavailable"
         detail="No lesson data was returned for this route."
       />
@@ -107,7 +108,7 @@ export function Lesson() {
   ) {
     return (
       <LessonState
-        courseId={courseId}
+        courseId={matchingCourse?.id}
         title="Lesson unavailable"
         detail="This lesson does not belong to the requested module. Use the module page to choose a lesson."
       />

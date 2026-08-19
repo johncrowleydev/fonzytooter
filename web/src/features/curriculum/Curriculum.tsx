@@ -17,15 +17,15 @@ export function Curriculum() {
   const course = courseQuery.data?.data
 
   useEffect(() => {
-    if (!course || course.id !== courseId) return
+    const matchingCourse = course?.id === courseId ? course : undefined
 
     setPageContext({
       type: 'curriculum',
-      title: course.title,
-      courseId: course.id,
-      courseTitle: course.title,
+      title: matchingCourse?.title ?? 'Curriculum',
+      courseId,
+      courseTitle: matchingCourse?.title,
     })
-  }, [course, setPageContext])
+  }, [course, courseId, setPageContext])
 
   if (!courseId) {
     return (
