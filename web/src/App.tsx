@@ -19,7 +19,7 @@ export function App() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/curriculum" element={<Curriculum />} />
           <Route path="/curriculum/:moduleId" element={<ModuleDetail />} />
-          <Route path="/lesson/:lessonId" element={<Lesson />} />
+          <Route path="/curriculum/:moduleId/lessons/:lessonId" element={<Lesson />} />
           <Route path="/review" element={<Review />} />
           <Route path="/exercise/:exerciseId" element={<Exercise />} />
           <Route path="/progress" element={<Progress />} />
