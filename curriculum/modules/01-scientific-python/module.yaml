@@ -1,0 +1,37 @@
+id: scientific-python
+title: Scientific Python Foundations
+order: 1
+objectives:
+  - id: python.execution-model
+    title: Read and reason about ordinary scientific Python
+    description: Understand the Python syntax and runtime behaviors most relevant to numerical and machine-learning code.
+    prerequisites: []
+  - id: python.functions
+    title: Express transformations as Python functions
+    description: Write and reason about functions that map inputs to outputs, connecting programming functions to mathematical functions.
+    prerequisites:
+      - python.execution-model
+  - id: numpy.arrays
+    title: Represent numerical data with NumPy arrays
+    description: Create, inspect, index, and transform arrays while reasoning about shape, dimensionality, and dtype.
+    prerequisites:
+      - python.execution-model
+  - id: numpy.vectorization
+    title: Reason about vectorized array operations
+    description: Replace element-by-element thinking with array operations and understand why vectorization matters in numerical computing.
+    prerequisites:
+      - numpy.arrays
+  - id: numpy.broadcasting
+    title: Predict NumPy broadcasting behavior
+    description: Determine when arrays of different shapes can interact and what resulting shapes and values will be produced.
+    prerequisites:
+      - numpy.arrays
+  - id: python.numerical-experiments
+    title: Use Python for small numerical experiments
+    description: Translate a mathematical idea into executable code, inspect the result, and use computation to test intuition.
+    prerequisites:
+      - python.functions
+      - numpy.vectorization
+videos: []
+lessons:
+  - 01-python-for-a-programmer

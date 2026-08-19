@@ -2,4 +2,19 @@
 #
 # Add verified sources as lesson content is authored. Do not insert placeholder
 # bibliographic data that could later be mistaken for a real citation.
-sources: {}
+sources:
+  python-execution-model:
+    title: Python Language Reference — Execution model
+    url: https://docs.python.org/3/reference/executionmodel.html
+  python-data-model:
+    title: Python Language Reference — Data model
+    url: https://docs.python.org/3/reference/datamodel.html
+  python-typing:
+    title: Python Standard Library — typing — Support for type hints
+    url: https://docs.python.org/3/library/typing.html
+  python-tutorial:
+    title: The Python Tutorial
+    url: https://docs.python.org/3/tutorial/
+  python-design-history:
+    title: Guido van Rossum — Foreword for Programming Python (1st ed.)
+    url: https://www.python.org/doc/essays/foreword/
