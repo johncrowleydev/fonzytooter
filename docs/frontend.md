@@ -13,6 +13,17 @@ The frontend stack is:
 - React Router
 - MDX for authored lesson content
 
+### Authored lesson MDX
+
+`LessonMdx` in `web/src/features/lessons/LessonMdx.tsx` is the runtime boundary for curriculum MDX
+authored in Git. It uses `@mdx-js/mdx` to asynchronously evaluate trusted lesson source with the
+static registry in `web/src/features/lessons/mdx/components.tsx`.
+
+MDX evaluation executes compiled JavaScript. `LessonMdx` is therefore not safe for user
+submissions, tutor output, arbitrary remote content, or database-authored untrusted markup. Keep
+those inputs outside this renderer. Validate authored lesson bodies with `cd web && npm run
+curriculum:mdx`; the Go curriculum validator remains responsible for semantic curriculum checks.
+
 Add dependencies only when they solve a concrete current requirement.
 
 ## Styling: Tailwind first, custom CSS only by exception
