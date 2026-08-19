@@ -91,6 +91,8 @@ const feedbackClasses = {
   success: 'border-brand-teal/30 bg-brand-teal/10',
   error: 'border-brand-coral/30 bg-brand-coral/10',
 } as const
+const evidenceButtonClass =
+  'rounded-lg border px-3 py-2 text-left text-xs font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-teal disabled:cursor-not-allowed disabled:opacity-50'
 
 export function MappingPropertiesLab() {
   const [stage, setStage] = useState(0)
@@ -98,40 +100,85 @@ export function MappingPropertiesLab() {
   const [selectedInput, setSelectedInput] = useState('1')
   const [feedback, setFeedback] = useState<Feedback>(null)
   const [classifications, setClassifications] = useState<Record<string, string>>({})
+  const [diagnosticAnswer, setDiagnosticAnswer] = useState<'yes' | 'no' | null>(null)
+  const [collisionPair, setCollisionPair] = useState<string | null>(null)
+  const [diagnosticTarget, setDiagnosticTarget] = useState<string | null>(null)
   const stageCount = 6
   const complete = stage === stageCount
   const codomain = stage === 3 ? threeCodomain : fourCodomain
   const analysis = analyzeMapping(fourDomain, codomain, edges)
 
-  function chooseDiagnostic(answer: 'yes' | 'evidence') {
+  function checkDiagnostic() {
     if (stage === 0) {
-      setFeedback(
-        answer === 'evidence'
-          ? {
-              tone: 'success',
-              message:
-                'This is a valid function, but it is not injective: distinct inputs 2 and 3 collide at B. “Not injective” does not mean “not a function.”',
-            }
-          : {
-              tone: 'error',
-              message: 'Inputs 2 and 3 both reach B, so the function is not injective.',
-            },
-      )
-    } else {
-      setFeedback(
-        answer === 'evidence'
-          ? {
-              tone: 'success',
-              message:
-                'C belongs to the codomain but not the image. Because image ≠ codomain, the function is not surjective.',
-            }
-          : {
-              tone: 'error',
-              message:
-                'C receives no input. That gap means the function does not cover its codomain.',
-            },
-      )
+      if (diagnosticAnswer === null) {
+        setFeedback({
+          tone: 'error',
+          message: 'First decide whether the function is injective.',
+        })
+      } else if (diagnosticAnswer === 'yes') {
+        setFeedback({
+          tone: 'error',
+          message:
+            'The mapping is a valid function, but it contains a collision. Choose “No,” then locate the inputs and output that form it.',
+        })
+      } else if (!collisionPair || !diagnosticTarget) {
+        setFeedback({
+          tone: 'error',
+          message: 'Now identify both the pair of inputs that collide and the output they reach.',
+        })
+      } else if (collisionPair !== '2-and-3' || diagnosticTarget !== 'B') {
+        setFeedback({
+          tone: 'error',
+          message:
+            'That evidence does not match the arrows. Trace each selected input to its destination and look for one output reached twice.',
+        })
+      } else {
+        setFeedback({
+          tone: 'success',
+          message:
+            'This is a valid function, but it is not injective: distinct inputs 2 and 3 collide at B. “Not injective” does not mean “not a function.”',
+        })
+      }
+      return
     }
+
+    if (diagnosticAnswer === null) {
+      setFeedback({
+        tone: 'error',
+        message: 'First decide whether the function is surjective.',
+      })
+    } else if (diagnosticAnswer === 'yes') {
+      setFeedback({
+        tone: 'error',
+        message:
+          'The image does not fill the codomain. Choose “No,” then locate the codomain value with no incoming arrow.',
+      })
+    } else if (!diagnosticTarget) {
+      setFeedback({
+        tone: 'error',
+        message: 'Now identify the codomain value that the mapping misses.',
+      })
+    } else if (diagnosticTarget !== 'C') {
+      setFeedback({
+        tone: 'error',
+        message: `${diagnosticTarget} has at least one incoming arrow, so it belongs to the image. Look for the codomain value with none.`,
+      })
+    } else {
+      setFeedback({
+        tone: 'success',
+        message:
+          'C belongs to the codomain but not the image. Because image ≠ codomain, the function is not surjective.',
+      })
+    }
+  }
+
+  function selectDiagnosticAnswer(answer: 'yes' | 'no') {
+    setDiagnosticAnswer(answer)
+    if (answer === 'yes') {
+      setCollisionPair(null)
+      setDiagnosticTarget(null)
+    }
+    setFeedback(null)
   }
 
   function chooseOutput(input: string, output: string) {
@@ -226,6 +273,9 @@ export function MappingPropertiesLab() {
     }
     setStage(next)
     setSelectedInput('1')
+    setDiagnosticAnswer(null)
+    setCollisionPair(null)
+    setDiagnosticTarget(null)
     setFeedback(null)
   }
 
@@ -240,6 +290,11 @@ export function MappingPropertiesLab() {
       ])
     }
     if (stage === 4) setClassifications({})
+    if (stage <= 1) {
+      setDiagnosticAnswer(null)
+      setCollisionPair(null)
+      setDiagnosticTarget(null)
+    }
     setFeedback(null)
   }
 
@@ -288,14 +343,26 @@ export function MappingPropertiesLab() {
           />
 
           {stage <= 1 ? (
-            <div className="flex flex-wrap gap-2">
-              <Button variant="outline" onClick={() => chooseDiagnostic('yes')}>
-                Yes
-              </Button>
-              <Button onClick={() => chooseDiagnostic('evidence')}>
-                No — the diagram shows the evidence
-              </Button>
-            </div>
+            <DiagnosticControls
+              stage={stage}
+              answer={diagnosticAnswer}
+              collisionPair={collisionPair}
+              target={diagnosticTarget}
+              onAnswer={selectDiagnosticAnswer}
+              onCollisionPair={(pair) => {
+                setCollisionPair(pair)
+                setFeedback(null)
+              }}
+              onTarget={(target) => {
+                setDiagnosticTarget(target)
+                setFeedback(null)
+              }}
+            />
+          ) : null}
+          {stage <= 1 ? (
+            <Button className="w-max" onClick={checkDiagnostic}>
+              Check evidence
+            </Button>
           ) : null}
           {stage === 2 || stage === 3 ? (
             <Button className="w-max" onClick={checkEditableMapping}>
@@ -342,6 +409,102 @@ export function MappingPropertiesLab() {
       )}
     </Card>
   )
+}
+
+function DiagnosticControls({
+  stage,
+  answer,
+  collisionPair,
+  target,
+  onAnswer,
+  onCollisionPair,
+  onTarget,
+}: {
+  stage: number
+  answer: 'yes' | 'no' | null
+  collisionPair: string | null
+  target: string | null
+  onAnswer: (answer: 'yes' | 'no') => void
+  onCollisionPair: (pair: string) => void
+  onTarget: (target: string) => void
+}) {
+  const pairOptions = [
+    { value: '1-and-4', label: 'Inputs 1 and 4' },
+    { value: '2-and-3', label: 'Inputs 2 and 3' },
+    { value: '3-and-4', label: 'Inputs 3 and 4' },
+  ]
+
+  return (
+    <div className="grid gap-4 rounded-lg border border-line bg-white/5 p-4">
+      <fieldset>
+        <legend className="text-xs font-semibold text-ink">
+          {stage === 0 ? 'Is this function injective?' : 'Is this function surjective?'}
+        </legend>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {(['yes', 'no'] as const).map((option) => (
+            <button
+              key={option}
+              className={`${evidenceButtonClass} ${evidenceSelectionClass(answer === option)}`}
+              type="button"
+              onClick={() => onAnswer(option)}
+              aria-pressed={answer === option}
+            >
+              {answer === option ? '✓ Selected: ' : ''}
+              {option === 'yes' ? 'Yes' : 'No'}
+            </button>
+          ))}
+        </div>
+      </fieldset>
+
+      {stage === 0 ? (
+        <fieldset disabled={answer !== 'no'}>
+          <legend className="text-xs font-semibold text-ink">Which inputs collide?</legend>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {pairOptions.map((option) => (
+              <button
+                key={option.value}
+                className={`${evidenceButtonClass} ${evidenceSelectionClass(
+                  collisionPair === option.value,
+                )}`}
+                type="button"
+                onClick={() => onCollisionPair(option.value)}
+                aria-pressed={collisionPair === option.value}
+              >
+                {collisionPair === option.value ? '✓ Selected: ' : ''}
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </fieldset>
+      ) : null}
+
+      <fieldset disabled={answer !== 'no'}>
+        <legend className="text-xs font-semibold text-ink">
+          {stage === 0 ? 'Which output receives the collision?' : 'Which codomain value is missed?'}
+        </legend>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {fourCodomain.map((output) => (
+            <button
+              key={output}
+              className={`${evidenceButtonClass} ${evidenceSelectionClass(target === output)}`}
+              type="button"
+              onClick={() => onTarget(output)}
+              aria-pressed={target === output}
+            >
+              {target === output ? '✓ Selected: ' : ''}
+              Output {output}
+            </button>
+          ))}
+        </div>
+      </fieldset>
+    </div>
+  )
+}
+
+function evidenceSelectionClass(selected: boolean) {
+  return selected
+    ? 'border-brand-violet/60 bg-brand-violet/10 text-ink'
+    : 'border-line bg-panel text-muted hover:border-brand-violet/50 hover:text-ink'
 }
 
 function StageContent({
