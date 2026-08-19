@@ -9,6 +9,10 @@ import { Execution } from './execution.zod'
 
 export const pageContextCodeMax = 30000
 
+export const pageContextCourseIdMax = 200
+
+export const pageContextCourseTitleMax = 300
+
 export const pageContextExerciseIdMax = 200
 
 export const pageContextExerciseTitleMax = 300
@@ -39,6 +43,8 @@ export const pageContextTitleMax = 300
 
 export const PageContext = zod.strictObject({
   code: zod.string().max(pageContextCodeMax).optional(),
+  courseId: zod.string().max(pageContextCourseIdMax).optional(),
+  courseTitle: zod.string().max(pageContextCourseTitleMax).optional(),
   exerciseId: zod.string().max(pageContextExerciseIdMax).optional(),
   exerciseTitle: zod.string().max(pageContextExerciseTitleMax).optional(),
   lastExecution: Execution.optional(),

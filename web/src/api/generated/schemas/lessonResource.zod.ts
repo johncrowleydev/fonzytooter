@@ -10,6 +10,7 @@ import { SourceResource } from './sourceResource.zod'
 export const LessonResource = zod.strictObject({
   $schema: zod.url().optional().describe('A URL to the JSON Schema for this object.'),
   content: zod.string().describe('Raw MDX source body with YAML frontmatter removed.'),
+  courseId: zod.string(),
   id: zod.string(),
   moduleId: zod.string(),
   objectiveIds: zod.array(zod.string()),

@@ -1,77 +1,114 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { useGetLesson, useGetModule } from '../../api/generated/endpoints'
+import { useGetCourse, useGetCourseLesson, useGetCourseModule } from '../../api/generated/endpoints'
 import type { LessonResource } from '../../api/generated/schemas/lessonResource.zod'
+import { coursePath, lessonPath, modulePath } from '../../app/routes'
 import { Card, PageIntro, SectionHeading } from '../../components/ui'
 import { useTutor } from '../tutor/TutorContext'
 import { safeExternalUrl } from '../curriculum/externalLinks'
 import { LessonMdx } from './LessonMdx'
 
 export function Lesson() {
-  const { moduleId, lessonId } = useParams()
-  const moduleQuery = useGetModule(moduleId ?? '', {
-    query: { enabled: Boolean(moduleId) },
+  const { courseId, moduleId, lessonId } = useParams()
+  const courseQuery = useGetCourse(courseId ?? '', {
+    query: { enabled: Boolean(courseId) },
   })
-  const lessonQuery = useGetLesson(moduleId ?? '', lessonId ?? '', {
-    query: { enabled: Boolean(moduleId && lessonId) },
+  const moduleQuery = useGetCourseModule(courseId ?? '', moduleId ?? '', {
+    query: { enabled: Boolean(courseId && moduleId) },
+  })
+  const lessonQuery = useGetCourseLesson(courseId ?? '', moduleId ?? '', lessonId ?? '', {
+    query: { enabled: Boolean(courseId && moduleId && lessonId) },
   })
   const { setPageContext, openTutorWithContext } = useTutor()
   const [selectedText, setSelectedText] = useState('')
+  const course = courseQuery.data?.data
   const module = moduleQuery.data?.data
   const lesson = lessonQuery.data?.data
+  const matchingCourse = course?.id === courseId ? course : undefined
+  const matchingModule =
+    matchingCourse &&
+    module?.courseId === matchingCourse.id &&
+    module.id === moduleId &&
+    matchingCourse.modules.some((item) => item.id === module.id)
+      ? module
+      : undefined
+  const matchingLesson =
+    matchingModule &&
+    lesson &&
+    lesson.courseId === matchingCourse?.id &&
+    lesson.moduleId === matchingModule.id &&
+    lesson.id === lessonId
+      ? lesson
+      : undefined
   const lessonIndex =
     module && lesson ? module.lessons.findIndex((item) => item.id === lesson.id) : -1
 
   useEffect(() => {
-    if (!module || !lesson) return
-
     setPageContext({
       type: 'lesson',
-      title: lesson.title,
-      lessonId: lesson.id,
-      lessonTitle: lesson.title,
-      moduleId: module.id,
-      moduleTitle: module.title,
-      objectiveIds: lesson.objectiveIds,
+      title: matchingLesson?.title ?? matchingModule?.title ?? matchingCourse?.title ?? 'Lesson',
+      courseId,
+      courseTitle: matchingCourse?.title,
+      lessonId,
+      lessonTitle: matchingLesson?.title,
+      moduleId,
+      moduleTitle: matchingModule?.title,
+      objectiveIds: matchingLesson?.objectiveIds,
     })
-  }, [lesson, module, setPageContext])
+  }, [courseId, lessonId, matchingCourse, matchingLesson, matchingModule, moduleId, setPageContext])
 
-  if (!moduleId || !lessonId) {
+  if (!courseId || !moduleId || !lessonId) {
     return (
       <LessonState
         title="Lesson unavailable"
-        detail="This lesson route is missing its module or lesson identity."
+        detail="This lesson route is missing its course, module, or lesson identity."
       />
     )
   }
 
-  if (moduleQuery.isPending || lessonQuery.isPending) {
-    return (
-      <LessonState title="Loading lesson" detail="Fetching the lesson and its module context…" />
-    )
-  }
-
-  if (moduleQuery.isError || lessonQuery.isError) {
+  if (courseQuery.isPending || moduleQuery.isPending || lessonQuery.isPending) {
     return (
       <LessonState
-        title="Lesson unavailable"
-        detail={getErrorMessage(moduleQuery.error ?? lessonQuery.error)}
+        courseId={matchingCourse?.id}
+        title="Loading lesson"
+        detail="Fetching the lesson and its module context…"
       />
     )
   }
 
-  if (!module || !lesson) {
+  if (courseQuery.isError || moduleQuery.isError || lessonQuery.isError) {
     return (
       <LessonState
+        title="Lesson unavailable"
+        courseId={matchingCourse?.id}
+        detail={getErrorMessage(courseQuery.error ?? moduleQuery.error ?? lessonQuery.error)}
+      />
+    )
+  }
+
+  if (!course || !module || !lesson) {
+    return (
+      <LessonState
+        courseId={matchingCourse?.id}
         title="Lesson unavailable"
         detail="No lesson data was returned for this route."
       />
     )
   }
 
-  if (lesson.moduleId !== module.id || lessonIndex < 0) {
+  if (
+    course.id !== courseId ||
+    module.courseId !== course.id ||
+    module.id !== moduleId ||
+    lesson.courseId !== course.id ||
+    lesson.moduleId !== module.id ||
+    lesson.id !== lessonId ||
+    !course.modules.some((item) => item.id === module.id) ||
+    lessonIndex < 0
+  ) {
     return (
       <LessonState
+        courseId={matchingCourse?.id}
         title="Lesson unavailable"
         detail="This lesson does not belong to the requested module. Use the module page to choose a lesson."
       />
@@ -84,6 +121,8 @@ export function Lesson() {
     openTutorWithContext({
       type: 'lesson',
       title: lesson.title,
+      courseId: course.id,
+      courseTitle: course.title,
       lessonId: lesson.id,
       lessonTitle: lesson.title,
       moduleId: module.id,
@@ -98,7 +137,7 @@ export function Lesson() {
       <div className="flex items-center gap-2.5 text-2xs text-faint max-sm:gap-2">
         <Link
           className="text-muted no-underline hover:text-brand-teal"
-          to={`/curriculum/${module.id}`}
+          to={modulePath(course.id, module.id)}
         >
           {module.title}
         </Link>
@@ -134,7 +173,7 @@ export function Lesson() {
         {previousLesson ? (
           <Link
             className="inline-flex max-w-[45%] items-center gap-2.5 rounded-lg border border-line-strong bg-brand-slate/10 px-4 py-2.5 text-xs font-bold text-ink no-underline transition hover:bg-brand-slate/20"
-            to={lessonPath(module.id, previousLesson.id)}
+            to={lessonPath(course.id, module.id, previousLesson.id)}
           >
             ← <span className="truncate">{previousLesson.title}</span>
           </Link>
@@ -147,7 +186,7 @@ export function Lesson() {
         {nextLesson ? (
           <Link
             className="inline-flex max-w-[45%] items-center gap-2.5 rounded-lg bg-brand-teal px-4 py-2.5 text-xs font-bold text-brand-ink no-underline transition hover:-translate-y-px hover:bg-brand-teal-light"
-            to={lessonPath(module.id, nextLesson.id)}
+            to={lessonPath(course.id, module.id, nextLesson.id)}
           >
             <span className="truncate">{nextLesson.title}</span> →
           </Link>
@@ -162,10 +201,6 @@ export function Lesson() {
 function handleSelection(setSelectedText: (value: string) => void) {
   const selection = window.getSelection()?.toString().trim() ?? ''
   if (selection.length > 8) setSelectedText(selection)
-}
-
-function lessonPath(moduleId: string, lessonId: string) {
-  return `/curriculum/${moduleId}/lessons/${lessonId}`
 }
 
 function SelectionPopover({
@@ -242,12 +277,20 @@ function LessonSources({ sources }: { sources: LessonResource['sources'] }) {
   )
 }
 
-function LessonState({ title, detail }: { title: string; detail: string }) {
+function LessonState({
+  courseId,
+  title,
+  detail,
+}: {
+  courseId?: string
+  title: string
+  detail: string
+}) {
   return (
     <div className="grid max-w-6xl gap-7 max-sm:gap-5">
       <Link
         className="justify-self-start text-xs font-bold text-muted no-underline hover:text-ink"
-        to="/curriculum"
+        to={courseId ? coursePath(courseId) : '/curriculum'}
       >
         ← Curriculum
       </Link>

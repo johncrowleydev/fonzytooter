@@ -78,7 +78,7 @@ func TestLoadUsesDeclaredOrderAndFrontmatterIDs(t *testing.T) {
 	if err != nil {
 		t.Fatalf("load curriculum: %v", err)
 	}
-	modules := catalog.Modules()
+	modules := catalog.ModulesByCourse("ai-ml")
 	if len(modules) != 2 || modules[0].ID != "first" || modules[1].ID != "second" {
 		t.Fatalf("unexpected module order: %#v", modules)
 	}
@@ -97,11 +97,11 @@ func TestLoadUsesDeclaredOrderAndFrontmatterIDs(t *testing.T) {
 
 	modules[0].Lessons[0].Content = "mutated"
 	modules[0].Objectives = append(modules[0].Objectives, Objective{ID: "mutated"})
-	again, ok := catalog.LessonByID("first", "first.lesson")
+	again, ok := catalog.LessonByCourse("ai-ml", "first", "first.lesson")
 	if !ok || again.Content == "mutated" {
 		t.Fatal("catalog exposed mutable lesson state")
 	}
-	first, ok := catalog.ModuleByID("first")
+	first, ok := catalog.ModuleByCourse("ai-ml", "first")
 	if !ok || len(first.Objectives) != 0 {
 		t.Fatalf("catalog exposed mutable module state: %#v", first)
 	}

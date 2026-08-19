@@ -16,9 +16,13 @@ Example page context:
 
 ```ts
 type TutorPageContext = {
-  type: 'dashboard' | 'lesson' | 'exercise' | 'review' | 'project'
+  type: 'dashboard' | 'curriculum' | 'lesson' | 'exercise' | 'review' | 'project'
+  courseId?: string
+  courseTitle?: string
   moduleId?: string
+  moduleTitle?: string
   lessonId?: string
+  lessonTitle?: string
   objectiveIds?: string[]
   sectionId?: string
   exerciseId?: string

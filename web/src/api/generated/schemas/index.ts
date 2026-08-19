@@ -5,6 +5,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './courseResource.zod'
+export * from './courseSummary.zod'
+export * from './courseSummaryList.zod'
 export * from './errorDetail.zod'
 export * from './errorModel.zod'
 export * from './event.zod'
@@ -14,7 +17,6 @@ export * from './lessonResource.zod'
 export * from './lessonSummary.zod'
 export * from './moduleResource.zod'
 export * from './moduleSummary.zod'
-export * from './moduleSummaryList.zod'
 export * from './objectiveResource.zod'
 export * from './pageContext.zod'
 export * from './sourceResource.zod'

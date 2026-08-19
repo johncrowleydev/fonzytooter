@@ -11,6 +11,7 @@ import { VideoResource } from './videoResource.zod'
 
 export const ModuleResource = zod.strictObject({
   $schema: zod.url().optional().describe('A URL to the JSON Schema for this object.'),
+  courseId: zod.string(),
   id: zod.string(),
   lessons: zod.array(LessonSummary),
   objectives: zod.array(ObjectiveResource),

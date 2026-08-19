@@ -31,19 +31,40 @@ type TutorTurnInput struct {
 	Body tutor.TurnRequest
 }
 
-type ModulePathInput struct {
+type CoursePathInput struct {
+	CourseID string `path:"courseId"`
+}
+
+type CourseModulePathInput struct {
+	CourseID string `path:"courseId"`
 	ModuleID string `path:"moduleId"`
 }
 
-type LessonPathInput struct {
+type CourseLessonPathInput struct {
+	CourseID string `path:"courseId"`
 	ModuleID string `path:"moduleId"`
 	LessonID string `path:"lessonId"`
+}
+
+type CourseSummary struct {
+	ID          string `json:"id"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	Order       int    `json:"order"`
 }
 
 type ModuleSummary struct {
 	ID    string `json:"id"`
 	Title string `json:"title"`
 	Order int    `json:"order"`
+}
+
+type CourseResource struct {
+	ID          string          `json:"id"`
+	Title       string          `json:"title"`
+	Description string          `json:"description"`
+	Order       int             `json:"order"`
+	Modules     []ModuleSummary `json:"modules" nullable:"false"`
 }
 
 type ObjectiveResource struct {
@@ -67,6 +88,7 @@ type LessonSummary struct {
 }
 
 type ModuleResource struct {
+	CourseID   string              `json:"courseId"`
 	ID         string              `json:"id"`
 	Title      string              `json:"title"`
 	Order      int                 `json:"order"`
@@ -82,6 +104,7 @@ type SourceResource struct {
 }
 
 type LessonResource struct {
+	CourseID     string           `json:"courseId"`
 	ID           string           `json:"id"`
 	ModuleID     string           `json:"moduleId"`
 	Title        string           `json:"title"`
@@ -90,15 +113,19 @@ type LessonResource struct {
 	Content      string           `json:"content" doc:"Raw MDX source body with YAML frontmatter removed."`
 }
 
-type ListModulesResponse struct {
-	Body []ModuleSummary
+type ListCoursesResponse struct {
+	Body []CourseSummary
 }
 
-type GetModuleResponse struct {
+type GetCourseResponse struct {
+	Body CourseResource
+}
+
+type GetCourseModuleResponse struct {
 	Body ModuleResource
 }
 
-type GetLessonResponse struct {
+type GetCourseLessonResponse struct {
 	Body LessonResource
 }
 
@@ -133,52 +160,82 @@ func NewServer(address string, tutorService *tutor.Service, catalog *curriculum.
 }
 
 func registerCurriculum(api huma.API, catalog *curriculum.Catalog) {
-	huma.Register[struct{}, ListModulesResponse](api, huma.Operation{
-		OperationID: "listModules",
+	huma.Register[struct{}, ListCoursesResponse](api, huma.Operation{
+		OperationID: "listCourses",
 		Method:      http.MethodGet,
-		Path:        "/api/modules",
-		Summary:     "List curriculum modules",
+		Path:        "/api/courses",
+		Summary:     "List curriculum courses",
 		Tags:        []string{"curriculum"},
-	}, func(context.Context, *struct{}) (*ListModulesResponse, error) {
-		modules := catalog.Modules()
-		body := make([]ModuleSummary, 0, len(modules))
-		for _, module := range modules {
-			body = append(body, ModuleSummary{ID: module.ID, Title: module.Title, Order: module.Order})
+	}, func(context.Context, *struct{}) (*ListCoursesResponse, error) {
+		courses := catalog.Courses()
+		body := make([]CourseSummary, 0, len(courses))
+		for _, course := range courses {
+			body = append(body, CourseSummary{
+				ID:          course.ID,
+				Title:       course.Title,
+				Description: course.Description,
+				Order:       course.Order,
+			})
 		}
-		return &ListModulesResponse{Body: body}, nil
+		return &ListCoursesResponse{Body: body}, nil
 	})
-	api.OpenAPI().Components.Schemas.Map()["ModuleSummaryList"] = &huma.Schema{
+	api.OpenAPI().Components.Schemas.Map()["CourseSummaryList"] = &huma.Schema{
 		Type:  huma.TypeArray,
-		Items: &huma.Schema{Ref: "#/components/schemas/ModuleSummary"},
+		Items: &huma.Schema{Ref: "#/components/schemas/CourseSummary"},
 	}
-	api.OpenAPI().Paths["/api/modules"].Get.Responses["200"].Content["application/json"].Schema = &huma.Schema{
-		Ref: "#/components/schemas/ModuleSummaryList",
+	api.OpenAPI().Paths["/api/courses"].Get.Responses["200"].Content["application/json"].Schema = &huma.Schema{
+		Ref: "#/components/schemas/CourseSummaryList",
 	}
 
-	huma.Register[ModulePathInput, GetModuleResponse](api, huma.Operation{
-		OperationID: "getModule",
+	huma.Register[CoursePathInput, GetCourseResponse](api, huma.Operation{
+		OperationID: "getCourse",
 		Method:      http.MethodGet,
-		Path:        "/api/modules/{moduleId}",
-		Summary:     "Get a curriculum module",
+		Path:        "/api/courses/{courseId}",
+		Summary:     "Get a curriculum course",
 		Tags:        []string{"curriculum"},
 		Errors:      []int{http.StatusNotFound},
-	}, func(_ context.Context, input *ModulePathInput) (*GetModuleResponse, error) {
-		module, ok := catalog.ModuleByID(input.ModuleID)
+	}, func(_ context.Context, input *CoursePathInput) (*GetCourseResponse, error) {
+		course, ok := catalog.CourseByID(input.CourseID)
+		if !ok {
+			return nil, huma.Error404NotFound("course not found")
+		}
+		modules := make([]ModuleSummary, 0, len(course.Modules))
+		for _, module := range course.Modules {
+			modules = append(modules, ModuleSummary{ID: module.ID, Title: module.Title, Order: module.Order})
+		}
+		return &GetCourseResponse{Body: CourseResource{
+			ID:          course.ID,
+			Title:       course.Title,
+			Description: course.Description,
+			Order:       course.Order,
+			Modules:     modules,
+		}}, nil
+	})
+
+	huma.Register[CourseModulePathInput, GetCourseModuleResponse](api, huma.Operation{
+		OperationID: "getCourseModule",
+		Method:      http.MethodGet,
+		Path:        "/api/courses/{courseId}/modules/{moduleId}",
+		Summary:     "Get a course module",
+		Tags:        []string{"curriculum"},
+		Errors:      []int{http.StatusNotFound},
+	}, func(_ context.Context, input *CourseModulePathInput) (*GetCourseModuleResponse, error) {
+		module, ok := catalog.ModuleByCourse(input.CourseID, input.ModuleID)
 		if !ok {
 			return nil, huma.Error404NotFound("module not found")
 		}
-		return &GetModuleResponse{Body: moduleResource(module)}, nil
+		return &GetCourseModuleResponse{Body: moduleResource(module)}, nil
 	})
 
-	huma.Register[LessonPathInput, GetLessonResponse](api, huma.Operation{
-		OperationID: "getLesson",
+	huma.Register[CourseLessonPathInput, GetCourseLessonResponse](api, huma.Operation{
+		OperationID: "getCourseLesson",
 		Method:      http.MethodGet,
-		Path:        "/api/modules/{moduleId}/lessons/{lessonId}",
-		Summary:     "Get a curriculum lesson",
+		Path:        "/api/courses/{courseId}/modules/{moduleId}/lessons/{lessonId}",
+		Summary:     "Get a course lesson",
 		Tags:        []string{"curriculum"},
 		Errors:      []int{http.StatusNotFound},
-	}, func(_ context.Context, input *LessonPathInput) (*GetLessonResponse, error) {
-		lesson, ok := catalog.LessonByID(input.ModuleID, input.LessonID)
+	}, func(_ context.Context, input *CourseLessonPathInput) (*GetCourseLessonResponse, error) {
+		lesson, ok := catalog.LessonByCourse(input.CourseID, input.ModuleID, input.LessonID)
 		if !ok {
 			return nil, huma.Error404NotFound("lesson not found")
 		}
@@ -191,7 +248,8 @@ func registerCurriculum(api huma.API, catalog *curriculum.Catalog) {
 			}
 			sources = append(sources, SourceResource{ID: source.ID, Title: source.Title, URL: source.URL})
 		}
-		return &GetLessonResponse{Body: LessonResource{
+		return &GetCourseLessonResponse{Body: LessonResource{
+			CourseID:     input.CourseID,
 			ID:           lesson.ID,
 			ModuleID:     input.ModuleID,
 			Title:        lesson.Title,
@@ -233,6 +291,7 @@ func moduleResource(module curriculum.Module) ModuleResource {
 	}
 
 	return ModuleResource{
+		CourseID:   module.CourseID,
 		ID:         module.ID,
 		Title:      module.Title,
 		Order:      module.Order,
