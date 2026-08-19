@@ -66,6 +66,28 @@ When invoked from an exercise, the tutor should prefer:
 
 It should not casually dump the completed solution merely because it can. The learner may explicitly request a solution, but the product should make that a conscious choice.
 
+## Worksheet review
+
+A completed worksheet is a deliberate multimodal input, not routine screen context. The learner may upload images or a document containing handwritten or typed work for review.
+
+The tutor should evaluate submitted work against authored problem answers or rubrics when those are available. For deterministic problems, the vision model should interpret the learner's work rather than invent the expected answer itself.
+
+Worksheet review should consider both results and demonstrated reasoning. Useful feedback includes:
+
+- whether the final answer is correct;
+- whether sufficient work is shown when reasoning is part of the task;
+- which intermediate steps are correct;
+- the earliest identifiable conceptual or computational error;
+- recurring misconceptions across several problems;
+- concepts that appear strong;
+- concepts that appear to need more practice or prerequisite review.
+
+If handwriting, problem association, or an intermediate step is ambiguous, the tutor should state the uncertainty rather than fabricate a confident interpretation.
+
+Worksheet feedback may contribute evidence about objective-level application or conceptual understanding and may recommend follow-up practice or a mastery check. It should not directly award mastery from model judgment alone.
+
+See `docs/worksheets.md` for the curriculum role and assessment model for printable practice.
+
 ## Provider boundary
 
 OpenRouter and Codex have materially different execution models. Preserve those differences inside provider adapters.
