@@ -1,6 +1,6 @@
 # Fonzytooter
 
-Fonzytooter is a deliberately small, single-user learning system for a self-paced AI/ML curriculum.
+Fonzytooter is a deliberately small, single-user learning system for self-paced technical courses. The AI/ML curriculum is the initial/default course and the current content focus, but the architecture is intended to support additional authored courses without becoming a general-purpose LMS.
 
 It is not intended to become a general-purpose LMS. The system exists to support one learning loop:
 
@@ -9,6 +9,7 @@ It is not intended to become a general-purpose LMS. The system exists to support
 ## Goals
 
 - Self-paced curriculum with no calendar deadlines or artificial pacing.
+- Multiple explicitly modeled courses while keeping the product single-user and small.
 - Objective-centered progress rather than vague course-completion percentages.
 - Spaced repetition for retention and review scheduling.
 - MDX lessons with interactive React components and visualizations.
@@ -52,11 +53,13 @@ It is not intended to become a general-purpose LMS. The system exists to support
 
 The curriculum is versioned content in Git. SQLite stores learner state.
 
-See [`docs/curriculum.md`](docs/curriculum.md) for the high-level AI/ML curriculum plan, [`docs/architecture.md`](docs/architecture.md) for the architectural boundaries, and [`AGENTS.md`](AGENTS.md) before making structural changes.
+See [`docs/curriculum.md`](docs/curriculum.md) for the high-level AI/ML course plan, [`docs/multi-course.md`](docs/multi-course.md) for the multi-course ownership and migration model, [`docs/architecture.md`](docs/architecture.md) for the architectural boundaries, and [`AGENTS.md`](AGENTS.md) before making structural changes.
 
 ## Core concepts
 
-### Learning objectives
+### Courses and learning objectives
+
+A course is the top-level authored learning path; modules belong to courses. The AI/ML course is currently the only authored course, but course identity should be explicit in routing, state, and curriculum ownership rather than inferred from that fact.
 
 Objectives are the connective tissue of the system. Lessons teach objectives; videos support them; reviews reinforce them; exercises assess them; projects integrate them.
 
@@ -77,6 +80,8 @@ Jupyter notebooks sit between those two modes: they are used outside Fonzytooter
 The tutor is mounted at the application-shell level and can be opened from any screen. Each turn receives structured context about the current screen and relevant recent activity. The tutor does not need screenshots to know what the learner is doing.
 
 ## Repository layout
+
+The current repository still uses the initial single-course curriculum layout; the planned course-aware migration is documented in [`docs/multi-course.md`](docs/multi-course.md).
 
 ```text
 .

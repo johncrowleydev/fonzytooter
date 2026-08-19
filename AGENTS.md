@@ -4,16 +4,16 @@ Instructions for coding agents working in this repository.
 
 ## What this project is
 
-Fonzytooter is a personal, single-user AI/ML learning system. It is intentionally small. Favor straightforward code and explicit data flow over generalized infrastructure.
+Fonzytooter is a personal, single-user technical learning system. The AI/ML curriculum is the initial/default course, but the platform is intentionally course-aware so additional authored courses can be added later without retrofitting single-course assumptions. It is still intentionally small. Favor straightforward code and explicit data flow over generalized infrastructure.
 
-Read the relevant files in `docs/` before making architectural changes. Frontend work must also follow `docs/frontend.md`. API/backend/frontend-contract work must follow `docs/api-contract.md`, and HTTP API design must follow `docs/api-style.md`.
+Read the relevant files in `docs/` before making architectural changes. Multi-course work must follow `docs/multi-course.md`. Frontend work must also follow `docs/frontend.md`. API/backend/frontend-contract work must follow `docs/api-contract.md`, and HTTP API design must follow `docs/api-style.md`.
 
 ## Non-negotiable architectural constraints
 
 1. **Keep it a monolith.** One Go backend, one React frontend, one SQLite database.
 2. **Do not add server-side Python execution.** Pyodide is the only Python interpreter inside the learning app.
 3. **Outgrown Pyodide means a real project.** GPU work, large datasets, substantial training jobs, or multi-file ML work belong in Git repositories and a normal IDE.
-4. **Curriculum content lives in Git.** Lessons/modules/sources are MDX/YAML and version controlled. Learner state belongs in SQLite.
+4. **Curriculum content lives in Git.** Courses/modules/lessons/sources are MDX/YAML and version controlled. Learner state belongs in SQLite.
 5. **Learning objectives are the primary domain concept.** Avoid inventing parallel progress models that cannot map back to objectives.
 6. **No calendar pacing.** Do not add week numbers, deadlines, streak pressure, or "behind schedule" concepts unless explicitly requested.
 7. **The tutor is global.** It should be available from any screen and receive structured semantic page context plus relevant recent activity.
@@ -25,6 +25,7 @@ Read the relevant files in `docs/` before making architectural changes. Frontend
 13. **Avoid speculative infrastructure.** No microservices, Redis, queues, Kubernetes, GraphQL, vector database, event sourcing, generic CMS, or enterprise RBAC without a demonstrated need.
 14. **The API contract is generated end-to-end.** Go operations/types generate OpenAPI; OpenAPI generates the TanStack Query client and Zod schemas. Frontend feature code must not hand-write API DTOs or bypass the generated API boundary with raw `fetch`/Axios. See `docs/api-contract.md`.
 15. **The HTTP API is resource-oriented REST.** Paths identify resources and collections; HTTP methods carry CRUD/state-transition semantics; resource bodies stay resource-shaped; transport metadata belongs in headers; analogous operations use consistent naming and status codes; action/RPC endpoints are avoided. See `docs/api-style.md`.
+16. **Course is a first-class ownership boundary.** Do not add curriculum routes, APIs, tutor context, persistence keys, worksheets, exercises, projects, or other course-bound state that assumes AI/ML is the only course. AI/ML may be the default for navigation, but it is not the platform-wide identity. See `docs/multi-course.md`.
 
 ## Engineering preferences
 
@@ -71,7 +72,7 @@ The tutor should eventually support modes such as explain, Socratic, exercise he
 A tutor turn may include:
 
 - conversation history;
-- current page/lesson/exercise/objective IDs;
+- current course/module/lesson/exercise/objective IDs;
 - selected text or current exercise code when explicitly relevant;
 - recent attempts and test failures;
 - relevant objective state;
