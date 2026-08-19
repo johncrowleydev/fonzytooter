@@ -1,6 +1,6 @@
 # Fonzytooter
 
-Fonzytooter is a deliberately small, single-user learning system for self-paced technical courses. The AI/ML curriculum is the initial/default course and the current content focus, but the architecture is intended to support additional authored courses without becoming a general-purpose LMS.
+Fonzytooter is a deliberately small, single-user learning system for self-paced technical courses. **AI & Machine Learning** (`ai-ml`) is the initial/default course and the current content focus, while the implemented curriculum model supports additional authored courses without turning the application into a general-purpose LMS.
 
 It is not intended to become a general-purpose LMS. The system exists to support one learning loop:
 
@@ -51,15 +51,15 @@ It is not intended to become a general-purpose LMS. The system exists to support
                           SQLite
 ```
 
-The curriculum is versioned content in Git. SQLite stores learner state.
+Curriculum is versioned content in Git. SQLite is reserved for learner state.
 
-See [`docs/curriculum.md`](docs/curriculum.md) for the high-level AI/ML course plan, [`docs/multi-course.md`](docs/multi-course.md) for the multi-course ownership and migration model, [`docs/architecture.md`](docs/architecture.md) for the architectural boundaries, and [`AGENTS.md`](AGENTS.md) before making structural changes.
+See [`docs/courses/`](docs/courses/) for course-specific curriculum plans, [`docs/multi-course.md`](docs/multi-course.md) for platform-wide course ownership and routing, [`docs/architecture.md`](docs/architecture.md) for the architectural boundaries, and [`AGENTS.md`](AGENTS.md) before making structural changes.
 
 ## Core concepts
 
 ### Courses and learning objectives
 
-A course is the top-level authored learning path; modules belong to courses. The AI/ML course is currently the only authored course, but course identity should be explicit in routing, state, and curriculum ownership rather than inferred from that fact.
+A course is the top-level authored learning path; modules belong to courses. AI/ML is currently the only authored course, but course identity is explicit in authored ownership, catalog lookup, HTTP resources, frontend routes, and curriculum-related tutor context rather than inferred from that fact.
 
 Objectives are the connective tissue of the system. Lessons teach objectives; videos support them; reviews reinforce them; exercises assess them; projects integrate them.
 
@@ -77,25 +77,53 @@ Jupyter notebooks sit between those two modes: they are used outside Fonzytooter
 
 ### Tutor everywhere
 
-The tutor is mounted at the application-shell level and can be opened from any screen. Each turn receives structured context about the current screen and relevant recent activity. The tutor does not need screenshots to know what the learner is doing.
+The tutor is mounted at the application-shell level and can be opened from any screen. Each turn receives structured context about the current screen and relevant recent activity. Curriculum page context includes explicit course identity. The tutor does not need screenshots to know what the learner is doing.
 
 ## Repository layout
-
-The repository uses the course-aware curriculum layout documented in [`docs/multi-course.md`](docs/multi-course.md).
 
 ```text
 .
 ├── AGENTS.md
 ├── curriculum/
 │   ├── courses/
+│   │   └── ai-ml/
+│   │       ├── course.yaml
+│   │       └── modules/
 │   └── sources.yaml
 ├── docs/
+│   └── courses/
+├── openapi/
 ├── server/
 │   ├── cmd/fonzytooter/
 │   └── internal/
 └── web/
     └── src/
 ```
+
+The runtime curriculum layout and ownership model are documented in [`docs/multi-course.md`](docs/multi-course.md). The current AI/ML long-range curriculum plan is [`docs/courses/ai-ml.md`](docs/courses/ai-ml.md).
+
+## Curriculum routes and API
+
+The current authored curriculum is navigated through course-aware routes:
+
+```text
+/courses/:courseId
+/courses/:courseId/modules/:moduleId
+/courses/:courseId/modules/:moduleId/lessons/:lessonId
+```
+
+`/curriculum` redirects to the current default course at `/courses/ai-ml`.
+
+The corresponding read API is:
+
+```text
+GET /api/courses
+GET /api/courses/{courseId}
+GET /api/courses/{courseId}/modules/{moduleId}
+GET /api/courses/{courseId}/modules/{moduleId}/lessons/{lessonId}
+```
+
+Go operations/types generate OpenAPI, which generates the frontend TanStack Query client and Zod schemas. Feature code should not create a parallel handwritten API contract.
 
 ## Development
 
@@ -114,8 +142,7 @@ go run ./cmd/fonzytooter
 
 The API listens on `:8080` by default. Override it with `FONZYTOOTER_ADDR`.
 The development default loads Git-authored curriculum from `../curriculum`;
-override it with `FONZYTOOTER_CURRICULUM_PATH`. Invalid curriculum prevents the
-server from starting. To validate it without starting the API:
+override it with `FONZYTOOTER_CURRICULUM_PATH`. The path is the curriculum root, not an individual course. Invalid curriculum prevents the server from starting. To validate it without starting the API:
 
 ```bash
 cd server
@@ -132,15 +159,19 @@ npm run dev
 
 Vite proxies `/api` to `http://localhost:8080` during local development.
 
-### Current scaffold status
+### Current implementation status
 
-The initial scaffold intentionally implements very little business logic:
+The project now has the core curriculum delivery path rather than only an initial scaffold:
 
-- the Go API has a health endpoint and the streaming tutor endpoint shape;
-- the tutor UI is globally available and already consumes streamed tutor events;
-- the default tutor provider is an explicit "not configured" provider;
-- curriculum folders and content conventions are established;
-- the Pyodide exercise boundary is documented and typed, but the editor/runtime is not wired yet;
-- persistence, FSRS, provider integrations, and real curriculum content come next.
+- the Go curriculum loader validates and indexes an explicitly multi-course Git-authored catalog;
+- the curriculum HTTP API exposes course-qualified course/module/lesson resources;
+- Huma-generated OpenAPI drives the generated Orval/TanStack Query + Zod frontend contract;
+- React Router renders real course, module, and lesson pages from that generated API;
+- authored lesson MDX renders through the trusted lesson component registry, including the current Scientific Python interactives;
+- `/curriculum` remains the simple navigation entry point and redirects to the default AI/ML course;
+- the global tutor receives explicit course/module/lesson semantic page context and consumes streamed tutor events;
+- the default tutor provider is still an explicit "not configured" provider;
+- the Pyodide exercise boundary is documented and typed, but the full editor/runtime workflow is not yet implemented;
+- learner-state persistence, FSRS, real tutor providers, worksheets, and workbook/PDF flows remain future implementation work.
 
-That is intentional. Add capabilities when the learning workflow needs them rather than pre-building an LMS platform.
+Add capabilities when the learning workflow needs them rather than pre-building an LMS platform.
