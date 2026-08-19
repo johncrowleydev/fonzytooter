@@ -18,3 +18,21 @@ sources:
   python-design-history:
     title: Guido van Rossum — Foreword for Programming Python (1st ed.)
     url: https://www.python.org/doc/essays/foreword/
+  eom-function:
+    title: Encyclopedia of Mathematics — Function
+    url: https://encyclopediaofmath.org/wiki/Function
+  eom-inverse-function:
+    title: Encyclopedia of Mathematics — Inverse function
+    url: https://encyclopediaofmath.org/wiki/Inverse_function
+  openstax-function-composition:
+    title: OpenStax Precalculus — Composition of Functions
+    url: https://openstax.org/books/precalculus/pages/1-4-composition-of-functions
+  openstax-inverse-functions:
+    title: OpenStax Precalculus — Inverse Functions
+    url: https://openstax.org/books/precalculus/pages/1-7-inverse-functions
+  mactutor-function-concept:
+    title: MacTutor History of Mathematics — The function concept
+    url: https://mathshistory.st-andrews.ac.uk/HistTopics/Functions/
+  deep-learning-book-feedforward:
+    title: Deep Learning — Chapter 6 — Deep Feedforward Networks
+    url: https://www.deeplearningbook.org/contents/mlp.html
