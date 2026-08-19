@@ -2,13 +2,15 @@
 
 ## Decision
 
-Fonzytooter is a single-user learning system that may contain multiple authored courses.
+Fonzytooter is a single-user learning system with an explicitly multi-course curriculum model.
 
-The current AI/ML curriculum remains the initial course, the default course, and the product's immediate content focus. Multi-course support exists so that new courses can be added later without extracting single-course assumptions from routing, curriculum loading, learner state, tutor context, worksheets, and other platform features.
+The **AI & Machine Learning** course (`ai-ml`) is currently the only authored course, the default course, and the product's immediate content focus. It is not a platform-wide singleton: course identity is explicit in authored content ownership, catalog lookup, HTTP resources, frontend routes, and curriculum-related tutor context.
 
-This is **not** a decision to turn Fonzytooter into a generic LMS. The existing simplicity constraints still apply: one user, one Go service, one React app, one SQLite database, Git-authored curriculum, and no speculative enrollment, tenancy, marketplace, authoring-platform, or enterprise infrastructure.
+This does **not** turn Fonzytooter into a generic LMS. The existing simplicity constraints still apply: one user, one Go service, one React app, one SQLite database, Git-authored curriculum, and no speculative enrollment, tenancy, marketplace, classroom, CMS, or enterprise infrastructure.
 
-A likely second course is computer science for an experienced working programmer who is largely self-taught: data structures and algorithms, computer architecture, compilers and programming languages, operating systems, networking, databases, theory of computation, and computing history. That course is useful as the concrete design pressure for this architecture, but creating it is not part of the current implementation scope.
+A likely future course is computer science for experienced working programmers who did not study computer science formally. That is useful design pressure, but no computer-science course content is currently authored.
+
+Course-specific curriculum plans live under [`courses/`](courses/). Platform-wide ownership and routing rules belong here.
 
 ## Domain hierarchy
 
@@ -32,11 +34,11 @@ The exact set of activity types will continue to evolve, but the ownership rule 
 
 > A course owns modules. A module belongs to exactly one course. Course-bound learning artifacts must be traceable back to that course.
 
-The in-memory curriculum catalog should represent the full authored catalog rather than treating the AI/ML course as synonymous with "the curriculum."
+The in-memory curriculum catalog represents the full authored catalog. Course-aware lookups verify the complete ownership hierarchy instead of relying on globally rooted module or lesson resources.
 
 ## Course identity
 
-Every course needs a stable authored ID, for example:
+Every course has a stable authored ID, for example:
 
 ```text
 ai-ml
@@ -45,37 +47,53 @@ computer-science
 
 At routing, API, persistence, tutor-context, and other durable boundaries, course membership must be explicit whenever a resource is course-bound. Code must not infer the course from the fact that only one currently exists.
 
-Existing module, lesson, and objective ID conventions do not need to be redesigned merely for theoretical purity. The important invariant is that canonical resource identity includes course context wherever ambiguity could otherwise exist.
+The current catalog still keeps objective IDs globally unique, preserving the existing prerequisite-reference model without inventing cross-course reference syntax prematurely. Module IDs are also currently validated globally for simplicity, but lookup still requires course identity. Global uniqueness is a validation convenience, not a replacement for ownership.
 
-A future cross-course reference must therefore be qualified explicitly rather than relying on a globally implicit active curriculum. For example, an AI/ML lesson could eventually link to a computer-science lesson about asymptotic complexity. Cross-course links are allowed; a generic cross-course prerequisite graph is not required now.
+A future explicit cross-course reference can be designed when one is actually authored. A generic cross-course prerequisite graph is not required.
 
-The global source registry may remain shared across courses so the same authoritative source can be cited from more than one course.
+The source registry remains shared across courses so the same authoritative source may support material in more than one course.
 
 ## Git-authored content layout
 
-The former `curriculum/modules/` layout was a single-course shape. Authored curriculum now uses this course-aware structure:
+Authored curriculum uses this course-aware structure:
 
 ```text
 curriculum/
 ├── courses/
-│   ├── ai-ml/
-│   │   ├── course.yaml
-│   │   └── modules/
-│   │       └── ...
-│   └── computer-science/
+│   └── ai-ml/
 │       ├── course.yaml
 │       └── modules/
-│           └── ...
+│           ├── 00-orientation/
+│           └── 01-scientific-python/
 └── sources.yaml
 ```
 
-The exact `course.yaml` schema should stay small. It needs enough metadata to identify and present the course, but should not grow into a generic LMS course-definition format.
+A future second course follows the same shape:
 
-The current AI/ML content should migrate into the explicit `ai-ml` course without changing its pedagogical meaning.
+```text
+curriculum/courses/computer-science/
+├── course.yaml
+└── modules/
+```
+
+The current `course.yaml` schema is intentionally small:
+
+```yaml
+id: ai-ml
+title: AI & Machine Learning
+description: Build practical foundations in Python, mathematics, and machine learning.
+order: 0
+```
+
+Course metadata exists to identify, order, and present authored courses. It is not an LMS enrollment or administration schema.
+
+The loader validates the curriculum root, course metadata, module/lesson/objective/source references, ordering constraints, prerequisite relationships, and other authored invariants before constructing the immutable in-memory catalog. `FONZYTOOTER_CURRICULUM_PATH` points to the curriculum root, not to one course.
+
+See [`../curriculum/README.md`](../curriculum/README.md) and [`content-authoring.md`](content-authoring.md) for authoring conventions.
 
 ## Application routing
 
-Curriculum-bound application routes should become course-aware. A clear target shape is:
+Curriculum-bound routes carry explicit course identity:
 
 ```text
 /courses/:courseId
@@ -83,33 +101,58 @@ Curriculum-bound application routes should become course-aware. A clear target s
 /courses/:courseId/modules/:moduleId/lessons/:lessonId
 ```
 
-The exact URL naming may be adjusted during implementation if the real router/API constraints justify it, but the invariant is that module and lesson routes carry course identity.
+The convenience route:
 
-While AI/ML is the only course, the application does **not** need a visible course picker. Existing entry points such as `/` or `/curriculum` may redirect to the default AI/ML course for convenience. That convenience must not recreate a hidden global singleton inside feature code.
+```text
+/curriculum
+```
 
-When a second course is actually added, course selection/navigation can become visible then.
+redirects to the current default course:
 
-## API shape
+```text
+/courses/ai-ml
+```
 
-The HTTP API should follow the existing resource-oriented REST conventions and generated Go -> OpenAPI -> Orval -> TanStack Query/Zod contract.
+That default is an application-navigation preference kept in one obvious frontend location. It is not used by backend catalog lookups or as hidden durable identity.
 
-Course-aware resources should be modeled as resources, not as ad hoc action endpoints. A likely shape is:
+There is intentionally no visible course picker or generic `/courses` catalog screen while only one real course exists. When a second authored course makes course selection useful, the navigation can expose it then.
+
+## HTTP API
+
+The curriculum read API follows the same ownership hierarchy:
 
 ```text
 GET /api/courses
 GET /api/courses/{courseId}
-GET /api/courses/{courseId}/modules
 GET /api/courses/{courseId}/modules/{moduleId}
 GET /api/courses/{courseId}/modules/{moduleId}/lessons/{lessonId}
 ```
 
-This is implementation guidance rather than a requirement to create every endpoint immediately. The implementation should expose only the operations needed by the application while preserving explicit course ownership.
+`GET /api/courses/{courseId}` includes the ordered module summaries needed to render the course page, so a separate module-collection endpoint is not currently necessary.
+
+Module and lesson resources include course identity. Handlers use course-aware catalog lookups, so a valid module or lesson requested beneath the wrong course returns the standard not-found response rather than being resolved globally.
+
+The former globally rooted `/api/modules/...` operations have been removed.
+
+As with the rest of the application API, Go operations/types are authoritative and flow through Huma-generated OpenAPI to Orval-generated TanStack Query clients and Zod schemas. See [`api-contract.md`](api-contract.md) and [`api-style.md`](api-style.md).
+
+## Tutor context
+
+The tutor remains global to the application, but curriculum context is course-qualified.
+
+Curriculum, module, and lesson page context includes explicit `courseId` and `courseTitle` along with the relevant module/lesson/objective identity. Selected-text lesson tutoring preserves that course identity as well.
+
+Route identity is established even while data is loading or when a resource is invalid, so the tutor does not silently retain semantic context from the previously viewed course or lesson.
+
+The tutor must not infer course ownership from module IDs or from the default course.
+
+Cross-course tutoring is still allowed naturally: the tutor may eventually recommend useful material from another course. That does not require dumping every course or all learner state into every turn.
 
 ## Learner state
 
-Course identity must be part of persisted state for course-bound learning activity.
+Course identity must be part of persisted state for course-bound learning activity as persistence features are implemented.
 
-This includes, as those features are implemented:
+This includes:
 
 - objective progress and evidence;
 - lesson activity;
@@ -117,20 +160,12 @@ This includes, as those features are implemented:
 - worksheet attempts and tutor-reviewed worksheet evidence;
 - exercise workspaces and attempts;
 - notebook/lab/project status;
-- course-specific "continue learning" state;
-- tutor page/activity context that refers to curriculum resources.
+- course-specific continue-learning state;
+- tutor activity referring to curriculum resources.
 
 The default course is a navigation preference, not a substitute for durable course identity.
 
-This is a major reason to establish the multi-course foundation before substantial learner-state persistence and before worksheet implementation: those systems should be built against the correct ownership hierarchy once rather than retrofitted immediately afterward.
-
-## Tutor context
-
-The tutor remains global to the application, but curriculum context must be course-qualified.
-
-A tutor turn associated with a lesson, module, objective, worksheet, exercise, or project should include enough structured identity to resolve the correct course explicitly. The context builder must not rely on a single globally active curriculum.
-
-Cross-course tutoring is allowed naturally: the tutor may recommend material in another course when useful. That does not require loading every course or every learner-state record into every tutor turn.
+The multi-course foundation was deliberately established before substantial learner-state persistence so new state schemas can use the correct ownership model from the beginning.
 
 ## Worksheets and workbooks
 
@@ -142,38 +177,35 @@ Their ownership chain is:
 course -> module -> lesson -> worksheet
 ```
 
-A module workbook aggregates worksheets from that module within its course. No worksheet or workbook implementation should depend on an implicit single-course catalog.
+A module workbook aggregates worksheets from that module within its course. Worksheet implementation should build directly on the course-aware catalog, routes, and future persistence keys rather than introducing a single-course compatibility layer.
 
-The multi-course foundation should therefore land before worksheet implementation.
+## Course-specific planning documents
 
-## User experience during the foundation refactor
+Long-range curriculum planning is separate from the runtime-authored catalog.
 
-The first multi-course implementation should be intentionally boring from the user's perspective.
+```text
+docs/courses/<course-id>.md
+    -> subject-specific curriculum direction and future syllabus planning
 
-After the refactor:
+curriculum/courses/<course-id>/
+    -> concrete authored metadata, modules, lessons, and objectives loaded by the app
+```
 
-- AI/ML should still be the only authored course;
-- it should remain the default course;
-- current lessons and modules should preserve their content and ordering;
-- the application should look and behave substantially the same;
-- no empty course marketplace/catalog UI is required;
-- no computer-science course content is required.
+The current AI/ML curriculum plan is [`courses/ai-ml.md`](courses/ai-ml.md).
 
-The value of the refactor is architectural: platform features added afterward will be built on explicit course ownership.
+This keeps phrases such as "the AI/ML curriculum" from being confused with platform-wide curriculum architecture as additional courses are introduced.
 
-## Implementation sequence
+## Current user experience
 
-A focused implementation should proceed roughly in this order:
+With only AI/ML authored, the multi-course architecture is intentionally unobtrusive:
 
-1. introduce the `Course` domain model and explicit AI/ML course metadata;
-2. migrate Git-authored content into a course-aware directory/catalog structure;
-3. make curriculum validation and lookup operate across courses;
-4. make curriculum API resources and generated clients course-aware;
-5. make frontend curriculum routes/navigation and tutor page context course-aware;
-6. ensure new persistence schemas use explicit course identity for course-bound state;
-7. implement worksheets against that foundation.
+- AI/ML remains the default course;
+- `/curriculum` still provides the normal global navigation entry point;
+- existing modules and lessons preserve their authored ordering and content;
+- course/module/lesson URLs now carry explicit course identity;
+- no empty marketplace or course-selection interface is shown.
 
-This sequence is guidance, not a mandate for one giant PR. Prefer small coherent PRs if the implementation naturally separates.
+The value is architectural: new platform features can now be built without embedding an assumption that AI/ML is the only possible course.
 
 ## Non-goals
 
@@ -185,9 +217,9 @@ Do not use multi-course support as justification to build:
 - permissions or RBAC around courses;
 - a course marketplace;
 - a generic course CMS or visual authoring system;
-- course search/discovery infrastructure for two local courses;
+- course search/discovery infrastructure for a tiny personal catalog;
 - calendar semesters, due dates, or cohort pacing;
 - a generic cross-course dependency/knowledge graph;
 - separate services or databases per course.
 
-Fonzytooter remains a small personal learning application. The architecture is becoming **multi-course**, not **general-purpose LMS**.
+Fonzytooter remains a small personal learning application. The architecture is **multi-course**, not **general-purpose LMS**.

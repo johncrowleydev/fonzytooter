@@ -4,7 +4,7 @@
 
 Fonzytooter is a single-user personal learning application that may host multiple authored courses. It is not a multi-tenant LMS product. Simplicity is a feature.
 
-The AI/ML curriculum is the initial/default course, not a permanent singleton baked into the platform. See [`multi-course.md`](multi-course.md) for the course ownership, routing, state, and implementation boundaries.
+The **AI & Machine Learning** course (`ai-ml`) is the initial/default course, not a permanent singleton baked into the platform. The course-aware catalog, API, frontend routes, and tutor context are implemented. See [`multi-course.md`](multi-course.md) for the ownership and routing model, and [`courses/`](courses/) for course-specific curriculum plans.
 
 The system should remain understandable enough that one developer can hold most of it in their head.
 
@@ -16,7 +16,7 @@ Browser / installed PWA
 │ React + TypeScript                         │
 │                                             │
 │ App shell                                   │
-│ ├─ curriculum                              │
+│ ├─ course / module / lesson curriculum     │
 │ ├─ reviews                                 │
 │ ├─ exercises                               │
 │ │   └─ CodeMirror + Pyodide Web Worker     │
@@ -30,7 +30,7 @@ EC2
 │ Go process                                  │
 │                                             │
 │ HTTP API                                    │
-│ ├─ curriculum metadata                     │
+│ ├─ course-aware curriculum catalog         │
 │ ├─ progress / activity                     │
 │ ├─ reviews / FSRS                          │
 │ └─ tutor orchestration                     │
@@ -43,6 +43,8 @@ EC2
                     ▼
                   SQLite
 ```
+
+Some boxes above describe intended subsystems that are not all implemented yet. The course-aware curriculum delivery path and generated API contract are implemented; persistence, FSRS, and real tutor providers remain future work.
 
 ## Full-stack API contract
 
@@ -57,7 +59,7 @@ Go operations/types
 
 Do not maintain duplicate handwritten TypeScript DTOs or hand-written frontend request code alongside the Go API. Generated Zod schemas are the frontend runtime contract and the source of inferred API types.
 
-CI will eventually regenerate the OpenAPI and frontend artifacts and fail on drift, and a deterministic frontend boundary check will reject raw application `fetch`/Axios calls and handwritten API-contract types outside explicitly approved infrastructure.
+CI enforces generated-contract drift and frontend API-boundary rules. OpenAPI and generated frontend artifacts must be regenerated through the documented workflow when the Go API changes; feature code must not bypass the generated boundary with raw `fetch`/Axios or handwritten API-contract types.
 
 See [`api-contract.md`](api-contract.md) for the complete generation, validation, streaming, and enforcement rules.
 
@@ -77,6 +79,17 @@ Version-controlled content includes:
 - source metadata and citation IDs.
 
 This content should be reviewable like source code.
+
+The current runtime hierarchy is:
+
+```text
+curriculum/
+├── courses/
+│   └── ai-ml/
+│       ├── course.yaml
+│       └── modules/
+└── sources.yaml
+```
 
 ### SQLite is authoritative for learner state
 
@@ -109,7 +122,32 @@ course
       └─ project/lab ──────────┘
 ```
 
+The in-memory catalog verifies course ownership when resolving modules and lessons. The HTTP API and React routes preserve the same hierarchy rather than exposing modules as globally rooted curriculum resources.
+
 Progress should be explainable in terms of objectives rather than arbitrary page-completion percentages, while objective/activity identity remains qualified by its course where needed.
+
+## Curriculum routes and read API
+
+The current frontend routes are:
+
+```text
+/courses/:courseId
+/courses/:courseId/modules/:moduleId
+/courses/:courseId/modules/:moduleId/lessons/:lessonId
+```
+
+`/curriculum` is a convenience redirect to the default `/courses/ai-ml` route. The default is a navigation choice, not hidden backend ownership.
+
+The corresponding curriculum read API is:
+
+```text
+GET /api/courses
+GET /api/courses/{courseId}
+GET /api/courses/{courseId}/modules/{moduleId}
+GET /api/courses/{courseId}/modules/{moduleId}/lessons/{lessonId}
+```
+
+The course resource includes its ordered module summaries, so the frontend does not currently need a separate module-collection operation.
 
 ## Python execution boundary
 
@@ -163,7 +201,7 @@ curriculum sources ───┘            ▼
 
 Provider adapters are allowed to differ internally. Normalize the event stream, not the provider request protocol.
 
-Curriculum-related tutor context must include explicit course identity rather than assuming one global curriculum.
+Curriculum-related tutor context includes explicit course identity. Course/module/lesson routes establish route-scoped context even while data is loading, then enrich it with resolved titles and objective IDs when available.
 
 ## Transport
 

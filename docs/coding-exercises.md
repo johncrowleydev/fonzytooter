@@ -25,7 +25,7 @@ Git repository + IDE
     -> engineering, synthesis, and substantial experiments
 ```
 
-See [`curriculum.md`](curriculum.md) for the broader curriculum role of each environment.
+See [`courses/ai-ml.md`](courses/ai-ml.md) for how those environments fit into the current AI/ML course plan.
 
 ## Planned UI
 
