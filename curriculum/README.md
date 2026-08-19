@@ -4,12 +4,14 @@ This directory contains authored curriculum content. It is version controlled an
 
 ## Conventions
 
-- Stable IDs should be lowercase and dot/kebab separated consistently within their domain.
+- Stable IDs use `^[a-z0-9]+(?:[.-][a-z0-9]+)*$`: lowercase letters and numbers separated by single dots or hyphens.
 - Modules organize learning material.
-- Objectives describe capabilities and may reference prerequisite objective IDs.
+- `module.yaml` uses `id`, `title`, and explicit `order`. Its ordered `lessons` list is the canonical lesson sequence.
+- Objectives describe capabilities and may reference globally unique prerequisite objective IDs, including objectives in other modules.
 - Lessons are MDX.
+- Lesson metadata is YAML frontmatter at the beginning of each MDX file. The Go loader preserves the remaining MDX source body and does not execute or compile it.
 - Videos are curated resources attached to modules/objectives.
 - Technical lesson content must cite reputable sources from `sources.yaml`.
 - Larger labs/projects reference external Git repositories rather than embedding a second execution environment into Fonzytooter.
 
-The schemas are intentionally small and provisional until the first real AI/ML modules are authored.
+The authoring schemas are intentionally small. Run `cd server && go run ./cmd/curriculum-check ../curriculum` before committing curriculum changes.

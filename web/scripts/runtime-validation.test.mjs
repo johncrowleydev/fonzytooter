@@ -147,6 +147,62 @@ test('generated health fetch rejects extra response properties with ZodError', a
   }
 })
 
+test('generated curriculum list fetch validates an array response without Content-Type', async () => {
+  const client = await importGeneratedClient()
+  const originalFetch = globalThis.fetch
+  const moduleSummary = { id: 'python', title: 'Python', order: 0 }
+
+  try {
+    globalThis.fetch = async () =>
+      new Response(JSON.stringify([moduleSummary]), {
+        status: 200,
+      })
+
+    const response = await client.listModules()
+    assert.deepEqual(response.data, [moduleSummary])
+
+    globalThis.fetch = async () =>
+      new Response(JSON.stringify({ id: 'python' }), {
+        status: 200,
+        headers: { 'content-type': 'text/plain' },
+      })
+    await assert.rejects(
+      () => client.listModules(),
+      (error) => error?.name === 'ZodError',
+    )
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
+
+test('generated curriculum resource fetch rejects invalid JSON with ZodError', async () => {
+  const client = await importGeneratedClient()
+  const originalFetch = globalThis.fetch
+
+  try {
+    globalThis.fetch = async () =>
+      new Response(
+        JSON.stringify({
+          id: 'python',
+          title: 'Python',
+          order: 0,
+          objectives: [],
+          videos: [],
+          lessons: [],
+          unexpected: true,
+        }),
+        { status: 200, headers: { 'content-type': 'application/json' } },
+      )
+
+    await assert.rejects(
+      () => client.getModule('python'),
+      (error) => error?.name === 'ZodError',
+    )
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
+
 test('generated TurnRequest validates non-whitespace messages and closed objects', async () => {
   const { TurnRequest } = await importGeneratedTurnRequestSchema()
 

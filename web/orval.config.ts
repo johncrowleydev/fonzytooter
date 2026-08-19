@@ -42,10 +42,7 @@ export default defineConfig({
       },
     },
     // Orval 8.24.0 checks Content-Type before its Zod parse even when the
-    // OpenAPI success representation is JSON. Normalize that generated
-    // branch after generation so declared JSON is always parsed and validated.
-    hooks: {
-      afterAllFilesWrite: 'node scripts/enforce-generated-json-validation.mjs',
-    },
+    // OpenAPI success representation is JSON. The api:generate script runs a
+    // deterministic normalizer after Orval has finished writing every file.
   },
 })

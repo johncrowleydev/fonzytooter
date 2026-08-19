@@ -205,7 +205,7 @@ A successful HTTP status with a payload that violates the OpenAPI/Zod contract i
 
 For a success response declared as JSON, the generated client must not return the raw text merely because `Content-Type` is missing or incorrect: it parses and validates the declared JSON representation. This keeps the runtime contract tied to OpenAPI rather than to an unreliable response header.
 
-Orval 8.24.0 has no fetch setting that changes this header-gated branch, so the generation command applies a deterministic `afterAllFilesWrite` normalization to the generated fetch function; it does not introduce a second handwritten HTTP client.
+Orval 8.24.0 has no fetch setting that changes this header-gated branch, so the `api:generate` command applies a deterministic normalization after Orval has finished writing the generated fetch function; it does not introduce a second handwritten HTTP client. The normalizer also checks every declared JSON success operation in the OpenAPI document and fails if any generated function lacks an unconditional Zod parse.
 
 Ordinary generated fetch clients use `forceSuccessResponse: true`: they return only successful response shapes, preserve successful status and serialized headers, and throw an HTTP error carrying the status and problem payload for non-success responses. A problem response must therefore never be passed through a successful response schema such as `Health`.
 
