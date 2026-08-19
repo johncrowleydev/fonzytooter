@@ -106,9 +106,10 @@ func TestCurriculumOpenAPIContract(t *testing.T) {
 func testCatalog(t *testing.T) *curriculum.Catalog {
 	t.Helper()
 	catalog, err := curriculum.Load(fstest.MapFS{
-		"sources.yaml":                   &fstest.MapFile{Data: []byte("sources:\n  go-docs:\n    title: Go documentation\n    url: https://go.dev/doc/\n")},
-		"modules/storage/module.yaml":    &fstest.MapFile{Data: []byte("id: python\ntitle: Python\norder: 2\nobjectives:\n  - id: python.variables\n    title: Use variables\n    description: Bind names to values.\n    prerequisites: []\nvideos:\n  - id: python-video\n    title: Python video\n    url: https://example.com/python\n    objectiveIds:\n      - python.variables\nlessons:\n  - lesson.stable\n")},
-		"modules/storage/not-the-id.mdx": &fstest.MapFile{Data: []byte("---\nid: lesson.stable\ntitle: Stable lesson\nobjectiveIds:\n  - python.variables\nsourceIds:\n  - go-docs\n---\n# Lesson\n")},
+		"sources.yaml":                                 &fstest.MapFile{Data: []byte("sources:\n  go-docs:\n    title: Go documentation\n    url: https://go.dev/doc/\n")},
+		"courses/ai-ml/course.yaml":                    &fstest.MapFile{Data: []byte("id: ai-ml\ntitle: AI & Machine Learning\ndescription: Learn AI and machine learning.\norder: 0\n")},
+		"courses/ai-ml/modules/storage/module.yaml":    &fstest.MapFile{Data: []byte("id: python\ntitle: Python\norder: 2\nobjectives:\n  - id: python.variables\n    title: Use variables\n    description: Bind names to values.\n    prerequisites: []\nvideos:\n  - id: python-video\n    title: Python video\n    url: https://example.com/python\n    objectiveIds:\n      - python.variables\nlessons:\n  - lesson.stable\n")},
+		"courses/ai-ml/modules/storage/not-the-id.mdx": &fstest.MapFile{Data: []byte("---\nid: lesson.stable\ntitle: Stable lesson\nobjectiveIds:\n  - python.variables\nsourceIds:\n  - go-docs\n---\n# Lesson\n")},
 	})
 	if err != nil {
 		t.Fatalf("load test catalog: %v", err)

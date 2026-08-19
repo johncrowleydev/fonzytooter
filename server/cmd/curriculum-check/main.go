@@ -32,5 +32,5 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Printf("curriculum valid: %d modules, %d lessons, %d objectives, %d sources\n", catalog.ModuleCount(), catalog.LessonCount(), catalog.ObjectiveCount(), catalog.SourceCount())
+	fmt.Printf("curriculum valid: %d courses, %d modules, %d lessons, %d objectives, %d sources\n", catalog.CourseCount(), catalog.ModuleCount(), catalog.LessonCount(), catalog.ObjectiveCount(), catalog.SourceCount())
 }

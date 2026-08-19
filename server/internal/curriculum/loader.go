@@ -13,6 +13,13 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+type courseAuthoring struct {
+	ID          string `yaml:"id"`
+	Title       string `yaml:"title"`
+	Description string `yaml:"description"`
+	Order       *int   `yaml:"order"`
+}
+
 type moduleAuthoring struct {
 	ID         string               `yaml:"id"`
 	Title      string               `yaml:"title"`
@@ -52,6 +59,13 @@ type sourceRegistry struct {
 	Sources map[string]sourceAuthoring `yaml:"sources"`
 }
 
+type courseFile struct {
+	path       string
+	metadata   courseAuthoring
+	modules    []moduleFile
+	metadataOK bool
+}
+
 type moduleFile struct {
 	path       string
 	metadata   moduleAuthoring
@@ -76,89 +90,127 @@ func Load(fsys fs.FS) (*Catalog, error) {
 	}
 
 	sources := loadSources(fsys, errors)
-	modules := loadModules(fsys, errors)
+	courses := loadCourses(fsys, errors)
 	validateSources(sources, errors)
-	validateModules(modules, sources, errors)
+	validateCourses(courses, sources, errors)
 
 	if err := errors.Err(); err != nil {
 		return nil, err
 	}
 
-	loadedModules := make([]Module, 0, len(modules))
 	loadedSources := make(map[string]Source, len(sources))
 	for id, source := range sources {
 		loadedSources[id] = Source{ID: id, Title: source.Title, URL: source.URL}
 	}
 
-	for _, module := range modules {
-		loaded := Module{
-			ID:         module.metadata.ID,
-			Title:      module.metadata.Title,
-			Order:      *module.metadata.Order,
-			Objectives: make([]Objective, 0, len(module.metadata.Objectives)),
-			Videos:     make([]Video, 0, len(module.metadata.Videos)),
-			Lessons:    make([]Lesson, 0, len(module.metadata.Lessons)),
+	loadedCourses := make([]Course, 0, len(courses))
+	for _, course := range courses {
+		loadedCourse := Course{
+			ID:          course.metadata.ID,
+			Title:       course.metadata.Title,
+			Description: course.metadata.Description,
+			Order:       *course.metadata.Order,
+			Modules:     make([]Module, 0, len(course.modules)),
 		}
-		for _, objective := range module.metadata.Objectives {
-			loaded.Objectives = append(loaded.Objectives, Objective{
-				ID:            objective.ID,
-				Title:         objective.Title,
-				Description:   objective.Description,
-				Prerequisites: cloneStrings(objective.Prerequisites),
-			})
-		}
-		for _, video := range module.metadata.Videos {
-			loaded.Videos = append(loaded.Videos, Video{
-				ID:           video.ID,
-				Title:        video.Title,
-				URL:          video.URL,
-				ObjectiveIDs: cloneStrings(video.ObjectiveIDs),
-			})
-		}
-
-		lessonsByID := make(map[string]lessonFile, len(module.lessons))
-		for _, lesson := range module.lessons {
-			lessonsByID[lesson.metadata.ID] = lesson
-		}
-		for _, lessonID := range module.metadata.Lessons {
-			lesson, ok := lessonsByID[lessonID]
-			if !ok {
-				continue
+		for _, module := range course.modules {
+			loadedModule := Module{
+				CourseID:   course.metadata.ID,
+				ID:         module.metadata.ID,
+				Title:      module.metadata.Title,
+				Order:      *module.metadata.Order,
+				Objectives: make([]Objective, 0, len(module.metadata.Objectives)),
+				Videos:     make([]Video, 0, len(module.metadata.Videos)),
+				Lessons:    make([]Lesson, 0, len(module.metadata.Lessons)),
 			}
-			loaded.Lessons = append(loaded.Lessons, Lesson{
-				ID:           lesson.metadata.ID,
-				Title:        lesson.metadata.Title,
-				ObjectiveIDs: cloneStrings(lesson.metadata.ObjectiveIDs),
-				SourceIDs:    cloneStrings(lesson.metadata.SourceIDs),
-				Content:      lesson.content,
-			})
+			for _, objective := range module.metadata.Objectives {
+				loadedModule.Objectives = append(loadedModule.Objectives, Objective{
+					CourseID:      course.metadata.ID,
+					ModuleID:      module.metadata.ID,
+					ID:            objective.ID,
+					Title:         objective.Title,
+					Description:   objective.Description,
+					Prerequisites: cloneStrings(objective.Prerequisites),
+				})
+			}
+			for _, video := range module.metadata.Videos {
+				loadedModule.Videos = append(loadedModule.Videos, Video{
+					CourseID:     course.metadata.ID,
+					ModuleID:     module.metadata.ID,
+					ID:           video.ID,
+					Title:        video.Title,
+					URL:          video.URL,
+					ObjectiveIDs: cloneStrings(video.ObjectiveIDs),
+				})
+			}
+
+			lessonsByID := make(map[string]lessonFile, len(module.lessons))
+			for _, lesson := range module.lessons {
+				lessonsByID[lesson.metadata.ID] = lesson
+			}
+			for _, lessonID := range module.metadata.Lessons {
+				lesson, ok := lessonsByID[lessonID]
+				if !ok {
+					continue
+				}
+				loadedModule.Lessons = append(loadedModule.Lessons, Lesson{
+					CourseID:     course.metadata.ID,
+					ModuleID:     module.metadata.ID,
+					ID:           lesson.metadata.ID,
+					Title:        lesson.metadata.Title,
+					ObjectiveIDs: cloneStrings(lesson.metadata.ObjectiveIDs),
+					SourceIDs:    cloneStrings(lesson.metadata.SourceIDs),
+					Content:      lesson.content,
+				})
+			}
+			loadedCourse.Modules = append(loadedCourse.Modules, loadedModule)
 		}
-		loadedModules = append(loadedModules, loaded)
+		loadedCourses = append(loadedCourses, loadedCourse)
 	}
 
-	return newCatalog(loadedModules, loadedSources), nil
+	return newCatalog(loadedCourses, loadedSources), nil
 }
 
 func validateCurriculumRoot(fsys fs.FS, collector *errorCollector) {
-	sourceInfo, err := fs.Stat(fsys, "sources.yaml")
-	if errors.Is(err, fs.ErrNotExist) {
-		collector.add("sources.yaml", errors.New("required file is missing"))
-	} else if err != nil {
-		collector.add("sources.yaml", fmt.Errorf("cannot stat required file: %w", err))
-	} else if sourceInfo.IsDir() {
-		collector.add("sources.yaml", errors.New("required file is a directory"))
-	} else if !sourceInfo.Mode().IsRegular() {
-		collector.add("sources.yaml", errors.New("required file is not a regular file"))
-	}
+	validateRequiredFile(fsys, "sources.yaml", collector)
+	validateRequiredDirectory(fsys, "courses", collector)
+}
 
-	modulesInfo, err := fs.Stat(fsys, "modules")
+func validateRequiredFile(fsys fs.FS, filePath string, collector *errorCollector) bool {
+	info, err := fs.Stat(fsys, filePath)
 	if errors.Is(err, fs.ErrNotExist) {
-		collector.add("modules", errors.New("required directory is missing"))
-	} else if err != nil {
-		collector.add("modules", fmt.Errorf("cannot stat required directory: %w", err))
-	} else if !modulesInfo.IsDir() {
-		collector.add("modules", errors.New("required directory is not a directory"))
+		collector.add(filePath, errors.New("required file is missing"))
+		return false
 	}
+	if err != nil {
+		collector.add(filePath, fmt.Errorf("cannot stat required file: %w", err))
+		return false
+	}
+	if info.IsDir() {
+		collector.add(filePath, errors.New("required file is a directory"))
+		return false
+	}
+	if !info.Mode().IsRegular() {
+		collector.add(filePath, errors.New("required file is not a regular file"))
+		return false
+	}
+	return true
+}
+
+func validateRequiredDirectory(fsys fs.FS, directoryPath string, collector *errorCollector) bool {
+	info, err := fs.Stat(fsys, directoryPath)
+	if errors.Is(err, fs.ErrNotExist) {
+		collector.add(directoryPath, errors.New("required directory is missing"))
+		return false
+	}
+	if err != nil {
+		collector.add(directoryPath, fmt.Errorf("cannot stat required directory: %w", err))
+		return false
+	}
+	if !info.IsDir() {
+		collector.add(directoryPath, errors.New("required directory is not a directory"))
+		return false
+	}
+	return true
 }
 
 func loadSources(fsys fs.FS, collector *errorCollector) map[string]sourceAuthoring {
@@ -184,19 +236,52 @@ func loadSources(fsys fs.FS, collector *errorCollector) map[string]sourceAuthori
 	return registry.Sources
 }
 
-func loadModules(fsys fs.FS, collector *errorCollector) []moduleFile {
-	entries, err := fs.ReadDir(fsys, "modules")
-	if errors.Is(err, fs.ErrNotExist) {
-		return []moduleFile{}
-	}
+func loadCourses(fsys fs.FS, collector *errorCollector) []courseFile {
+	entries, err := fs.ReadDir(fsys, "courses")
 	if err != nil {
-		collector.add("modules", err)
+		collector.add("courses", err)
+		return []courseFile{}
+	}
+
+	courses := make([]courseFile, 0, len(entries))
+	for _, entry := range entries {
+		coursePath := path.Join("courses", entry.Name())
+		if !entry.IsDir() {
+			collector.add(coursePath, errors.New("expected a course directory"))
+			continue
+		}
+
+		course := courseFile{path: path.Join(coursePath, "course.yaml")}
+		if validateRequiredFile(fsys, course.path, collector) {
+			data, readErr := fs.ReadFile(fsys, course.path)
+			if readErr != nil {
+				collector.add(course.path, readErr)
+			} else if decodeErr := decodeYAML(data, &course.metadata); decodeErr != nil {
+				collector.add(course.path, decodeErr)
+			} else {
+				course.metadataOK = true
+			}
+		}
+
+		modulesPath := path.Join(coursePath, "modules")
+		if validateRequiredDirectory(fsys, modulesPath, collector) {
+			course.modules = loadModules(fsys, modulesPath, collector)
+		}
+		courses = append(courses, course)
+	}
+	return courses
+}
+
+func loadModules(fsys fs.FS, modulesPath string, collector *errorCollector) []moduleFile {
+	entries, err := fs.ReadDir(fsys, modulesPath)
+	if err != nil {
+		collector.add(modulesPath, err)
 		return []moduleFile{}
 	}
 
 	modules := make([]moduleFile, 0, len(entries))
 	for _, entry := range entries {
-		modulePath := path.Join("modules", entry.Name())
+		modulePath := path.Join(modulesPath, entry.Name())
 		if !entry.IsDir() {
 			collector.add(modulePath, errors.New("expected a module directory"))
 			continue

@@ -81,13 +81,13 @@ The tutor is mounted at the application-shell level and can be opened from any s
 
 ## Repository layout
 
-The current repository still uses the initial single-course curriculum layout; the planned course-aware migration is documented in [`docs/multi-course.md`](docs/multi-course.md).
+The repository uses the course-aware curriculum layout documented in [`docs/multi-course.md`](docs/multi-course.md).
 
 ```text
 .
 ├── AGENTS.md
 ├── curriculum/
-│   ├── modules/
+│   ├── courses/
 │   └── sources.yaml
 ├── docs/
 ├── server/
