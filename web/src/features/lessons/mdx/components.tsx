@@ -1,5 +1,9 @@
 import type { ComponentPropsWithoutRef } from 'react'
 import type { MDXComponents } from 'mdx/types'
+import { MutableDefaultExplorer } from '../components/MutableDefaultExplorer'
+import { PythonMentalModelCheck } from '../components/PythonMentalModelCheck'
+import { ReferenceBindingExplorer } from '../components/ReferenceBindingExplorer'
+import { SliceExplorer } from '../components/SliceExplorer'
 
 function withClassName(className: string, existingClassName?: string) {
   return existingClassName ? `${className} ${existingClassName}` : className
@@ -141,4 +145,8 @@ export const lessonMdxComponents = {
   pre: LessonPreformatted,
   strong: LessonStrong,
   ul: LessonUnorderedList,
+  MutableDefaultExplorer,
+  PythonMentalModelCheck,
+  ReferenceBindingExplorer,
+  SliceExplorer,
 } satisfies MDXComponents
