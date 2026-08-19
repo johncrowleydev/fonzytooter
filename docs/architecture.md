@@ -2,7 +2,9 @@
 
 ## Design target
 
-Fonzytooter is a single-user personal learning application, not a multi-tenant LMS product. Simplicity is a feature.
+Fonzytooter is a single-user personal learning application that may host multiple authored courses. It is not a multi-tenant LMS product. Simplicity is a feature.
+
+The AI/ML curriculum is the initial/default course, not a permanent singleton baked into the platform. See [`multi-course.md`](multi-course.md) for the course ownership, routing, state, and implementation boundaries.
 
 The system should remain understandable enough that one developer can hold most of it in their head.
 
@@ -65,6 +67,7 @@ See [`api-contract.md`](api-contract.md) for the complete generation, validation
 
 Version-controlled content includes:
 
+- courses and course metadata;
 - modules;
 - lessons;
 - learning objectives and prerequisite IDs;
@@ -88,21 +91,25 @@ Persistent learner state will eventually include:
 - project status;
 - user preferences.
 
+Course-bound learner state must carry explicit course identity. The fact that AI/ML is currently the only course must not be used as a persistence key or hidden global assumption.
+
 Do not put authored curriculum prose into SQLite merely because it is convenient to query.
 
-## Objective-centered model
+## Course and objective-centered model
 
-A module is an organizational container. A lesson is a teaching artifact. An objective represents a capability the learner is expected to develop.
+A course is the top-level authored learning path. A module is an organizational container inside one course. A lesson is a teaching artifact. An objective represents a capability the learner is expected to develop.
 
 ```text
-lesson ───────────────┐
-video ────────────────┤
-review item ──────────┼──► objective ◄── prerequisite objective
-exercise ─────────────┤
-project/lab ──────────┘
+course
+  └─ module
+      ├─ lesson ───────────────┐
+      ├─ video ────────────────┤
+      ├─ review item ──────────┼──► objective ◄── prerequisite objective
+      ├─ exercise ─────────────┤
+      └─ project/lab ──────────┘
 ```
 
-Progress should be explainable in terms of objectives rather than arbitrary page-completion percentages.
+Progress should be explainable in terms of objectives rather than arbitrary page-completion percentages, while objective/activity identity remains qualified by its course where needed.
 
 ## Python execution boundary
 
@@ -156,6 +163,8 @@ curriculum sources ───┘            ▼
 
 Provider adapters are allowed to differ internally. Normalize the event stream, not the provider request protocol.
 
+Curriculum-related tutor context must include explicit course identity rather than assuming one global curriculum.
+
 ## Transport
 
 Use ordinary HTTP for requests and streamed HTTP/SSE-style events for tutor output. The browser sends one tutor turn and the server streams events back.
@@ -187,4 +196,5 @@ The following should remain open until implementation pressure clarifies them:
 - how Codex subscription authentication is hosted on EC2;
 - whether GitHub integration is useful for project/lab tracking;
 - offline PWA behavior beyond cached app assets;
-- exact citation rendering UX.
+- exact citation rendering UX;
+- the visible course-selection UX once a second course actually exists.
