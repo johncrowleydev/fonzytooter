@@ -47,9 +47,6 @@ export function ModuleDetail() {
 }
 
 function ModuleContent({ module }: { module: ModuleResource }) {
-  const prerequisites = Array.from(
-    new Set(module.objectives.flatMap((objective) => objective.prerequisites)),
-  )
   const objectiveTitles = new Map(
     module.objectives.map((objective) => [objective.id, objective.title]),
   )
@@ -69,56 +66,46 @@ function ModuleContent({ module }: { module: ModuleResource }) {
         detail={`${module.lessons.length} ${module.lessons.length === 1 ? 'lesson' : 'lessons'}`}
       />
 
-      <section className="grid grid-cols-2 gap-12 max-xl:grid-cols-1">
-        <div>
-          <SectionHeading title="Objectives" />
-          {module.objectives.length > 0 ? (
-            <div className="grid gap-2">
-              {module.objectives.map((objective) => (
-                <div key={objective.id} className="border-t border-line py-3">
-                  <strong className="block text-xs">{objective.title}</strong>
-                  <span className="mt-1 block text-2xs leading-normal text-muted">
-                    {objective.description}
-                  </span>
-                  <span className="mt-2 block text-2xs text-faint">{objective.id}</span>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <Card muted>
-              <p className="text-xs leading-relaxed text-muted">
-                No objectives are recorded for this module.
-              </p>
-            </Card>
-          )}
-        </div>
-
-        <div>
-          <SectionHeading title="Prerequisites" />
-          {prerequisites.length > 0 ? (
-            <ul className="m-0 grid list-none gap-2 p-0">
-              {prerequisites.map((prerequisite) => (
-                <li
-                  key={prerequisite}
-                  className="rounded-lg border border-line bg-panel px-3 py-3 text-xs"
-                >
-                  <strong className="block">
-                    {objectiveTitles.get(prerequisite) ?? prerequisite}
-                  </strong>
-                  {objectiveTitles.has(prerequisite) ? (
-                    <span className="mt-1 block text-2xs text-faint">{prerequisite}</span>
-                  ) : null}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <Card muted>
-              <p className="text-xs leading-relaxed text-muted">
-                No prerequisites are recorded for this module.
-              </p>
-            </Card>
-          )}
-        </div>
+      <section>
+        <SectionHeading title="Objectives" />
+        {module.objectives.length > 0 ? (
+          <div className="grid gap-2">
+            {module.objectives.map((objective) => (
+              <div key={objective.id} className="border-t border-line py-3">
+                <strong className="block text-xs">{objective.title}</strong>
+                <span className="mt-1 block text-2xs leading-normal text-muted">
+                  {objective.description}
+                </span>
+                <span className="mt-2 block text-2xs text-faint">{objective.id}</span>
+                {objective.prerequisites.length > 0 ? (
+                  <div className="mt-3 border-t border-line pt-2">
+                    <span className="text-2xs font-bold uppercase tracking-wide text-faint">
+                      Prerequisites
+                    </span>
+                    <ul className="mt-1 grid gap-1 pl-4 text-2xs text-muted">
+                      {objective.prerequisites.map((prerequisite) => (
+                        <li key={prerequisite}>
+                          {objectiveTitles.get(prerequisite) ?? prerequisite}
+                          {objectiveTitles.has(prerequisite) ? (
+                            <span className="ml-1 text-faint">({prerequisite})</span>
+                          ) : null}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : (
+                  <span className="mt-2 block text-2xs text-faint">No prerequisites</span>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <Card muted>
+            <p className="text-xs leading-relaxed text-muted">
+              No objectives are recorded for this module.
+            </p>
+          </Card>
+        )}
       </section>
 
       <section>
