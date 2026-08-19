@@ -2,12 +2,15 @@
 
 This directory contains authored curriculum content. It is version controlled and separate from learner state.
 
+Fonzytooter is moving from the current single-course layout to an explicit multi-course catalog. The AI/ML curriculum remains the initial/default course. See [`../docs/multi-course.md`](../docs/multi-course.md) for the target ownership and directory model.
+
 ## Conventions
 
 - Stable IDs use `^[a-z0-9]+(?:[.-][a-z0-9]+)*$`: lowercase letters and numbers separated by single dots or hyphens.
-- Modules organize learning material.
+- Courses are the top-level authored learning paths; modules belong to exactly one course.
+- The current `modules/` directory is the transitional single-course layout for AI/ML. Do not add a second parallel top-level curriculum using another ad hoc convention; migrate to the documented course-aware layout first.
 - `module.yaml` uses `id`, `title`, and explicit `order`. Its ordered `lessons` list is the canonical lesson sequence.
-- Objectives describe capabilities and may reference globally unique prerequisite objective IDs, including objectives in other modules.
+- Objectives describe capabilities and may reference prerequisite objective IDs, including objectives in other modules. Course identity must be explicit where required by the multi-course model.
 - Lessons are MDX.
 - Lesson metadata is YAML frontmatter at the beginning of each MDX file. The Go loader preserves the remaining MDX source body and does not execute or compile it.
 - Videos are curated resources attached to modules/objectives.
