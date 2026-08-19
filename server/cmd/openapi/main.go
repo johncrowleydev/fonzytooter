@@ -5,12 +5,16 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/johncrowleydev/fonzytooter/server/internal/curriculum"
 	"github.com/johncrowleydev/fonzytooter/server/internal/httpapi"
 	"github.com/johncrowleydev/fonzytooter/server/internal/tutor"
 )
 
 func main() {
-	application := httpapi.NewAPI(tutor.NewService(tutor.NewUnavailableProvider()))
+	application := httpapi.NewAPI(
+		tutor.NewService(tutor.NewUnavailableProvider()),
+		curriculum.NewEmptyCatalog(),
+	)
 
 	encoder := json.NewEncoder(os.Stdout)
 	encoder.SetIndent("", "  ")

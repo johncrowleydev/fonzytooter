@@ -70,6 +70,11 @@ type lessonFile struct {
 // the filesystem or authored YAML nodes; the returned catalog is in-memory.
 func Load(fsys fs.FS) (*Catalog, error) {
 	errors := &errorCollector{}
+	validateCurriculumRoot(fsys, errors)
+	if err := errors.Err(); err != nil {
+		return nil, err
+	}
+
 	sources := loadSources(fsys, errors)
 	modules := loadModules(fsys, errors)
 	validateSources(sources, errors)
@@ -132,6 +137,28 @@ func Load(fsys fs.FS) (*Catalog, error) {
 	}
 
 	return newCatalog(loadedModules, loadedSources), nil
+}
+
+func validateCurriculumRoot(fsys fs.FS, collector *errorCollector) {
+	sourceInfo, err := fs.Stat(fsys, "sources.yaml")
+	if errors.Is(err, fs.ErrNotExist) {
+		collector.add("sources.yaml", errors.New("required file is missing"))
+	} else if err != nil {
+		collector.add("sources.yaml", fmt.Errorf("cannot stat required file: %w", err))
+	} else if sourceInfo.IsDir() {
+		collector.add("sources.yaml", errors.New("required file is a directory"))
+	} else if !sourceInfo.Mode().IsRegular() {
+		collector.add("sources.yaml", errors.New("required file is not a regular file"))
+	}
+
+	modulesInfo, err := fs.Stat(fsys, "modules")
+	if errors.Is(err, fs.ErrNotExist) {
+		collector.add("modules", errors.New("required directory is missing"))
+	} else if err != nil {
+		collector.add("modules", fmt.Errorf("cannot stat required directory: %w", err))
+	} else if !modulesInfo.IsDir() {
+		collector.add("modules", errors.New("required directory is not a directory"))
+	}
 }
 
 func loadSources(fsys fs.FS, collector *errorCollector) map[string]sourceAuthoring {

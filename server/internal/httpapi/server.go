@@ -104,10 +104,9 @@ type GetLessonResponse struct {
 
 // NewAPI constructs the application handler and registers every documented
 // operation on the same Huma API used by the OpenAPI command.
-func NewAPI(tutorService *tutor.Service, catalogs ...*curriculum.Catalog) *API {
-	catalog := curriculum.NewEmptyCatalog()
-	if len(catalogs) > 0 && catalogs[0] != nil {
-		catalog = catalogs[0]
+func NewAPI(tutorService *tutor.Service, catalog *curriculum.Catalog) *API {
+	if catalog == nil {
+		panic("httpapi.NewAPI: nil curriculum catalog")
 	}
 	mux := http.NewServeMux()
 	config := huma.DefaultConfig("Fonzytooter API", "0.1.0")
@@ -123,8 +122,8 @@ func NewAPI(tutorService *tutor.Service, catalogs ...*curriculum.Catalog) *API {
 	return &API{Handler: mux, Spec: humaAPI.OpenAPI()}
 }
 
-func NewServer(address string, tutorService *tutor.Service, catalogs ...*curriculum.Catalog) *http.Server {
-	application := NewAPI(tutorService, catalogs...)
+func NewServer(address string, tutorService *tutor.Service, catalog *curriculum.Catalog) *http.Server {
+	application := NewAPI(tutorService, catalog)
 
 	return &http.Server{
 		Addr:              address,

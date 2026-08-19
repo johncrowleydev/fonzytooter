@@ -11,11 +11,22 @@ import (
 	"testing"
 
 	"github.com/danielgtaylor/huma/v2"
+	"github.com/johncrowleydev/fonzytooter/server/internal/curriculum"
 	"github.com/johncrowleydev/fonzytooter/server/internal/tutor"
 )
 
+func TestNewAPIRejectsNilCatalog(t *testing.T) {
+	defer func() {
+		if recovered := recover(); recovered != "httpapi.NewAPI: nil curriculum catalog" {
+			t.Fatalf("expected nil catalog panic, got %v", recovered)
+		}
+	}()
+
+	NewAPI(tutor.NewService(tutor.NewUnavailableProvider()), nil)
+}
+
 func TestHealthReturnsTypedRepresentation(t *testing.T) {
-	app := NewAPI(tutor.NewService(tutor.NewUnavailableProvider()))
+	app := NewAPI(tutor.NewService(tutor.NewUnavailableProvider()), curriculum.NewEmptyCatalog())
 	req := httptest.NewRequest(http.MethodGet, "/api/health", nil)
 	response := httptest.NewRecorder()
 
@@ -35,7 +46,7 @@ func TestHealthReturnsTypedRepresentation(t *testing.T) {
 }
 
 func TestTutorTurnRouteUsesResourcePathAndStreamsEvents(t *testing.T) {
-	app := NewAPI(tutor.NewService(tutor.NewUnavailableProvider()))
+	app := NewAPI(tutor.NewService(tutor.NewUnavailableProvider()), curriculum.NewEmptyCatalog())
 	req := httptest.NewRequest(http.MethodPost, "/api/tutor/turns", strings.NewReader(`{"message":"hello"}`))
 	req.Header.Set("Content-Type", "application/json")
 	response := httptest.NewRecorder()
@@ -68,7 +79,7 @@ func TestTutorTurnRouteUsesResourcePathAndStreamsEvents(t *testing.T) {
 }
 
 func TestTutorTurnInvalidInputUsesCommonError(t *testing.T) {
-	app := NewAPI(tutor.NewService(tutor.NewUnavailableProvider()))
+	app := NewAPI(tutor.NewService(tutor.NewUnavailableProvider()), curriculum.NewEmptyCatalog())
 	for _, message := range []string{" ", "   "} {
 		t.Run(fmt.Sprintf("message %q", message), func(t *testing.T) {
 			req := httptest.NewRequest(http.MethodPost, "/api/tutor/turns", strings.NewReader(fmt.Sprintf(`{"message":%q}`, message)))
@@ -99,7 +110,7 @@ func TestTutorTurnInvalidInputUsesCommonError(t *testing.T) {
 }
 
 func TestTutorTurnMalformedJSONUsesBadRequestProblem(t *testing.T) {
-	app := NewAPI(tutor.NewService(tutor.NewUnavailableProvider()))
+	app := NewAPI(tutor.NewService(tutor.NewUnavailableProvider()), curriculum.NewEmptyCatalog())
 	req := httptest.NewRequest(http.MethodPost, "/api/tutor/turns", strings.NewReader("{"))
 	req.Header.Set("Content-Type", "application/json")
 	response := httptest.NewRecorder()
@@ -115,7 +126,7 @@ func TestTutorTurnMalformedJSONUsesBadRequestProblem(t *testing.T) {
 }
 
 func TestTutorTurnProviderFailureUsesBadGatewayProblem(t *testing.T) {
-	app := NewAPI(tutor.NewService(failingProvider{}))
+	app := NewAPI(tutor.NewService(failingProvider{}), curriculum.NewEmptyCatalog())
 	req := httptest.NewRequest(http.MethodPost, "/api/tutor/turns", strings.NewReader(`{"message":"hello"}`))
 	req.Header.Set("Content-Type", "application/json")
 	response := httptest.NewRecorder()
@@ -134,7 +145,7 @@ func TestTutorTurnProviderFailureUsesBadGatewayProblem(t *testing.T) {
 }
 
 func TestOpenAPIContract(t *testing.T) {
-	app := NewAPI(tutor.NewService(tutor.NewUnavailableProvider()))
+	app := NewAPI(tutor.NewService(tutor.NewUnavailableProvider()), curriculum.NewEmptyCatalog())
 	if app.Spec.OpenAPI != "3.1.0" {
 		t.Fatalf("expected OpenAPI 3.1.0, got %q", app.Spec.OpenAPI)
 	}
