@@ -1,0 +1,1332 @@
+---
+id: 02-functions-code-and-mathematics
+title: "Functions: Code and Mathematics"
+objectiveIds:
+  - python.functions
+sourceIds:
+  - python-execution-model
+  - python-tutorial
+  - eom-function
+  - eom-inverse-function
+  - openstax-function-composition
+  - openstax-inverse-functions
+  - mactutor-function-concept
+  - deep-learning-book-feedforward
+---
+
+# Functions: Code and Mathematics
+
+You already know how to write functions.
+
+In TypeScript:
+
+```typescript
+function fahrenheit(celsius: number): number {
+  return (celsius * 9) / 5 + 32
+}
+```
+
+In C#:
+
+```csharp
+double Fahrenheit(double celsius)
+{
+    return celsius * 9 / 5 + 32;
+}
+```
+
+And in Python:
+
+```python
+def fahrenheit(celsius: float) -> float:
+    return celsius * 9 / 5 + 32
+```
+
+The programming idea is familiar: provide an input, run some logic, receive an output.
+
+Mathematics uses the same word, **function**, for an idea that is closely related but more precise.
+
+If we write:
+
+```text
+f(c) = 9c / 5 + 32
+```
+
+we are not describing a procedure that a processor executes line by line. We are describing a relationship between allowable inputs and their corresponding outputs.
+
+That difference matters.
+
+The goal of this lesson is to make the mathematical idea precise enough that, later, expressions such as
+
+```text
+prediction = model(input)
+loss = loss_function(prediction, target)
+```
+
+and
+
+```text
+f(x) = f₃(f₂(f₁(x)))
+```
+
+feel like versions of the same underlying idea rather than unrelated programming and mathematics notation.
+
+---
+
+## A mathematical function is a mapping
+
+A common mathematical notation is:
+
+```text
+f : A → B
+```
+
+Read it as:
+
+> `f` is a function from `A` to `B`.
+
+The essential rule is:
+
+> **Every input in `A` is assigned exactly one output in `B`.**
+
+That assignment is what mathematicians mean by a **mapping**.
+
+The word can sound more abstract than the idea actually is. A mapping is simply a correspondence: take an allowed input and say which output belongs to it.
+
+For a small finite example, suppose:
+
+```text
+A = {1, 2, 3, 4}
+B = {A, B, C, D, E}
+```
+
+and define `f` by:
+
+```text
+1 → A
+2 → C
+3 → C
+4 → E
+```
+
+This is a perfectly valid function.
+
+Notice something important:
+
+```text
+2 → C
+3 → C
+```
+
+Two different inputs produce the same output.
+
+That does **not** violate the definition of a function.
+
+The restriction goes in the other direction. This would fail to define a function:
+
+```text
+2 → C
+2 → D
+```
+
+because the same input has been assigned two different outputs.
+
+So the rule is not:
+
+> every output has exactly one input.
+
+The rule is:
+
+> every input has exactly one output.
+
+That distinction is fundamental.
+
+---
+
+## The "one-to-one" misconception
+
+It is easy to absorb the phrase "one input, one output" and accidentally turn it into "one input for every output."
+
+Those are different claims.
+
+Consider:
+
+```text
+f(x) = x²
+```
+
+Then:
+
+```text
+f(2) = 4
+f(-2) = 4
+```
+
+Both inputs map to the same output.
+
+`f(x) = x²` is still a function.
+
+What you may have previously thought was required of every function actually describes a **special kind of function**: a one-to-one, or **injective**, function.
+
+We will give that property a precise definition shortly.
+
+For now, keep the basic definition separate from the stronger property:
+
+```text
+function:
+    every input has exactly one output
+
+one-to-one function:
+    different inputs also have different outputs
+```
+
+---
+
+## Domain, codomain, and image
+
+The notation
+
+```text
+f : A → B
+```
+
+contains more information than the formula for `f` alone.
+
+`A` is the **domain**.
+
+It is the set of allowed inputs.
+
+`B` is the **codomain**.
+
+It is the set in which the function's outputs are declared to live.
+
+The **image** of the function is the set of outputs that the function actually reaches.
+
+Return to our finite example:
+
+```text
+f : {1, 2, 3, 4} → {A, B, C, D, E}
+
+1 → A
+2 → C
+3 → C
+4 → E
+```
+
+Then:
+
+```text
+domain    = {1, 2, 3, 4}
+codomain  = {A, B, C, D, E}
+image     = {A, C, E}
+```
+
+`B` and `D` belong to the codomain, but this particular function never produces them.
+
+That is the distinction between **where outputs are allowed to live** and **which outputs actually occur**.
+
+Many textbooks use the word **range** for the image, and that is how we will use it here:
+
+```text
+range = image = outputs actually attained
+```
+
+Be aware that mathematical terminology is not perfectly uniform. Some sources use "range" differently, so when precision matters, `domain`, `codomain`, and `image` are less ambiguous.
+
+### A programming analogy
+
+A function signature can give you a useful approximation of this idea.
+
+In TypeScript:
+
+```typescript
+function square(x: number): number {
+  return x * x
+}
+```
+
+The parameter type is **domain-like** and the return type is **codomain-like**.
+
+Mathematically, we might write something like:
+
+```text
+f : ℝ → ℝ
+f(x) = x²
+```
+
+But do not push the analogy too far.
+
+A JavaScript `number` is not literally the set of real numbers. Floating-point values have finite representations, `NaN` exists, runtime exceptions exist, and a program may fail to return normally at all.
+
+The analogy is useful because both signatures answer a similar structural question:
+
+```text
+What kind of thing may go in?
+What kind of thing may come out?
+```
+
+The mathematical version is cleaner and stricter.
+
+---
+
+## The codomain is part of the function
+
+Consider the rule:
+
+```text
+f(x) = x²
+```
+
+We could declare:
+
+```text
+f : ℝ → ℝ
+```
+
+or:
+
+```text
+f : ℝ → [0, ∞)
+```
+
+The formula is identical.
+
+The actual outputs are identical.
+
+But the declared codomain is different.
+
+That difference will matter when we ask whether the function is **onto** and whether it has an inverse from its entire codomain back to its domain.
+
+This is one reason mathematicians do not identify a function only with a formula.
+
+The mapping, its domain, and its codomain all matter.
+
+---
+
+## A short historical detour: the definition became more abstract
+
+The modern definition of a function did not appear fully formed.
+
+The concept changed as mathematics needed it to do more work.
+
+In the seventeenth century, Leibniz used the word *function* in a geometric setting. Early definitions were tied closely to quantities associated with curves and formulas.
+
+In the eighteenth century, Euler made functions central to analysis. His 1748 treatment described functions in terms of analytic expressions built from variables and constants. In 1755 he also gave a broader description in terms of one quantity depending on another.
+
+During the nineteenth century, work surrounding Fourier series helped expose a problem with thinking of a function as merely "a formula." Mathematicians needed to discuss assignments that might be piecewise, irregular, or not represented by one convenient analytic expression. Fourier and Dirichlet were important in that broadening.
+
+The modern set-based viewpoint strips away the representation and keeps the underlying structure:
+
+```text
+input set → assignment rule → output set
+```
+
+That historical shift is useful for us because software engineers are also tempted to identify a function with its implementation.
+
+Mathematically, the implementation is not the central object.
+
+The mapping is.
+
+---
+
+## Functions as transformations
+
+For numerical work, **transformation** is often a useful mental model.
+
+```python
+def center(value: float, mean: float) -> float:
+    return value - mean
+```
+
+For fixed `mean`, this takes one numerical value and transforms it into another.
+
+Likewise:
+
+```python
+def relu(x: float) -> float:
+    return max(0.0, x)
+```
+
+transforms negative inputs to `0` and leaves positive inputs unchanged.
+
+But "transformation" is an intuition, not the formal definition.
+
+A function may map a photograph to a label, a string to its length, a database row to a DTO, or a vector to another vector. The output does not need to look like a modified version of the input.
+
+"Mapping" is therefore the more general word.
+
+"Transformation" is often the more intuitive one.
+
+---
+
+## Some functions lose information
+
+Consider absolute value:
+
+```text
+f(x) = |x|
+```
+
+Then:
+
+```text
+f(3) = 3
+f(-3) = 3
+```
+
+After seeing only the output `3`, you cannot determine whether the original input was `3` or `-3`.
+
+The mapping has collapsed two distinguishable inputs into the same output.
+
+This gives us a useful way to understand **injectivity**.
+
+### Injective: no two inputs collapse together
+
+A function is **injective** if different inputs always produce different outputs.
+
+Equivalently:
+
+```text
+if f(a) = f(b), then a = b
+```
+
+That condition says that if the outputs are equal, the inputs must have been equal too.
+
+Examples:
+
+```text
+f(x) = 2x + 3      injective over ℝ
+f(x) = x²          not injective over ℝ
+f(x) = |x|         not injective over ℝ
+```
+
+This is the formal property that the phrase **one-to-one** refers to.
+
+A function does not have to be injective.
+
+Injectivity tells you something extra about how the function behaves.
+
+---
+
+## Surjective: does the function cover its codomain?
+
+Injectivity asks whether inputs collide.
+
+**Surjectivity** asks a different question:
+
+> Does every element of the codomain actually get hit?
+
+A function is **surjective**, or **onto**, if every value in its codomain is the output of at least one input.
+
+Using our earlier terminology:
+
+```text
+surjective exactly when image = codomain
+```
+
+Consider:
+
+```text
+f : ℝ → ℝ
+f(x) = x²
+```
+
+This is not surjective because no real input produces `-1`, `-10`, or any other negative real number.
+
+But if we declare:
+
+```text
+f : ℝ → [0, ∞)
+f(x) = x²
+```
+
+then the function **is** surjective. Every nonnegative real number is the square of at least one real input.
+
+Same formula.
+
+Same domain.
+
+Different codomain.
+
+Different answer to the question "is it onto?"
+
+That is why codomain is not decorative notation.
+
+---
+
+## Bijective: no collisions and no missing outputs
+
+A function is **bijective** if it is both injective and surjective.
+
+A useful mental summary is:
+
+```text
+injective:
+    no two inputs collapse together
+
+surjective:
+    no codomain values are missed
+
+bijective:
+    neither happens
+```
+
+For a bijection, every value in the codomain corresponds to exactly one value in the domain.
+
+That makes the mapping reversible.
+
+And that brings us to inverse functions.
+
+---
+
+## Inverse functions undo mappings
+
+Suppose:
+
+```text
+f(x) = 2x + 3
+```
+
+If we know that the output is `11`, we can reconstruct the input:
+
+```text
+11 = 2x + 3
+8 = 2x
+x = 4
+```
+
+The inverse function performs that reversal:
+
+```text
+f⁻¹(y) = (y - 3) / 2
+```
+
+So:
+
+```text
+f(4) = 11
+f⁻¹(11) = 4
+```
+
+More generally:
+
+```text
+f⁻¹(f(x)) = x
+```
+
+and, when the inverse covers the entire codomain of `f`:
+
+```text
+f(f⁻¹(y)) = y
+```
+
+The superscript `-1` here does **not** mean reciprocal.
+
+```text
+f⁻¹(x) ≠ 1 / f(x)
+```
+
+It means "the inverse mapping of `f`."
+
+### Why injectivity matters
+
+Try to reverse:
+
+```text
+f(x) = x²
+```
+
+over all real numbers.
+
+If the output is `9`, the original input might have been:
+
+```text
+3
+```
+
+or:
+
+```text
+-3
+```
+
+A reverse mapping would have to choose two outputs for the same inverse input `9`.
+
+That would violate the definition of a function.
+
+The original function lost information, so it cannot be perfectly undone.
+
+### Why surjectivity matters
+
+Now suppose:
+
+```text
+f : ℝ → ℝ
+f(x) = x²
+```
+
+What should the inverse do with input `-1`?
+
+There is no real `x` for which:
+
+```text
+x² = -1
+```
+
+So an inverse defined on the **entire stated codomain** cannot exist either.
+
+This gives the precise result we will use:
+
+> A function `f : A → B` has a two-sided inverse `f⁻¹ : B → A` exactly when `f` is bijective.
+
+You will sometimes see textbooks say simply that a function needs to be "one-to-one" to have an inverse. Usually the inverse is then being defined only on the function's image, or the codomain is implicitly taken to be the range. With an explicit domain and codomain, bijectivity is the clean condition for an inverse between the two full sets.
+
+---
+
+## Restricting the domain can make a function invertible
+
+The square function becomes reversible if we stop allowing both positive and negative inputs.
+
+Define:
+
+```text
+f : [0, ∞) → [0, ∞)
+f(x) = x²
+```
+
+Now each output corresponds to exactly one allowed input.
+
+The inverse is:
+
+```text
+f⁻¹(x) = √x
+```
+
+The formula `x²` did not change.
+
+We changed the function by changing its domain and codomain.
+
+This is another example of why those sets are part of the mathematical object.
+
+### Logarithms are another inverse
+
+For a base such as `2`, consider:
+
+```text
+f(x) = 2ˣ
+```
+
+The inverse asks:
+
+> What exponent would produce this value?
+
+That inverse is the logarithm:
+
+```text
+f⁻¹(x) = log₂(x)
+```
+
+So:
+
+```text
+2³ = 8
+log₂(8) = 3
+```
+
+This also gives us one small terminology distinction worth locking in now:
+
+```text
+x²     power function — the variable is the base
+2ˣ     exponential function — the variable is the exponent
+```
+
+We will study exponentials and logarithms properly later. For this lesson, the important point is that logarithms are a clean example of inverse functions.
+
+---
+
+## Composition: one function feeds another
+
+Suppose:
+
+```text
+f : A → B
+g : B → C
+```
+
+The output of `f` is suitable as the input of `g`.
+
+So we can build a new function by applying them in sequence:
+
+```text
+x → f(x) → g(f(x))
+```
+
+Mathematically, this is **composition**:
+
+```text
+(g ∘ f)(x) = g(f(x))
+```
+
+Read `g ∘ f` as:
+
+> `g` composed with `f`.
+
+The order can look backward at first. Evaluation still happens from the inside out:
+
+```text
+first:  f(x)
+then:   g(...)
+```
+
+In ordinary code, the same structure is familiar:
+
+```python
+result = g(f(x))
+```
+
+For example:
+
+```python
+def double(x: float) -> float:
+    return x * 2
+
+
+def shift(x: float) -> float:
+    return x + 3
+
+
+result = shift(double(4))
+# 11
+```
+
+The mathematical version is:
+
+```text
+f(x) = 2x
+g(x) = x + 3
+
+(g ∘ f)(4)
+= g(f(4))
+= g(8)
+= 11
+```
+
+### Composition has compatibility requirements
+
+The types in a software pipeline have to line up.
+
+The same is true mathematically.
+
+If:
+
+```text
+f : A → B
+g : B → C
+```
+
+then every output from `f` belongs to the domain expected by `g`.
+
+More generally, `g(f(x))` only makes sense for inputs where `f(x)` lands inside the domain of `g`.
+
+This is one of the places where domain and codomain stop feeling like vocabulary and start doing useful work.
+
+They tell you whether transformations can be connected.
+
+---
+
+## Inverses reverse composition order
+
+Suppose you perform two reversible transformations:
+
+```text
+x → f(x) → g(f(x))
+```
+
+To get back to `x`, you must undo the **last** transformation first:
+
+```text
+g(f(x)) → f(x) → x
+            g⁻¹      f⁻¹
+```
+
+So:
+
+```text
+(g ∘ f)⁻¹ = f⁻¹ ∘ g⁻¹
+```
+
+This should feel familiar from software and everyday procedures.
+
+If you:
+
+```text
+compress → encrypt
+```
+
+then reversal is:
+
+```text
+decrypt → decompress
+```
+
+You undo operations in the opposite order from the one in which you applied them.
+
+We do not need to prove this formally yet. The important part is recognizing composition as a structure that can itself be reasoned about.
+
+---
+
+## A Python function is not automatically a mathematical function
+
+So far, our Python examples have behaved like mathematical functions:
+
+```python
+def square(x: float) -> float:
+    return x * x
+```
+
+Given the same input, the same output is determined.
+
+There is no externally visible effect other than returning the value.
+
+But Python permits much more than that.
+
+Consider:
+
+```python
+current_id = 0
+
+
+def next_id() -> int:
+    global current_id
+    current_id += 1
+    return current_id
+```
+
+Calling:
+
+```python
+next_id()
+```
+
+does not have one fixed output determined only by the explicit arguments. It depends on mutable external state.
+
+Or:
+
+```python
+from datetime import datetime
+
+
+def current_time() -> datetime:
+    return datetime.now()
+```
+
+The same call at different moments produces different values.
+
+Or:
+
+```python
+def save_user(user) -> None:
+    database.insert(user)
+```
+
+The important result of the call may be the database mutation rather than its return value.
+
+Ordinary programming functions may:
+
+- read external state;
+- mutate external state;
+- perform I/O;
+- depend on time or randomness;
+- raise exceptions;
+- communicate through effects other than a returned value.
+
+Mathematical functions do not work that way.
+
+For every allowed mathematical input, the associated output is fixed.
+
+### Pure functions are the closest programming analogue
+
+In programming, a **pure function** is the closest match to the mathematical model.
+
+Informally, a pure function:
+
+- determines its result from its inputs;
+- has no externally visible side effects.
+
+For example:
+
+```python
+def normalize(value: float, minimum: float, maximum: float) -> float:
+    return (value - minimum) / (maximum - minimum)
+```
+
+If the same three arguments are supplied, the same result follows.
+
+This distinction becomes especially important in mathematical and ML code because equations often describe software as though every operation were a clean mathematical transformation.
+
+Much of the numerical core really can be understood that way.
+
+The surrounding program still contains files, devices, randomness, state, logging, networking, and every other messy part of software.
+
+Do not confuse the two levels.
+
+---
+
+## Functions can take more than one input
+
+Nothing about a mathematical function requires a single scalar input.
+
+A function can accept an ordered pair:
+
+```text
+f(x, y) = x + y
+```
+
+or a vector:
+
+```text
+f : ℝⁿ → ℝᵐ
+```
+
+or something much more structured.
+
+In programming, you already use the equivalent idea constantly:
+
+```python
+def distance(x1, y1, x2, y2):
+    ...
+```
+
+Mathematically, multiple named arguments can be understood as one structured input.
+
+For example, the pair `(x, y)` belongs to a product domain.
+
+We do not need formal set theory for that yet. The practical point is simply:
+
+> "A function maps an input to an output" does not imply that both input and output are single numbers.
+
+That will matter immediately in machine learning, where inputs, outputs, and parameters are usually vectors, matrices, tensors, or structured collections.
+
+---
+
+## Parameterized functions
+
+Now consider:
+
+```text
+f(x) = wx + b
+```
+
+There are three symbols here, but they do not necessarily play the same role.
+
+We may treat `x` as the ordinary input while `w` and `b` are fixed parameters that select one member of a family of functions.
+
+For example:
+
+```text
+w = 2, b = 1     gives     f(x) = 2x + 1
+w = -3, b = 4    gives     f(x) = -3x + 4
+```
+
+Machine learning uses this idea everywhere.
+
+A model is often written:
+
+```text
+fθ(x)
+```
+
+or:
+
+```text
+f(x; θ)
+```
+
+where `x` is the data input and `θ` represents the model parameters.
+
+The semicolon is only a notational reminder that the parameters are playing a different conceptual role from the ordinary input.
+
+During one forward evaluation, the parameters are treated as fixed and the model maps an input to an output.
+
+During training, those parameters are adjusted.
+
+So the learning process moves us through a family of possible functions.
+
+---
+
+## The machine-learning payoff: models are composed functions
+
+A simple artificial neuron is often written schematically as:
+
+```text
+y = σ(wx + b)
+```
+
+There are already multiple functions hiding inside that expression.
+
+First:
+
+```text
+x → wx + b
+```
+
+Then:
+
+```text
+z → σ(z)
+```
+
+So the full operation is a composition:
+
+```text
+x → wx + b → σ(wx + b)
+```
+
+For vector inputs, the same idea becomes:
+
+```text
+y = σ(Wx + b)
+```
+
+where `W` is a matrix and `b` is a vector.
+
+We will learn the linear algebra behind that later.
+
+The structural idea already makes sense now.
+
+A neural network stacks transformations:
+
+```text
+x
+↓
+f₁
+↓
+f₂
+↓
+f₃
+↓
+output
+```
+
+or:
+
+```text
+f(x) = f₃(f₂(f₁(x)))
+```
+
+The *Deep Learning* text describes feedforward networks in exactly this compositional way: layers are functions composed into a larger mapping, and the learned parameters determine which mapping the network implements.
+
+That is not merely a convenient metaphor.
+
+Function composition is part of the actual mathematical structure of the model.
+
+---
+
+## Loss functions are functions too
+
+Suppose a model produces a prediction:
+
+```text
+ŷ = fθ(x)
+```
+
+Training needs some way to measure how that prediction compares with the desired target `y`.
+
+A **loss function** performs another mapping:
+
+```text
+prediction and target → numerical loss
+```
+
+Schematically:
+
+```text
+L(ŷ, y)
+```
+
+Substitute the model prediction:
+
+```text
+L(fθ(x), y)
+```
+
+Now the composition is visible:
+
+```text
+input x
+  ↓
+model fθ
+  ↓
+prediction ŷ
+  ↓
+loss L with target y
+  ↓
+number measuring error
+```
+
+During training, we eventually ask how changing `θ` changes that final loss.
+
+That question will lead us into derivatives, gradients, and optimization later.
+
+For now, the important conceptual foundation is already in place:
+
+> **Machine learning is largely about constructing, composing, and optimizing parameterized functions.**
+
+The math becomes much less alien once that sentence is understood literally.
+
+---
+
+## Translate between code and mathematics
+
+Consider this Python:
+
+```python
+def affine(x: float, weight: float, bias: float) -> float:
+    return weight * x + bias
+
+
+def relu(x: float) -> float:
+    return max(0.0, x)
+
+
+def neuron(x: float, weight: float, bias: float) -> float:
+    return relu(affine(x, weight, bias))
+```
+
+A mathematical description is:
+
+```text
+a(x; w, b) = wx + b
+r(x) = max(0, x)
+
+neuron(x; w, b) = r(a(x; w, b))
+```
+
+or, emphasizing composition:
+
+```text
+neuron = r ∘ a
+```
+
+with `w` and `b` treated as parameters of `a`.
+
+The code and mathematics are not identical objects.
+
+The Python function has runtime behavior, floating-point semantics, names, objects, and implementation details.
+
+The mathematical expression describes the clean mapping we intend the computation to realize.
+
+Learning to move comfortably between those two views is one of the core skills of scientific programming.
+
+---
+
+## Check your mental model
+
+Before moving on, you should be able to reason through these without relying only on vocabulary.
+
+### 1. Is it a function?
+
+Suppose:
+
+```text
+1 → A
+2 → B
+2 → C
+3 → A
+```
+
+Does this define a function from `{1, 2, 3}` to `{A, B, C}`?
+
+Explain the answer using the actual definition.
+
+### 2. Correct the one-to-one misconception
+
+For:
+
+```text
+f(x) = x²
+```
+
+why do:
+
+```text
+f(2) = 4
+f(-2) = 4
+```
+
+not stop `f` from being a function?
+
+What property does `f` fail instead?
+
+### 3. Domain, codomain, image
+
+Given:
+
+```text
+f : {1, 2, 3, 4} → {A, B, C, D}
+
+1 → A
+2 → C
+3 → C
+4 → A
+```
+
+identify:
+
+```text
+domain
+codomain
+image/range
+```
+
+Is the function injective?
+
+Is it surjective?
+
+### 4. Same formula, different function properties
+
+Compare:
+
+```text
+f : ℝ → ℝ
+f(x) = x²
+```
+
+with:
+
+```text
+g : ℝ → [0, ∞)
+g(x) = x²
+```
+
+Both use the same formula.
+
+Which one is surjective, and why?
+
+Are either of them injective over the stated domain?
+
+### 5. Can it be inverted?
+
+Why does:
+
+```text
+f : ℝ → ℝ
+f(x) = 2x + 3
+```
+
+have an inverse, while:
+
+```text
+g : ℝ → ℝ
+g(x) = x²
+```
+
+does not have a two-sided inverse over those full sets?
+
+What domain restriction makes the square function invertible onto `[0, ∞)`?
+
+### 6. Composition order
+
+Given:
+
+```text
+f(x) = 2x
+g(x) = x + 3
+```
+
+compute:
+
+```text
+(g ∘ f)(4)
+```
+
+and:
+
+```text
+(f ∘ g)(4)
+```
+
+Are they equal?
+
+What does that tell you about function composition in general?
+
+### 7. Mathematical or procedural?
+
+Why is this close to a mathematical function?
+
+```python
+def square(x):
+    return x * x
+```
+
+Why is this not naturally modeled as a mathematical function of its explicit arguments alone?
+
+```python
+count = 0
+
+
+def next_count():
+    global count
+    count += 1
+    return count
+```
+
+### 8. Read the ML expression
+
+Explain this structurally before worrying about how it is trained:
+
+```text
+L(fθ(x), y)
+```
+
+What is the input to the model?
+
+What are the parameters?
+
+What becomes the input to the loss function?
+
+What kind of output does the loss function produce?
+
+---
+
+## What you should carry forward
+
+A mathematical function is not merely "some formula" and not merely "code with a return value."
+
+It is a mapping from a domain to a codomain in which every domain input has exactly one output.
+
+Different inputs are allowed to share an output. When they never do, the function has the additional property of being **injective**.
+
+The **codomain** is the declared destination set. The **image**, or range in our terminology, is the set of outputs actually reached.
+
+A function is **surjective** when its image fills its codomain.
+
+A function is **bijective** when it is both injective and surjective, which is exactly what is needed for a two-sided inverse between its full domain and codomain.
+
+Function **composition** builds larger mappings by feeding the output of one function into another.
+
+Python functions can represent these mappings cleanly, but programming functions are more general because they may depend on state, perform I/O, mutate data, or have other side effects.
+
+Pure computational functions are the closest programming analogue to the mathematical object.
+
+Most importantly for what comes next, start seeing ML notation as a system of transformations rather than a wall of symbols:
+
+```text
+x → fθ(x) → L(fθ(x), y)
+```
+
+A model is a parameterized function.
+
+Layers are functions composed with functions.
+
+Activations are functions.
+
+Losses are functions.
+
+Later, derivatives and gradients will tell us how these functions change.
+
+But the object they act on is already familiar.
+
+You have been writing functions for years.
+
+Now we have made the mathematical version precise enough to build on.
