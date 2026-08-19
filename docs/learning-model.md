@@ -40,7 +40,11 @@ Spaced repetition answers questions such as: can the learner retrieve or explain
 
 ### Application
 
-Exercises answer questions such as: can the learner calculate, implement, or use the idea in a constrained problem?
+Exercises and worksheets answer questions such as: can the learner calculate, implement, or use the idea in a constrained problem?
+
+For worksheets, the reasoning shown on the page can provide evidence that a final-answer-only check cannot. A wrong result may still reveal mostly correct reasoning plus one localized mistake; a correct result with no work may provide weaker evidence for a problem intended to assess a procedure or derivation.
+
+Worksheet review should map findings back to the relevant objective/concept IDs and accumulate evidence over time rather than turning one AI judgment into a permanent skill label.
 
 ### Transfer
 
@@ -57,6 +61,10 @@ Recall        Strong
 Application   Developing
 Transfer      Not assessed
 ```
+
+AI-interpreted worksheet feedback is evidence, not an independent authority for mastery. The tutor may recommend more practice, prerequisite review, or a mastery check, but it should not directly mark an objective mastered based on a vision-model judgment.
+
+See `docs/worksheets.md` for the printable-practice and worksheet-review model.
 
 ## Spaced repetition
 
@@ -95,6 +103,7 @@ Keep a small activity history to provide useful recency context:
 - video completed;
 - review attempted;
 - exercise run/checked;
+- worksheet attempted/reviewed;
 - repeated test failure;
 - project status change;
 - note created.
