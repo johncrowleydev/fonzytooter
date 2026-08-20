@@ -6,6 +6,7 @@
  */
 import * as zod from 'zod'
 import { SourceResource } from './sourceResource.zod'
+import { WorksheetSummary } from './worksheetSummary.zod'
 
 export const LessonResource = zod.strictObject({
   $schema: zod.url().optional().describe('A URL to the JSON Schema for this object.'),
@@ -16,6 +17,7 @@ export const LessonResource = zod.strictObject({
   objectiveIds: zod.array(zod.string()),
   sources: zod.array(SourceResource),
   title: zod.string(),
+  worksheets: zod.array(WorksheetSummary),
 })
 
 export type LessonResource = zod.input<typeof LessonResource>

@@ -46,6 +46,12 @@ type CourseLessonPathInput struct {
 	LessonID string `path:"lessonId"`
 }
 
+type CourseWorksheetPathInput struct {
+	CourseID    string `path:"courseId"`
+	ModuleID    string `path:"moduleId"`
+	WorksheetID string `path:"worksheetId"`
+}
+
 type CourseSummary struct {
 	ID          string `json:"id"`
 	Title       string `json:"title"`
@@ -87,6 +93,15 @@ type LessonSummary struct {
 	ObjectiveIDs []string `json:"objectiveIds" nullable:"false"`
 }
 
+type WorksheetSummary struct {
+	ID           string   `json:"id"`
+	Title        string   `json:"title"`
+	LessonID     string   `json:"lessonId"`
+	Order        int      `json:"order"`
+	ObjectiveIDs []string `json:"objectiveIds" nullable:"false"`
+	ProblemCount int      `json:"problemCount"`
+}
+
 type ModuleResource struct {
 	CourseID   string              `json:"courseId"`
 	ID         string              `json:"id"`
@@ -95,6 +110,7 @@ type ModuleResource struct {
 	Objectives []ObjectiveResource `json:"objectives" nullable:"false"`
 	Videos     []VideoResource     `json:"videos" nullable:"false"`
 	Lessons    []LessonSummary     `json:"lessons" nullable:"false"`
+	Worksheets []WorksheetSummary  `json:"worksheets" nullable:"false"`
 }
 
 type SourceResource struct {
@@ -104,13 +120,34 @@ type SourceResource struct {
 }
 
 type LessonResource struct {
-	CourseID     string           `json:"courseId"`
-	ID           string           `json:"id"`
-	ModuleID     string           `json:"moduleId"`
-	Title        string           `json:"title"`
-	ObjectiveIDs []string         `json:"objectiveIds" nullable:"false"`
-	Sources      []SourceResource `json:"sources" nullable:"false"`
-	Content      string           `json:"content" doc:"Raw MDX source body with YAML frontmatter removed."`
+	CourseID     string             `json:"courseId"`
+	ID           string             `json:"id"`
+	ModuleID     string             `json:"moduleId"`
+	Title        string             `json:"title"`
+	ObjectiveIDs []string           `json:"objectiveIds" nullable:"false"`
+	Sources      []SourceResource   `json:"sources" nullable:"false"`
+	Content      string             `json:"content" doc:"Raw MDX source body with YAML frontmatter removed."`
+	Worksheets   []WorksheetSummary `json:"worksheets" nullable:"false"`
+}
+
+type WorksheetProblemResource struct {
+	ID            string   `json:"id"`
+	Prompt        string   `json:"prompt"`
+	ObjectiveIDs  []string `json:"objectiveIds" nullable:"false"`
+	RequiresWork  bool     `json:"requiresWork"`
+	ResponseLines int      `json:"responseLines"`
+}
+
+type WorksheetResource struct {
+	CourseID     string                     `json:"courseId"`
+	ModuleID     string                     `json:"moduleId"`
+	ID           string                     `json:"id"`
+	Title        string                     `json:"title"`
+	LessonID     string                     `json:"lessonId"`
+	Order        int                        `json:"order"`
+	ObjectiveIDs []string                   `json:"objectiveIds" nullable:"false"`
+	Instructions string                     `json:"instructions"`
+	Problems     []WorksheetProblemResource `json:"problems" nullable:"false"`
 }
 
 type ListCoursesResponse struct {
@@ -127,6 +164,10 @@ type GetCourseModuleResponse struct {
 
 type GetCourseLessonResponse struct {
 	Body LessonResource
+}
+
+type GetCourseWorksheetResponse struct {
+	Body WorksheetResource
 }
 
 // NewAPI constructs the application handler and registers every documented
@@ -256,6 +297,42 @@ func registerCurriculum(api huma.API, catalog *curriculum.Catalog) {
 			ObjectiveIDs: append([]string{}, lesson.ObjectiveIDs...),
 			Sources:      sources,
 			Content:      lesson.Content,
+			Worksheets:   worksheetSummaries(catalog.WorksheetsByLesson(input.CourseID, input.ModuleID, input.LessonID)),
+		}}, nil
+	})
+
+	huma.Register[CourseWorksheetPathInput, GetCourseWorksheetResponse](api, huma.Operation{
+		OperationID: "getCourseModuleWorksheet",
+		Method:      http.MethodGet,
+		Path:        "/api/courses/{courseId}/modules/{moduleId}/worksheets/{worksheetId}",
+		Summary:     "Get a course module worksheet",
+		Tags:        []string{"curriculum"},
+		Errors:      []int{http.StatusNotFound},
+	}, func(_ context.Context, input *CourseWorksheetPathInput) (*GetCourseWorksheetResponse, error) {
+		worksheet, ok := catalog.WorksheetByCourse(input.CourseID, input.ModuleID, input.WorksheetID)
+		if !ok {
+			return nil, huma.Error404NotFound("worksheet not found")
+		}
+		problems := make([]WorksheetProblemResource, 0, len(worksheet.Problems))
+		for _, problem := range worksheet.Problems {
+			problems = append(problems, WorksheetProblemResource{
+				ID:            problem.ID,
+				Prompt:        problem.Prompt,
+				ObjectiveIDs:  append([]string{}, problem.ObjectiveIDs...),
+				RequiresWork:  problem.RequiresWork,
+				ResponseLines: problem.ResponseLines,
+			})
+		}
+		return &GetCourseWorksheetResponse{Body: WorksheetResource{
+			CourseID:     worksheet.CourseID,
+			ModuleID:     worksheet.ModuleID,
+			ID:           worksheet.ID,
+			Title:        worksheet.Title,
+			LessonID:     worksheet.LessonID,
+			Order:        worksheet.Order,
+			ObjectiveIDs: append([]string{}, worksheet.ObjectiveIDs...),
+			Instructions: worksheet.Instructions,
+			Problems:     problems,
 		}}, nil
 	})
 }
@@ -298,7 +375,23 @@ func moduleResource(module curriculum.Module) ModuleResource {
 		Objectives: objectives,
 		Videos:     videos,
 		Lessons:    lessons,
+		Worksheets: worksheetSummaries(module.Worksheets),
 	}
+}
+
+func worksheetSummaries(worksheets []curriculum.Worksheet) []WorksheetSummary {
+	summaries := make([]WorksheetSummary, 0, len(worksheets))
+	for _, worksheet := range worksheets {
+		summaries = append(summaries, WorksheetSummary{
+			ID:           worksheet.ID,
+			Title:        worksheet.Title,
+			LessonID:     worksheet.LessonID,
+			Order:        worksheet.Order,
+			ObjectiveIDs: append([]string{}, worksheet.ObjectiveIDs...),
+			ProblemCount: len(worksheet.Problems),
+		})
+	}
+	return summaries
 }
 
 func registerHealth(api huma.API) {

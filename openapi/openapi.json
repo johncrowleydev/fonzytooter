@@ -277,6 +277,12 @@
           },
           "title": {
             "type": "string"
+          },
+          "worksheets": {
+            "items": {
+              "$ref": "#/components/schemas/WorksheetSummary"
+            },
+            "type": "array"
           }
         },
         "required": [
@@ -286,7 +292,8 @@
           "title",
           "objectiveIds",
           "sources",
-          "content"
+          "content",
+          "worksheets"
         ],
         "type": "object"
       },
@@ -355,6 +362,12 @@
               "$ref": "#/components/schemas/VideoResource"
             },
             "type": "array"
+          },
+          "worksheets": {
+            "items": {
+              "$ref": "#/components/schemas/WorksheetSummary"
+            },
+            "type": "array"
           }
         },
         "required": [
@@ -364,7 +377,8 @@
           "order",
           "objectives",
           "videos",
-          "lessons"
+          "lessons",
+          "worksheets"
         ],
         "type": "object"
       },
@@ -623,6 +637,135 @@
           "objectiveIds"
         ],
         "type": "object"
+      },
+      "WorksheetProblemResource": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "objectiveIds": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "prompt": {
+            "type": "string"
+          },
+          "requiresWork": {
+            "type": "boolean"
+          },
+          "responseLines": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "prompt",
+          "objectiveIds",
+          "requiresWork",
+          "responseLines"
+        ],
+        "type": "object"
+      },
+      "WorksheetResource": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/WorksheetResource.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "courseId": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "instructions": {
+            "type": "string"
+          },
+          "lessonId": {
+            "type": "string"
+          },
+          "moduleId": {
+            "type": "string"
+          },
+          "objectiveIds": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "order": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "problems": {
+            "items": {
+              "$ref": "#/components/schemas/WorksheetProblemResource"
+            },
+            "type": "array"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "courseId",
+          "moduleId",
+          "id",
+          "title",
+          "lessonId",
+          "order",
+          "objectiveIds",
+          "instructions",
+          "problems"
+        ],
+        "type": "object"
+      },
+      "WorksheetSummary": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "lessonId": {
+            "type": "string"
+          },
+          "objectiveIds": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "order": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "problemCount": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "lessonId",
+          "order",
+          "objectiveIds",
+          "problemCount"
+        ],
+        "type": "object"
       }
     }
   },
@@ -865,6 +1008,83 @@
           }
         },
         "summary": "Get a course lesson",
+        "tags": [
+          "curriculum"
+        ]
+      }
+    },
+    "/api/courses/{courseId}/modules/{moduleId}/worksheets/{worksheetId}": {
+      "get": {
+        "operationId": "getCourseModuleWorksheet",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "courseId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "moduleId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "worksheetId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorksheetResource"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Get a course module worksheet",
         "tags": [
           "curriculum"
         ]

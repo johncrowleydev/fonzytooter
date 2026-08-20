@@ -8,6 +8,7 @@ import * as zod from 'zod'
 import { LessonSummary } from './lessonSummary.zod'
 import { ObjectiveResource } from './objectiveResource.zod'
 import { VideoResource } from './videoResource.zod'
+import { WorksheetSummary } from './worksheetSummary.zod'
 
 export const ModuleResource = zod.strictObject({
   $schema: zod.url().optional().describe('A URL to the JSON Schema for this object.'),
@@ -18,6 +19,7 @@ export const ModuleResource = zod.strictObject({
   order: zod.int(),
   title: zod.string(),
   videos: zod.array(VideoResource),
+  worksheets: zod.array(WorksheetSummary),
 })
 
 export type ModuleResource = zod.input<typeof ModuleResource>

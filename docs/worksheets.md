@@ -148,9 +148,8 @@ The tutor may recommend actions based on the evidence, such as:
 
 ## Scope boundary
 
-This document establishes the curriculum and tutoring role of worksheets. It does **not** yet decide:
+This document establishes the curriculum and tutoring role of worksheets. The implemented Git-authoring schema is documented in [`content-authoring.md`](content-authoring.md). This document does **not** yet decide:
 
-- the final worksheet file/schema format;
 - how PDFs are rendered;
 - how workbook PDFs are assembled;
 - how uploads are stored;
