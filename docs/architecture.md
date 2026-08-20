@@ -44,7 +44,7 @@ EC2
                   SQLite
 ```
 
-Some boxes above describe intended subsystems that are not all implemented yet. The course-aware curriculum delivery path, embedded exercise authoring model, generated API contract, and initial learner persistence are implemented; exercise execution, FSRS, and real tutor providers remain future work.
+Some boxes above describe intended subsystems that are not all implemented yet. The course-aware curriculum delivery path, embedded exercise authoring model, generated API contract, initial learner persistence, and FSRS review workflow are implemented; exercise execution and real tutor providers remain future work.
 
 ## Full-stack API contract
 
@@ -99,9 +99,11 @@ SQLite is the implemented learner-state store. The server opens it through
 `modernc.org/sqlite` as the driver. Lesson completion and a bounded activity
 history are persisted now. Objective introduction and the next incomplete
 lesson are derived from that state plus the Git-authored catalog rather than
-stored redundantly. Additional persistent learner state will eventually include:
+stored redundantly. The learner database also stores FSRS review-card state and
+immutable review history. Authored review items without state remain virtual
+New cards on reads; the first rating creates their persistent scheduling row.
+Additional persistent learner state will eventually include:
 
-- spaced-repetition scheduling and review history;
 - exercise workspaces and attempts;
 - notes/bookmarks;
 - tutor conversations;
@@ -112,7 +114,15 @@ Course-bound learner state must carry explicit course identity. The fact that AI
 
 Do not put authored curriculum prose into SQLite merely because it is convenient to query.
 
-Authored review items are loaded from optional module-local `reviews/*.yaml` files and exposed through the course-qualified curriculum read API. Their prompt, answer, optional hint, ordering, objective references, and source lesson remain Git-owned curriculum. Future FSRS scheduling state and review history remain SQLite-owned learner state rather than fields on the authored curriculum resource.
+Authored review items are loaded from optional module-local `reviews/*.yaml` files and exposed through the course-qualified curriculum read API. Their prompt, answer, optional hint, ordering, objective references, and source lesson remain Git-owned curriculum. FSRS scheduling state and review history are SQLite-owned learner state rather than fields on the authored curriculum resource.
+
+The pinned `go-fsrs/v4` card mapping is explicit rather than JSON-encoded:
+`due_at`, `stability`, `difficulty`, `scheduled_days`, `reps`, `lapses`,
+`state`, `last_review_at`, and `remaining_steps` map one-for-one to the library's
+`fsrs.Card` fields. Review logs record the rating and explicit before/after
+values for those scheduling fields. Times are persisted in UTC. One injected
+clock value is shared by the four server previews and the selected transition,
+so the frontend never reimplements scheduling math.
 
 ## Course and objective-centered model
 
@@ -238,7 +248,6 @@ Back up the database file. Do not introduce distributed infrastructure unless th
 
 The following should remain open until implementation pressure clarifies them:
 
-- exact FSRS library/schema mapping;
 - authentication/reverse-proxy strategy for public internet exposure;
 - how Codex subscription authentication is hosted on EC2;
 - whether GitHub integration is useful for project/lab tracking;

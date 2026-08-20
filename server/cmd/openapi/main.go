@@ -15,6 +15,7 @@ func main() {
 		tutor.NewService(tutor.NewUnavailableProvider()),
 		curriculum.NewEmptyCatalog(),
 		nil,
+		nil,
 	)
 
 	encoder := json.NewEncoder(os.Stdout)

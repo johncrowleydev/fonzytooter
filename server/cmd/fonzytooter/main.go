@@ -17,6 +17,7 @@ import (
 	"github.com/johncrowleydev/fonzytooter/server/internal/database"
 	"github.com/johncrowleydev/fonzytooter/server/internal/httpapi"
 	"github.com/johncrowleydev/fonzytooter/server/internal/learner"
+	"github.com/johncrowleydev/fonzytooter/server/internal/review"
 	"github.com/johncrowleydev/fonzytooter/server/internal/tutor"
 )
 
@@ -88,6 +89,7 @@ func prepareServer(ctx context.Context, cfg config.Config, openDatabase database
 
 	tutorService := tutor.NewService(tutor.NewUnavailableProvider())
 	learnerService := learner.NewService(db, catalog)
-	server := httpapi.NewServer(cfg.Address, tutorService, catalog, learnerService)
+	reviewService := review.NewService(db, catalog, review.SystemClock{})
+	server := httpapi.NewServer(cfg.Address, tutorService, catalog, learnerService, reviewService)
 	return server, db, nil
 }

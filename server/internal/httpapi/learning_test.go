@@ -95,7 +95,7 @@ func TestLearningAPIMissingIdentityReturnsNotFound(t *testing.T) {
 }
 
 func TestLearningOpenAPIContract(t *testing.T) {
-	app := NewAPI(tutor.NewService(tutor.NewUnavailableProvider()), testCatalog(t), nil)
+	app := NewAPI(tutor.NewService(tutor.NewUnavailableProvider()), testCatalog(t), nil, nil)
 
 	lessonPath := app.Spec.Paths["/api/courses/{courseId}/modules/{moduleId}/lessons/{lessonId}/progress"]
 	if lessonPath == nil || lessonPath.Get == nil || lessonPath.Get.OperationID != "getLessonProgress" {
@@ -125,7 +125,7 @@ func testLearningAPI(t *testing.T) *API {
 		t.Fatalf("open test database: %v", err)
 	}
 	t.Cleanup(func() { _ = db.Close() })
-	return NewAPI(tutor.NewService(tutor.NewUnavailableProvider()), catalog, learner.NewService(db, catalog))
+	return NewAPI(tutor.NewService(tutor.NewUnavailableProvider()), catalog, learner.NewService(db, catalog), nil)
 }
 
 func serveJSON(t *testing.T, handler http.Handler, method, path, body string) *httptest.ResponseRecorder {

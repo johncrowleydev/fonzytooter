@@ -13,7 +13,7 @@ import (
 )
 
 func TestCurriculumReadAPI(t *testing.T) {
-	app := NewAPI(tutor.NewService(tutor.NewUnavailableProvider()), testCatalog(t), nil)
+	app := NewAPI(tutor.NewService(tutor.NewUnavailableProvider()), testCatalog(t), nil, nil)
 
 	listResponse := serve(t, app.Handler, http.MethodGet, "/api/courses")
 	if listResponse.Code != http.StatusOK {
@@ -126,7 +126,7 @@ func TestCurriculumReadAPI(t *testing.T) {
 }
 
 func TestCurriculumReadAPIMissingResourcesUseProblemResponses(t *testing.T) {
-	app := NewAPI(tutor.NewService(tutor.NewUnavailableProvider()), testCatalog(t), nil)
+	app := NewAPI(tutor.NewService(tutor.NewUnavailableProvider()), testCatalog(t), nil, nil)
 	for _, path := range []string{
 		"/api/courses/missing",
 		"/api/courses/other/modules/python",
@@ -164,7 +164,7 @@ func TestCurriculumReadAPIMissingResourcesUseProblemResponses(t *testing.T) {
 }
 
 func TestCurriculumOpenAPIContract(t *testing.T) {
-	app := NewAPI(tutor.NewService(tutor.NewUnavailableProvider()), curriculum.NewEmptyCatalog(), nil)
+	app := NewAPI(tutor.NewService(tutor.NewUnavailableProvider()), curriculum.NewEmptyCatalog(), nil, nil)
 	for path, operationID := range map[string]string{
 		"/api/courses":                               "listCourses",
 		"/api/courses/{courseId}":                    "getCourse",

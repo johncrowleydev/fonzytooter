@@ -13,7 +13,7 @@ import (
 
 func TestModuleWorkbookEndpoint(t *testing.T) {
 	renderer := &fakeWorksheetDocumentRenderer{}
-	app := newAPI(tutor.NewService(tutor.NewUnavailableProvider()), testCatalog(t), nil, renderer)
+	app := newAPI(tutor.NewService(tutor.NewUnavailableProvider()), testCatalog(t), nil, nil, renderer)
 
 	for _, test := range []struct {
 		workbookID string
@@ -47,7 +47,7 @@ func TestModuleWorkbookEndpoint(t *testing.T) {
 
 func TestModuleWorkbookEndpointMissingResources(t *testing.T) {
 	renderer := &fakeWorksheetDocumentRenderer{}
-	app := newAPI(tutor.NewService(tutor.NewUnavailableProvider()), testCatalog(t), nil, renderer)
+	app := newAPI(tutor.NewService(tutor.NewUnavailableProvider()), testCatalog(t), nil, nil, renderer)
 	for _, path := range []string{
 		"/api/courses/ai-ml/modules/python/workbooks/answer-key",
 		"/api/courses/ai-ml/modules/missing/workbooks/student",
@@ -76,7 +76,7 @@ func TestModuleWorkbookEndpointRenderingErrors(t *testing.T) {
 	} {
 		t.Run(name, func(t *testing.T) {
 			renderer := &fakeWorksheetDocumentRenderer{err: test.err}
-			app := newAPI(tutor.NewService(tutor.NewUnavailableProvider()), testCatalog(t), nil, renderer)
+			app := newAPI(tutor.NewService(tutor.NewUnavailableProvider()), testCatalog(t), nil, nil, renderer)
 			response := serve(t, app.Handler, http.MethodGet, "/api/courses/ai-ml/modules/python/workbooks/student")
 			if response.Code != test.status {
 				t.Fatalf("status = %d: %s", response.Code, response.Body.String())
@@ -89,7 +89,7 @@ func TestModuleWorkbookEndpointRenderingErrors(t *testing.T) {
 }
 
 func TestModuleWorkbookOpenAPIContract(t *testing.T) {
-	app := NewAPI(tutor.NewService(tutor.NewUnavailableProvider()), curriculum.NewEmptyCatalog(), nil)
+	app := NewAPI(tutor.NewService(tutor.NewUnavailableProvider()), curriculum.NewEmptyCatalog(), nil, nil)
 	path := app.Spec.Paths["/api/courses/{courseId}/modules/{moduleId}/workbooks/{workbookId}"]
 	if path == nil || path.Get == nil || path.Get.OperationID != "getCourseModuleWorkbook" {
 		t.Fatalf("missing module workbook operation: %#v", path)

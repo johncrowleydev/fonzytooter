@@ -5,6 +5,7 @@ go 1.26
 require github.com/danielgtaylor/huma/v2 v2.39.1
 
 require (
+	github.com/open-spaced-repetition/go-fsrs/v4 v4.0.0
 	github.com/pressly/goose/v3 v3.27.3
 	gopkg.in/yaml.v3 v3.0.1
 	modernc.org/sqlite v1.57.0

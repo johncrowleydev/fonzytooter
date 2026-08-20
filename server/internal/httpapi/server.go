@@ -14,6 +14,7 @@ import (
 	"github.com/danielgtaylor/huma/v2/adapters/humago"
 	"github.com/johncrowleydev/fonzytooter/server/internal/curriculum"
 	"github.com/johncrowleydev/fonzytooter/server/internal/learner"
+	"github.com/johncrowleydev/fonzytooter/server/internal/review"
 	"github.com/johncrowleydev/fonzytooter/server/internal/tutor"
 	"github.com/johncrowleydev/fonzytooter/server/internal/worksheetpdf"
 )
@@ -250,8 +251,8 @@ type GetCourseReviewItemResponse struct {
 
 // NewAPI constructs the application handler and registers every documented
 // operation on the same Huma API used by the OpenAPI command.
-func NewAPI(tutorService *tutor.Service, catalog *curriculum.Catalog, learnerService *learner.Service) *API {
-	return newAPI(tutorService, catalog, learnerService, worksheetpdf.NewRenderer())
+func NewAPI(tutorService *tutor.Service, catalog *curriculum.Catalog, learnerService *learner.Service, reviewService *review.Service) *API {
+	return newAPI(tutorService, catalog, learnerService, reviewService, worksheetpdf.NewRenderer())
 }
 
 type worksheetDocumentRenderer interface {
@@ -259,7 +260,7 @@ type worksheetDocumentRenderer interface {
 	RenderWorkbook(context.Context, curriculum.Course, curriculum.Module, worksheetpdf.Variant) ([]byte, error)
 }
 
-func newAPI(tutorService *tutor.Service, catalog *curriculum.Catalog, learnerService *learner.Service, documentRenderer worksheetDocumentRenderer) *API {
+func newAPI(tutorService *tutor.Service, catalog *curriculum.Catalog, learnerService *learner.Service, reviewService *review.Service, documentRenderer worksheetDocumentRenderer) *API {
 	if catalog == nil {
 		panic("httpapi.NewAPI: nil curriculum catalog")
 	}
@@ -275,12 +276,13 @@ func newAPI(tutorService *tutor.Service, catalog *curriculum.Catalog, learnerSer
 	registerCurriculum(humaAPI, catalog, documentRenderer)
 	registerLearning(humaAPI, learnerService)
 	registerExercises(humaAPI, catalog, learnerService)
+	registerReviews(humaAPI, reviewService)
 
 	return &API{Handler: mux, Spec: humaAPI.OpenAPI()}
 }
 
-func NewServer(address string, tutorService *tutor.Service, catalog *curriculum.Catalog, learnerService *learner.Service) *http.Server {
-	application := NewAPI(tutorService, catalog, learnerService)
+func NewServer(address string, tutorService *tutor.Service, catalog *curriculum.Catalog, learnerService *learner.Service, reviewService *review.Service) *http.Server {
+	application := NewAPI(tutorService, catalog, learnerService, reviewService)
 
 	return &http.Server{
 		Addr:              address,
