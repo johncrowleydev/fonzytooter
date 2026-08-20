@@ -14,6 +14,7 @@ func main() {
 	application := httpapi.NewAPI(
 		tutor.NewService(tutor.NewUnavailableProvider()),
 		curriculum.NewEmptyCatalog(),
+		nil,
 	)
 
 	encoder := json.NewEncoder(os.Stdout)

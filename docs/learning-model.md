@@ -109,3 +109,9 @@ Keep a small activity history to provide useful recency context:
 - note created.
 
 This is not intended to become an event-sourced architecture. It is a practical learner-history table.
+
+The implemented first learner-state slice records explicit lesson completion
+and one `lesson_completed` activity per incomplete-to-complete transition.
+Completing a lesson marks its referenced objectives as introduced in the
+derived course progress view. Recall, application, and transfer remain
+explicitly not assessed until their evidence-producing workflows exist.

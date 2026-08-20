@@ -1,12 +1,23 @@
 import { useEffect, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { Link, useParams } from 'react-router-dom'
-import { useGetCourse, useGetCourseLesson, useGetCourseModule } from '../../api/generated/endpoints'
+import {
+  getGetCourseProgressQueryKey,
+  getGetLessonProgressQueryKey,
+  getListActivitiesQueryKey,
+  useGetCourse,
+  useGetCourseLesson,
+  useGetCourseModule,
+  useGetLessonProgress,
+  usePutLessonProgress,
+} from '../../api/generated/endpoints'
 import type { LessonResource } from '../../api/generated/schemas/lessonResource.zod'
 import { coursePath, lessonPath, modulePath, worksheetPath } from '../../app/routes'
 import { Badge, Card, PageIntro, SectionHeading } from '../../components/ui'
 import { useTutor } from '../tutor/TutorContext'
 import { safeExternalUrl } from '../curriculum/externalLinks'
 import { LessonMdx } from './LessonMdx'
+import { LessonCompletionControl } from './LessonCompletionControl'
 
 export function Lesson() {
   const { courseId, moduleId, lessonId } = useParams()
@@ -40,6 +51,35 @@ export function Lesson() {
     lesson.id === lessonId
       ? lesson
       : undefined
+  const progressQuery = useGetLessonProgress(courseId ?? '', moduleId ?? '', lessonId ?? '', {
+    query: { enabled: Boolean(matchingLesson) },
+  })
+  const queryClient = useQueryClient()
+  const updateProgress = usePutLessonProgress({
+    mutation: {
+      onSuccess: async (response, variables) => {
+        queryClient.setQueryData(
+          getGetLessonProgressQueryKey(variables.courseId, variables.moduleId, variables.lessonId),
+          response,
+        )
+        await Promise.all([
+          queryClient.invalidateQueries({
+            queryKey: getGetLessonProgressQueryKey(
+              variables.courseId,
+              variables.moduleId,
+              variables.lessonId,
+            ),
+          }),
+          queryClient.invalidateQueries({
+            queryKey: getGetCourseProgressQueryKey(variables.courseId),
+          }),
+          queryClient.invalidateQueries({
+            queryKey: getListActivitiesQueryKey({ courseId: variables.courseId, limit: 6 }),
+          }),
+        ])
+      },
+    },
+  })
   const lessonIndex =
     module && lesson ? module.lessons.findIndex((item) => item.id === lesson.id) : -1
 
@@ -167,6 +207,23 @@ export function Lesson() {
             courseId={course.id}
             moduleId={module.id}
             worksheets={lesson.worksheets}
+          />
+          <LessonCompletionControl
+            completed={progressQuery.data?.data.completed ?? false}
+            pending={progressQuery.isPending || updateProgress.isPending}
+            error={
+              progressQuery.isError || updateProgress.isError
+                ? 'Lesson progress could not be saved. Try again.'
+                : undefined
+            }
+            onChange={(completed) =>
+              updateProgress.mutate({
+                courseId: course.id,
+                moduleId: module.id,
+                lessonId: lesson.id,
+                data: { completed },
+              })
+            }
           />
         </div>
       </article>
