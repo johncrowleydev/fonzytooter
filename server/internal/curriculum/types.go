@@ -89,16 +89,29 @@ const (
 	ExerciseTestHidden  = "hidden"
 )
 
+type ReviewItem struct {
+	CourseID       string
+	ModuleID       string
+	ID             string
+	Order          int
+	ObjectiveIDs   []string
+	SourceLessonID string
+	Prompt         string
+	Answer         string
+	Hint           string
+}
+
 type Module struct {
-	CourseID   string
-	ID         string
-	Title      string
-	Order      int
-	Objectives []Objective
-	Videos     []Video
-	Lessons    []Lesson
-	Worksheets []Worksheet
-	Exercises  []Exercise
+	CourseID    string
+	ID          string
+	Title       string
+	Order       int
+	Objectives  []Objective
+	Videos      []Video
+	Lessons     []Lesson
+	Worksheets  []Worksheet
+	Exercises   []Exercise
+	ReviewItems []ReviewItem
 }
 
 type Source struct {
@@ -111,19 +124,22 @@ type Source struct {
 // Its exported lookup methods return copies, so callers cannot mutate the
 // catalog's internal indexes or slices.
 type Catalog struct {
-	courses            []Course
-	coursesByID        map[string]int
-	modules            []Module
-	modulesByKey       map[moduleKey]Module
-	lessonsByKey       map[lessonKey]Lesson
-	worksheetsByKey    map[worksheetKey]Worksheet
-	worksheetsByModule map[moduleKey][]Worksheet
-	worksheetsByLesson map[lessonKey][]Worksheet
-	exercisesByKey     map[exerciseKey]Exercise
-	exercisesByModule  map[moduleKey][]Exercise
-	exercisesByLesson  map[lessonKey][]Exercise
-	objectives         map[string]Objective
-	sources            map[string]Source
+	courses                []Course
+	coursesByID            map[string]int
+	modules                []Module
+	modulesByKey           map[moduleKey]Module
+	lessonsByKey           map[lessonKey]Lesson
+	worksheetsByKey        map[worksheetKey]Worksheet
+	worksheetsByModule     map[moduleKey][]Worksheet
+	worksheetsByLesson     map[lessonKey][]Worksheet
+	exercisesByKey         map[exerciseKey]Exercise
+	exercisesByModule      map[moduleKey][]Exercise
+	exercisesByLesson      map[lessonKey][]Exercise
+	reviewItemsByKey       map[reviewItemKey]ReviewItem
+	reviewItemsByModule    map[moduleKey][]ReviewItem
+	reviewItemsByObjective map[string][]ReviewItem
+	objectives             map[string]Objective
+	sources                map[string]Source
 }
 
 type moduleKey struct {
@@ -149,21 +165,30 @@ type exerciseKey struct {
 	exerciseID string
 }
 
+type reviewItemKey struct {
+	courseID     string
+	moduleID     string
+	reviewItemID string
+}
+
 func NewEmptyCatalog() *Catalog {
 	return &Catalog{
-		courses:            []Course{},
-		coursesByID:        make(map[string]int),
-		modules:            []Module{},
-		modulesByKey:       make(map[moduleKey]Module),
-		lessonsByKey:       make(map[lessonKey]Lesson),
-		worksheetsByKey:    make(map[worksheetKey]Worksheet),
-		worksheetsByModule: make(map[moduleKey][]Worksheet),
-		worksheetsByLesson: make(map[lessonKey][]Worksheet),
-		exercisesByKey:     make(map[exerciseKey]Exercise),
-		exercisesByModule:  make(map[moduleKey][]Exercise),
-		exercisesByLesson:  make(map[lessonKey][]Exercise),
-		objectives:         make(map[string]Objective),
-		sources:            make(map[string]Source),
+		courses:                []Course{},
+		coursesByID:            make(map[string]int),
+		modules:                []Module{},
+		modulesByKey:           make(map[moduleKey]Module),
+		lessonsByKey:           make(map[lessonKey]Lesson),
+		worksheetsByKey:        make(map[worksheetKey]Worksheet),
+		worksheetsByModule:     make(map[moduleKey][]Worksheet),
+		worksheetsByLesson:     make(map[lessonKey][]Worksheet),
+		exercisesByKey:         make(map[exerciseKey]Exercise),
+		exercisesByModule:      make(map[moduleKey][]Exercise),
+		exercisesByLesson:      make(map[lessonKey][]Exercise),
+		reviewItemsByKey:       make(map[reviewItemKey]ReviewItem),
+		reviewItemsByModule:    make(map[moduleKey][]ReviewItem),
+		reviewItemsByObjective: make(map[string][]ReviewItem),
+		objectives:             make(map[string]Objective),
+		sources:                make(map[string]Source),
 	}
 }
 
@@ -212,6 +237,12 @@ func newCatalog(courses []Course, sources map[string]Source) *Catalog {
 				}
 				return module.Exercises[i].ID < module.Exercises[j].ID
 			})
+			sort.Slice(module.ReviewItems, func(i, j int) bool {
+				if module.ReviewItems[i].Order != module.ReviewItems[j].Order {
+					return module.ReviewItems[i].Order < module.ReviewItems[j].Order
+				}
+				return module.ReviewItems[i].ID < module.ReviewItems[j].ID
+			})
 			clonedModule := cloneModule(*module)
 			catalog.modules = append(catalog.modules, clonedModule)
 			catalog.modulesByKey[moduleKey{courseID: course.ID, moduleID: module.ID}] = clonedModule
@@ -233,6 +264,15 @@ func newCatalog(courses []Course, sources map[string]Source) *Catalog {
 				catalog.exercisesByModule[moduleLookupKey] = append(catalog.exercisesByModule[moduleLookupKey], clonedExercise)
 				lessonLookupKey := lessonKey{courseID: course.ID, moduleID: module.ID, lessonID: exercise.LessonID}
 				catalog.exercisesByLesson[lessonLookupKey] = append(catalog.exercisesByLesson[lessonLookupKey], clonedExercise)
+			}
+			for _, reviewItem := range clonedModule.ReviewItems {
+				clonedReviewItem := cloneReviewItem(reviewItem)
+				catalog.reviewItemsByKey[reviewItemKey{courseID: course.ID, moduleID: module.ID, reviewItemID: reviewItem.ID}] = clonedReviewItem
+				moduleLookupKey := moduleKey{courseID: course.ID, moduleID: module.ID}
+				catalog.reviewItemsByModule[moduleLookupKey] = append(catalog.reviewItemsByModule[moduleLookupKey], clonedReviewItem)
+				for _, objectiveID := range reviewItem.ObjectiveIDs {
+					catalog.reviewItemsByObjective[objectiveID] = append(catalog.reviewItemsByObjective[objectiveID], clonedReviewItem)
+				}
 			}
 			for _, objective := range module.Objectives {
 				catalog.objectives[objective.ID] = cloneObjective(objective)
@@ -344,6 +384,31 @@ func (c *Catalog) ExercisesByLesson(courseID, moduleID, lessonID string) []Exerc
 	return cloneExercises(c.exercisesByLesson[lessonKey{courseID: courseID, moduleID: moduleID, lessonID: lessonID}])
 }
 
+func (c *Catalog) ReviewItemByCourse(courseID, moduleID, reviewItemID string) (ReviewItem, bool) {
+	if c == nil {
+		return ReviewItem{}, false
+	}
+	reviewItem, ok := c.reviewItemsByKey[reviewItemKey{courseID: courseID, moduleID: moduleID, reviewItemID: reviewItemID}]
+	if !ok {
+		return ReviewItem{}, false
+	}
+	return cloneReviewItem(reviewItem), true
+}
+
+func (c *Catalog) ReviewItemsByModule(courseID, moduleID string) []ReviewItem {
+	if c == nil {
+		return []ReviewItem{}
+	}
+	return cloneReviewItems(c.reviewItemsByModule[moduleKey{courseID: courseID, moduleID: moduleID}])
+}
+
+func (c *Catalog) ReviewItemsByObjective(objectiveID string) []ReviewItem {
+	if c == nil {
+		return []ReviewItem{}
+	}
+	return cloneReviewItems(c.reviewItemsByObjective[objectiveID])
+}
+
 func (c *Catalog) ObjectiveByID(id string) (Objective, bool) {
 	if c == nil {
 		return Objective{}, false
@@ -398,6 +463,13 @@ func (c *Catalog) ExerciseCount() int {
 	return len(c.exercisesByKey)
 }
 
+func (c *Catalog) ReviewItemCount() int {
+	if c == nil {
+		return 0
+	}
+	return len(c.reviewItemsByKey)
+}
+
 func (c *Catalog) ObjectiveCount() int {
 	if c == nil {
 		return 0
@@ -450,6 +522,24 @@ func cloneModule(module Module) Module {
 	}
 	cloned.Worksheets = cloneWorksheets(module.Worksheets)
 	cloned.Exercises = cloneExercises(module.Exercises)
+	cloned.ReviewItems = cloneReviewItems(module.ReviewItems)
+	return cloned
+}
+
+func cloneReviewItems(reviewItems []ReviewItem) []ReviewItem {
+	if reviewItems == nil {
+		return []ReviewItem{}
+	}
+	cloned := make([]ReviewItem, len(reviewItems))
+	for index, reviewItem := range reviewItems {
+		cloned[index] = cloneReviewItem(reviewItem)
+	}
+	return cloned
+}
+
+func cloneReviewItem(reviewItem ReviewItem) ReviewItem {
+	cloned := reviewItem
+	cloned.ObjectiveIDs = cloneStrings(reviewItem.ObjectiveIDs)
 	return cloned
 }
 

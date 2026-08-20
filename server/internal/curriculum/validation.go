@@ -101,10 +101,65 @@ func validateCourses(courses []courseFile, sources map[string]sourceAuthoring, e
 		validateLessonFiles(module, objectiveIDs, sources, errors)
 		validateWorksheetFiles(module, objectiveIDs, errors)
 		validateExerciseFiles(module, objectiveIDs, errors)
+		validateReviewItemFiles(module, objectiveIDs, errors)
 	}
 	validateObjectiveReferences(modules, objectiveIDs, errors)
 	validatePrerequisiteCycles(modules, objectiveIDs, objectivePaths, errors)
 	validateVideoObjectiveReferences(modules, objectiveIDs, errors)
+}
+
+func validateReviewItemFiles(module moduleFile, objectiveIDs map[string]string, errors *errorCollector) {
+	lessonIDs := make(map[string]struct{}, len(module.lessons))
+	for _, lesson := range module.lessons {
+		if lesson.metadataOK {
+			lessonIDs[lesson.metadata.ID] = struct{}{}
+		}
+	}
+
+	reviewItemIDs := map[string]string{}
+	for _, reviewItem := range module.reviewItems {
+		if !reviewItem.metadataOK {
+			continue
+		}
+		metadata := reviewItem.metadata
+		if !stableIDPattern.MatchString(metadata.ID) {
+			errors.addf(reviewItem.path, "invalid review item id %q", metadata.ID)
+		}
+		if previous, ok := reviewItemIDs[metadata.ID]; ok {
+			errors.addf(reviewItem.path, "duplicate review item id %q (already declared in %s)", metadata.ID, previous)
+		} else {
+			reviewItemIDs[metadata.ID] = reviewItem.path
+		}
+		if metadata.Order == nil {
+			errors.addf(reviewItem.path, "review item %q is missing required order", metadata.ID)
+		} else if *metadata.Order < 0 {
+			errors.addf(reviewItem.path, "review item %q order must be non-negative", metadata.ID)
+		}
+		validateReviewItemObjectiveIDs(reviewItem.path, metadata.ID, metadata.ObjectiveIDs, objectiveIDs, errors)
+		if strings.TrimSpace(metadata.SourceLessonID) == "" {
+			errors.addf(reviewItem.path, "review item %q has empty sourceLessonId", metadata.ID)
+		} else if _, ok := lessonIDs[metadata.SourceLessonID]; !ok {
+			errors.addf(reviewItem.path, "review item %q references unknown lesson id %q in this module", metadata.ID, metadata.SourceLessonID)
+		}
+		if strings.TrimSpace(metadata.Prompt) == "" {
+			errors.addf(reviewItem.path, "review item %q has empty prompt", metadata.ID)
+		}
+		if strings.TrimSpace(metadata.Answer) == "" {
+			errors.addf(reviewItem.path, "review item %q has empty answer", metadata.ID)
+		}
+	}
+}
+
+func validateReviewItemObjectiveIDs(pathName, reviewItemID string, ids []string, objectiveIDs map[string]string, errors *errorCollector) {
+	if len(ids) == 0 {
+		errors.addf(pathName, "review item %q has no objectiveIds", reviewItemID)
+		return
+	}
+	for _, objectiveID := range ids {
+		if _, ok := objectiveIDs[objectiveID]; !ok {
+			errors.addf(pathName, "review item %q has unknown objective id %q", reviewItemID, objectiveID)
+		}
+	}
 }
 
 func validateExerciseFiles(module moduleFile, objectiveIDs map[string]string, errors *errorCollector) {

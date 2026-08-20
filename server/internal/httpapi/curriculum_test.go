@@ -107,6 +107,22 @@ func TestCurriculumReadAPI(t *testing.T) {
 	if exercise.CourseID != "ai-ml" || exercise.ModuleID != "python" || exercise.ID != "python.example" || exercise.LessonID != "lesson.stable" || len(exercise.VisibleTests) != 1 || exercise.VisibleTests[0].ID != "visible-case" || exercise.VisibleTests[0].Code != "assert solution()" {
 		t.Fatalf("unexpected exercise resource: %#v", exercise)
 	}
+
+	reviewItemResponse := serve(t, app.Handler, http.MethodGet, "/api/courses/ai-ml/modules/python/review-items/functions.definition")
+	if reviewItemResponse.Code != http.StatusOK {
+		t.Fatalf("get review item status = %d: %s", reviewItemResponse.Code, reviewItemResponse.Body.String())
+	}
+	reviewItemJSON := reviewItemResponse.Body.String()
+	if strings.Contains(reviewItemJSON, "due") || strings.Contains(reviewItemJSON, "stability") || strings.Contains(reviewItemJSON, "difficulty") {
+		t.Fatalf("authored review item included scheduling state: %s", reviewItemJSON)
+	}
+	var reviewItem ReviewItemResource
+	if err := json.Unmarshal([]byte(reviewItemJSON), &reviewItem); err != nil {
+		t.Fatalf("decode review item JSON: %v", err)
+	}
+	if reviewItem.CourseID != "ai-ml" || reviewItem.ModuleID != "python" || reviewItem.ID != "functions.definition" || reviewItem.SourceLessonID != "lesson.stable" || reviewItem.Answer != "Every input maps to one output." || reviewItem.Hint != "Focus on each input." {
+		t.Fatalf("unexpected review item resource: %#v", reviewItem)
+	}
 }
 
 func TestCurriculumReadAPIMissingResourcesUseProblemResponses(t *testing.T) {
@@ -123,6 +139,9 @@ func TestCurriculumReadAPIMissingResourcesUseProblemResponses(t *testing.T) {
 		"/api/courses/other/modules/python/exercises/python.example",
 		"/api/courses/ai-ml/modules/wrong-module/exercises/python.example",
 		"/api/courses/ai-ml/modules/python/exercises/missing",
+		"/api/courses/other/modules/python/review-items/functions.definition",
+		"/api/courses/ai-ml/modules/wrong-module/review-items/functions.definition",
+		"/api/courses/ai-ml/modules/python/review-items/missing",
 	} {
 		t.Run(path, func(t *testing.T) {
 			response := serve(t, app.Handler, http.MethodGet, path)
@@ -150,9 +169,10 @@ func TestCurriculumOpenAPIContract(t *testing.T) {
 		"/api/courses":                               "listCourses",
 		"/api/courses/{courseId}":                    "getCourse",
 		"/api/courses/{courseId}/modules/{moduleId}": "getCourseModule",
-		"/api/courses/{courseId}/modules/{moduleId}/lessons/{lessonId}":       "getCourseLesson",
-		"/api/courses/{courseId}/modules/{moduleId}/worksheets/{worksheetId}": "getCourseModuleWorksheet",
-		"/api/courses/{courseId}/modules/{moduleId}/exercises/{exerciseId}":   "getCourseModuleExercise",
+		"/api/courses/{courseId}/modules/{moduleId}/lessons/{lessonId}":          "getCourseLesson",
+		"/api/courses/{courseId}/modules/{moduleId}/worksheets/{worksheetId}":    "getCourseModuleWorksheet",
+		"/api/courses/{courseId}/modules/{moduleId}/exercises/{exerciseId}":      "getCourseModuleExercise",
+		"/api/courses/{courseId}/modules/{moduleId}/review-items/{reviewItemId}": "getCourseModuleReviewItem",
 	} {
 		item, ok := app.Spec.Paths[path]
 		if !ok || item.Get == nil || item.Get.OperationID != operationID {
@@ -202,6 +222,20 @@ func TestCurriculumOpenAPIContract(t *testing.T) {
 	if visibleTestSchema == nil || visibleTestSchema.Properties["visibility"] != nil {
 		t.Fatalf("visible exercise test schema exposed internal visibility: %#v", visibleTestSchema)
 	}
+	reviewItemSchema := app.Spec.Components.Schemas.Map()["ReviewItemResource"]
+	if reviewItemSchema == nil || reviewItemSchema.AdditionalProperties != false || reviewItemSchema.Properties["answer"] == nil || reviewItemSchema.Properties["sourceLessonId"] == nil {
+		t.Fatalf("expected strict authored review item schema, got %#v", reviewItemSchema)
+	}
+	for _, required := range reviewItemSchema.Required {
+		if required == "hint" {
+			t.Fatalf("optional review item hint is required in schema: %#v", reviewItemSchema)
+		}
+	}
+	for _, schedulingField := range []string{"due", "stability", "difficulty", "state", "scheduledDays"} {
+		if reviewItemSchema.Properties[schedulingField] != nil {
+			t.Fatalf("review item schema contains scheduling field %q: %#v", schedulingField, reviewItemSchema)
+		}
+	}
 }
 
 func testCatalog(t *testing.T) *curriculum.Catalog {
@@ -216,6 +250,7 @@ func testCatalog(t *testing.T) *curriculum.Catalog {
 		"courses/ai-ml/modules/storage/not-the-id.mdx":            &fstest.MapFile{Data: []byte("---\nid: lesson.stable\ntitle: Stable lesson\nobjectiveIds:\n  - python.variables\nsourceIds:\n  - go-docs\n---\n# Lesson\n")},
 		"courses/ai-ml/modules/storage/worksheets/worksheet.yaml": &fstest.MapFile{Data: []byte("id: worksheet\ntitle: Worksheet\nlessonId: lesson.stable\norder: 0\nobjectiveIds:\n  - python.variables\ninstructions: Complete the worksheet.\nproblems:\n  - id: problem\n    prompt: Solve it.\n    objectiveIds:\n      - python.variables\n    expectedAnswer: Secret answer.\n    requiresWork: true\n    responseLines: 3\n    rubric:\n      - Secret criterion.\n")},
 		"courses/ai-ml/modules/storage/exercises/example.yaml":    &fstest.MapFile{Data: []byte("id: python.example\ntitle: Example exercise\nlessonId: lesson.stable\norder: 0\nobjectiveIds:\n  - python.variables\nprompt: Implement it.\nstarterCode: pass\ntests:\n  - id: visible-case\n    title: Visible check\n    visibility: visible\n    code: assert solution()\n  - id: hidden-case\n    title: Hidden check\n    visibility: hidden\n    code: assert secret_solution()\n")},
+		"courses/ai-ml/modules/storage/reviews/functions.yaml":    &fstest.MapFile{Data: []byte("id: functions.definition\norder: 0\nobjectiveIds:\n  - python.variables\nsourceLessonId: lesson.stable\nprompt: What condition defines a function?\nanswer: Every input maps to one output.\nhint: Focus on each input.\n")},
 	})
 	if err != nil {
 		t.Fatalf("load test catalog: %v", err)

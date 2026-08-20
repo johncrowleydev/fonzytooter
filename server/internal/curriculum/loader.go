@@ -88,6 +88,16 @@ type exerciseTestAuthoring struct {
 	Code       string `yaml:"code"`
 }
 
+type reviewItemAuthoring struct {
+	ID             string   `yaml:"id"`
+	Order          *int     `yaml:"order"`
+	ObjectiveIDs   []string `yaml:"objectiveIds"`
+	SourceLessonID string   `yaml:"sourceLessonId"`
+	Prompt         string   `yaml:"prompt"`
+	Answer         string   `yaml:"answer"`
+	Hint           string   `yaml:"hint"`
+}
+
 type sourceAuthoring struct {
 	Title string `yaml:"title"`
 	URL   string `yaml:"url"`
@@ -105,11 +115,18 @@ type courseFile struct {
 }
 
 type moduleFile struct {
+	path        string
+	metadata    moduleAuthoring
+	lessons     []lessonFile
+	worksheets  []worksheetFile
+	exercises   []exerciseFile
+	reviewItems []reviewItemFile
+	metadataOK  bool
+}
+
+type reviewItemFile struct {
 	path       string
-	metadata   moduleAuthoring
-	lessons    []lessonFile
-	worksheets []worksheetFile
-	exercises  []exerciseFile
+	metadata   reviewItemAuthoring
 	metadataOK bool
 }
 
@@ -166,15 +183,16 @@ func Load(fsys fs.FS) (*Catalog, error) {
 		}
 		for _, module := range course.modules {
 			loadedModule := Module{
-				CourseID:   course.metadata.ID,
-				ID:         module.metadata.ID,
-				Title:      module.metadata.Title,
-				Order:      *module.metadata.Order,
-				Objectives: make([]Objective, 0, len(module.metadata.Objectives)),
-				Videos:     make([]Video, 0, len(module.metadata.Videos)),
-				Lessons:    make([]Lesson, 0, len(module.metadata.Lessons)),
-				Worksheets: make([]Worksheet, 0, len(module.worksheets)),
-				Exercises:  make([]Exercise, 0, len(module.exercises)),
+				CourseID:    course.metadata.ID,
+				ID:          module.metadata.ID,
+				Title:       module.metadata.Title,
+				Order:       *module.metadata.Order,
+				Objectives:  make([]Objective, 0, len(module.metadata.Objectives)),
+				Videos:      make([]Video, 0, len(module.metadata.Videos)),
+				Lessons:     make([]Lesson, 0, len(module.metadata.Lessons)),
+				Worksheets:  make([]Worksheet, 0, len(module.worksheets)),
+				Exercises:   make([]Exercise, 0, len(module.exercises)),
+				ReviewItems: make([]ReviewItem, 0, len(module.reviewItems)),
 			}
 			for _, objective := range module.metadata.Objectives {
 				loadedModule.Objectives = append(loadedModule.Objectives, Objective{
@@ -256,6 +274,19 @@ func Load(fsys fs.FS) (*Catalog, error) {
 					})
 				}
 				loadedModule.Exercises = append(loadedModule.Exercises, loadedExercise)
+			}
+			for _, reviewItem := range module.reviewItems {
+				loadedModule.ReviewItems = append(loadedModule.ReviewItems, ReviewItem{
+					CourseID:       course.metadata.ID,
+					ModuleID:       module.metadata.ID,
+					ID:             reviewItem.metadata.ID,
+					Order:          *reviewItem.metadata.Order,
+					ObjectiveIDs:   cloneStrings(reviewItem.metadata.ObjectiveIDs),
+					SourceLessonID: reviewItem.metadata.SourceLessonID,
+					Prompt:         reviewItem.metadata.Prompt,
+					Answer:         reviewItem.metadata.Answer,
+					Hint:           reviewItem.metadata.Hint,
+				})
 			}
 			loadedCourse.Modules = append(loadedCourse.Modules, loadedModule)
 		}
@@ -399,9 +430,41 @@ func loadModules(fsys fs.FS, modulesPath string, collector *errorCollector) []mo
 		module.lessons = loadLessons(fsys, modulePath, collector)
 		module.worksheets = loadWorksheets(fsys, modulePath, collector)
 		module.exercises = loadExercises(fsys, modulePath, collector)
+		module.reviewItems = loadReviewItems(fsys, modulePath, collector)
 		modules = append(modules, module)
 	}
 	return modules
+}
+
+func loadReviewItems(fsys fs.FS, modulePath string, collector *errorCollector) []reviewItemFile {
+	reviewsPath := path.Join(modulePath, "reviews")
+	entries, err := fs.ReadDir(fsys, reviewsPath)
+	if errors.Is(err, fs.ErrNotExist) {
+		return []reviewItemFile{}
+	}
+	if err != nil {
+		collector.add(reviewsPath, err)
+		return []reviewItemFile{}
+	}
+
+	reviewItems := make([]reviewItemFile, 0, len(entries))
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".yaml") {
+			continue
+		}
+		reviewItem := reviewItemFile{path: path.Join(reviewsPath, entry.Name())}
+		data, readErr := fs.ReadFile(fsys, reviewItem.path)
+		if readErr != nil {
+			collector.add(reviewItem.path, readErr)
+		} else if decodeErr := decodeYAML(data, &reviewItem.metadata); decodeErr != nil {
+			collector.add(reviewItem.path, decodeErr)
+		} else {
+			reviewItem.metadataOK = true
+		}
+		reviewItems = append(reviewItems, reviewItem)
+	}
+	sort.Slice(reviewItems, func(i, j int) bool { return reviewItems[i].path < reviewItems[j].path })
+	return reviewItems
 }
 
 func loadExercises(fsys fs.FS, modulePath string, collector *errorCollector) []exerciseFile {

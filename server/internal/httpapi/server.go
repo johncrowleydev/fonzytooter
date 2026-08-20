@@ -62,6 +62,12 @@ type CourseExercisePathInput struct {
 	ExerciseID string `path:"exerciseId"`
 }
 
+type CourseReviewItemPathInput struct {
+	CourseID     string `path:"courseId"`
+	ModuleID     string `path:"moduleId"`
+	ReviewItemID string `path:"reviewItemId"`
+}
+
 type CourseWorksheetDocumentPathInput struct {
 	CourseID    string `path:"courseId"`
 	ModuleID    string `path:"moduleId"`
@@ -202,6 +208,18 @@ type ExerciseResource struct {
 	VisibleTests []VisibleExerciseTestResource `json:"visibleTests" nullable:"false"`
 }
 
+type ReviewItemResource struct {
+	CourseID       string   `json:"courseId"`
+	ModuleID       string   `json:"moduleId"`
+	ID             string   `json:"id"`
+	Order          int      `json:"order"`
+	ObjectiveIDs   []string `json:"objectiveIds" nullable:"false"`
+	SourceLessonID string   `json:"sourceLessonId"`
+	Prompt         string   `json:"prompt"`
+	Answer         string   `json:"answer"`
+	Hint           string   `json:"hint,omitempty"`
+}
+
 type ListCoursesResponse struct {
 	Body []CourseSummary
 }
@@ -224,6 +242,10 @@ type GetCourseWorksheetResponse struct {
 
 type GetCourseExerciseResponse struct {
 	Body ExerciseResource
+}
+
+type GetCourseReviewItemResponse struct {
+	Body ReviewItemResource
 }
 
 // NewAPI constructs the application handler and registers every documented
@@ -392,6 +414,31 @@ func registerCurriculum(api huma.API, catalog *curriculum.Catalog, documentRende
 			ID: exercise.ID, Title: exercise.Title, LessonID: exercise.LessonID, Order: exercise.Order,
 			ObjectiveIDs: append([]string{}, exercise.ObjectiveIDs...), Prompt: exercise.Prompt,
 			StarterCode: exercise.StarterCode, VisibleTests: visibleTests,
+		}}, nil
+	})
+
+	huma.Register[CourseReviewItemPathInput, GetCourseReviewItemResponse](api, huma.Operation{
+		OperationID: "getCourseModuleReviewItem",
+		Method:      http.MethodGet,
+		Path:        "/api/courses/{courseId}/modules/{moduleId}/review-items/{reviewItemId}",
+		Summary:     "Get an authored review item",
+		Tags:        []string{"curriculum"},
+		Errors:      []int{http.StatusNotFound},
+	}, func(_ context.Context, input *CourseReviewItemPathInput) (*GetCourseReviewItemResponse, error) {
+		reviewItem, ok := catalog.ReviewItemByCourse(input.CourseID, input.ModuleID, input.ReviewItemID)
+		if !ok {
+			return nil, huma.Error404NotFound("review item not found")
+		}
+		return &GetCourseReviewItemResponse{Body: ReviewItemResource{
+			CourseID:       reviewItem.CourseID,
+			ModuleID:       reviewItem.ModuleID,
+			ID:             reviewItem.ID,
+			Order:          reviewItem.Order,
+			ObjectiveIDs:   append([]string{}, reviewItem.ObjectiveIDs...),
+			SourceLessonID: reviewItem.SourceLessonID,
+			Prompt:         reviewItem.Prompt,
+			Answer:         reviewItem.Answer,
+			Hint:           reviewItem.Hint,
 		}}, nil
 	})
 
