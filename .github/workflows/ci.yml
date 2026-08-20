@@ -87,7 +87,7 @@ jobs:
           tectonic --version
       - name: Restore Tectonic resource cache
         id: tectonic-cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: ${{ env.TECTONIC_CACHE_DIR }}
           key: tectonic-${{ runner.os }}-0.15.0-bundle-v33-v1
@@ -112,7 +112,7 @@ jobs:
           done
       - name: Save primed Tectonic resource cache
         if: steps.tectonic-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: ${{ env.TECTONIC_CACHE_DIR }}
           key: ${{ steps.tectonic-cache.outputs.cache-primary-key }}
