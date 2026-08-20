@@ -44,7 +44,8 @@ func open(ctx context.Context, path string, migrations fs.FS) (*sql.DB, error) {
 		}
 	}
 
-	db, err := sql.Open("sqlite", path)
+	dsn := fmt.Sprintf("%s?_foreign_keys=on&_busy_timeout=%d", path, busyTimeoutMilliseconds)
+	db, err := sql.Open("sqlite", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("open SQLite database %q: %w", path, err)
 	}
@@ -60,12 +61,6 @@ func open(ctx context.Context, path string, migrations fs.FS) (*sql.DB, error) {
 
 	if err := db.PingContext(ctx); err != nil {
 		return closeOnError(fmt.Errorf("ping SQLite database %q: %w", path, err))
-	}
-	if _, err := db.ExecContext(ctx, "PRAGMA foreign_keys = ON"); err != nil {
-		return closeOnError(fmt.Errorf("enable SQLite foreign keys: %w", err))
-	}
-	if _, err := db.ExecContext(ctx, fmt.Sprintf("PRAGMA busy_timeout = %d", busyTimeoutMilliseconds)); err != nil {
-		return closeOnError(fmt.Errorf("configure SQLite busy timeout: %w", err))
 	}
 	if _, err := db.ExecContext(ctx, "PRAGMA journal_mode = WAL"); err != nil {
 		return closeOnError(fmt.Errorf("enable SQLite WAL journal mode: %w", err))

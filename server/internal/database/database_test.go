@@ -50,6 +50,47 @@ func TestOpenEnforcesForeignKeys(t *testing.T) {
 	}
 }
 
+func TestOpenConfiguresReplacementConnections(t *testing.T) {
+	ctx := context.Background()
+	db, err := Open(ctx, filepath.Join(t.TempDir(), "fonzytooter.db"))
+	if err != nil {
+		t.Fatalf("open database: %v", err)
+	}
+	t.Cleanup(func() { _ = db.Close() })
+
+	db.SetMaxIdleConns(0)
+	for i := 0; i < 2; i++ {
+		conn, err := db.Conn(ctx)
+		if err != nil {
+			t.Fatalf("open replacement connection %d: %v", i+1, err)
+		}
+
+		var foreignKeys int
+		if err := conn.QueryRowContext(ctx, "PRAGMA foreign_keys").Scan(&foreignKeys); err != nil {
+			_ = conn.Close()
+			t.Fatalf("query foreign-key setting on connection %d: %v", i+1, err)
+		}
+		if foreignKeys != 1 {
+			_ = conn.Close()
+			t.Fatalf("expected foreign keys on connection %d, got %d", i+1, foreignKeys)
+		}
+
+		var busyTimeout int
+		if err := conn.QueryRowContext(ctx, "PRAGMA busy_timeout").Scan(&busyTimeout); err != nil {
+			_ = conn.Close()
+			t.Fatalf("query busy timeout on connection %d: %v", i+1, err)
+		}
+		if busyTimeout != busyTimeoutMilliseconds {
+			_ = conn.Close()
+			t.Fatalf("expected %d ms busy timeout on connection %d, got %d", busyTimeoutMilliseconds, i+1, busyTimeout)
+		}
+
+		if err := conn.Close(); err != nil {
+			t.Fatalf("close replacement connection %d: %v", i+1, err)
+		}
+	}
+}
+
 func TestOpenMigratesIdempotently(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "fonzytooter.db")
 
