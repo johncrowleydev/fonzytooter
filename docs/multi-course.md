@@ -47,7 +47,7 @@ computer-science
 
 At routing, API, persistence, tutor-context, and other durable boundaries, course membership must be explicit whenever a resource is course-bound. Code must not infer the course from the fact that only one currently exists.
 
-The current catalog still keeps objective IDs globally unique, preserving the existing prerequisite-reference model without inventing cross-course reference syntax prematurely. Module IDs are also currently validated globally for simplicity, but lookup still requires course identity. Global uniqueness is a validation convenience, not a replacement for ownership.
+The current catalog keeps objective IDs globally unique, preserving the existing prerequisite-reference model without inventing cross-course reference syntax prematurely. Module IDs are unique within their owning course and are always resolved together with course identity. Two courses may therefore use the same module ID without weakening ownership isolation.
 
 A future explicit cross-course reference can be designed when one is actually authored. A generic cross-course prerequisite graph is not required.
 

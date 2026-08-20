@@ -49,7 +49,7 @@ Course metadata is intentionally limited to authored identity, presentation, and
 All authored IDs use the same deterministic format: `^[a-z0-9]+(?:[.-][a-z0-9]+)*$`.
 IDs are application identity; directory and filename choices are storage organization.
 
-Course identity is explicit when modules and lessons are resolved. Do not write new code that assumes a module or lesson is globally rooted merely because the current authored catalog contains one course.
+Course identity is explicit when modules and lessons are resolved. Module IDs are unique within their owning course, not across the whole catalog. Do not write new code that assumes a module or lesson is globally rooted merely because the current authored catalog contains one course.
 
 ## Module metadata
 
