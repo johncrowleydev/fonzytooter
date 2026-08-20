@@ -125,7 +125,7 @@ go run ./cmd/curriculum-state-check migrate \
   --migrations ../curriculum/identity-migrations.yaml
 ```
 
-Migration mode validates the current curriculum and the complete migration graph before writing. Append-only rename chains such as `A -> B -> C` resolve directly to the current terminal ID. Cycles, missing terminal IDs, ambiguous mappings, and database-key collisions fail. All affected identity columns are updated in one transaction with foreign keys enforced; any error rolls the transaction back. Lesson completion, saved code, exercise attempts/test results, review scheduling/logs, and activity history are preserved. Entries marked `removed: true` never delete or rewrite historical rows.
+Migration mode validates the current curriculum and the complete migration graph before writing. It refuses to run if any historical migration `from` identity exists in the current catalog, defensively preventing state for a reused ID from being rewritten. Append-only rename chains such as `A -> B -> C` resolve directly to the current terminal ID. Cycles, missing terminal IDs, ambiguous mappings, and database-key collisions fail. All affected identity columns are updated in one transaction with foreign keys enforced; any error rolls the transaction back. Lesson completion, saved code, exercise attempts/test results, review scheduling/logs, and activity history are preserved. Entries marked `removed: true` never delete or rewrite historical rows.
 
 Stop the running application before migrating its database and keep the normal database backup appropriate for any maintenance operation. The migration command is idempotent once old IDs no longer remain, and it prints the number of identity values updated for each ledger entry followed by a fresh audit report.
 

@@ -159,6 +159,24 @@ migrations:
 	assertCount(t, db, `SELECT COUNT(*) FROM lesson_progress WHERE lesson_id = 'lesson'`, 1)
 }
 
+func TestApplyMigrationsRejectsReusedMigrationSourceBeforeWriting(t *testing.T) {
+	db := openTestDatabase(t)
+	seedHistory(t, db, identitySet{"lesson", "exercise", "test", "review"})
+	migrations := parseMigrations(t, `version: 1
+migrations:
+  - entity: lesson
+    from: ai-ml/module/lesson
+    to: ai-ml/module/lesson-new
+`)
+
+	_, err := ApplyMigrations(context.Background(), db, catalog(t, identitySet{"lesson", "exercise", "test", "review"}), migrations)
+	if err == nil || !strings.Contains(err.Error(), "migration sources are reserved") {
+		t.Fatalf("expected reused migration source error, got %v", err)
+	}
+	assertCount(t, db, `SELECT COUNT(*) FROM lesson_progress WHERE lesson_id = 'lesson' AND completed = 1`, 1)
+	assertCount(t, db, `SELECT COUNT(*) FROM lesson_progress WHERE lesson_id = 'lesson-new'`, 0)
+}
+
 func TestApplyMigrationsResolvesRenameChainsTransitively(t *testing.T) {
 	db := openTestDatabase(t)
 	seedHistory(t, db, identitySet{"lesson", "exercise", "test", "review"})

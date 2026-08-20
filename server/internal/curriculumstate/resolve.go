@@ -38,8 +38,12 @@ func resolveMigrations(catalog *curriculum.Catalog, migrations []curriculumident
 		}
 	}
 
-	current := make(map[string]struct{})
-	for _, identity := range curriculumidentity.Snapshot(catalog) {
+	snapshot := curriculumidentity.Snapshot(catalog)
+	if err := curriculumidentity.ValidateReservedMigrationSources(snapshot, migrations); err != nil {
+		return nil, err
+	}
+	current := make(map[string]struct{}, len(snapshot))
+	for _, identity := range snapshot {
 		current[identity.String()] = struct{}{}
 	}
 	ordered := append([]curriculumidentity.Migration(nil), migrations...)
