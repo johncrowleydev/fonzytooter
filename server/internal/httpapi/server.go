@@ -3,7 +3,9 @@ package httpapi
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"reflect"
 	"time"
@@ -12,6 +14,7 @@ import (
 	"github.com/danielgtaylor/huma/v2/adapters/humago"
 	"github.com/johncrowleydev/fonzytooter/server/internal/curriculum"
 	"github.com/johncrowleydev/fonzytooter/server/internal/tutor"
+	"github.com/johncrowleydev/fonzytooter/server/internal/worksheetpdf"
 )
 
 type API struct {
@@ -50,6 +53,13 @@ type CourseWorksheetPathInput struct {
 	CourseID    string `path:"courseId"`
 	ModuleID    string `path:"moduleId"`
 	WorksheetID string `path:"worksheetId"`
+}
+
+type CourseWorksheetDocumentPathInput struct {
+	CourseID    string `path:"courseId"`
+	ModuleID    string `path:"moduleId"`
+	WorksheetID string `path:"worksheetId"`
+	DocumentID  string `path:"documentId"`
 }
 
 type CourseSummary struct {
@@ -173,6 +183,14 @@ type GetCourseWorksheetResponse struct {
 // NewAPI constructs the application handler and registers every documented
 // operation on the same Huma API used by the OpenAPI command.
 func NewAPI(tutorService *tutor.Service, catalog *curriculum.Catalog) *API {
+	return newAPI(tutorService, catalog, worksheetpdf.NewRenderer())
+}
+
+type worksheetDocumentRenderer interface {
+	Render(context.Context, curriculum.Worksheet, worksheetpdf.Variant) ([]byte, error)
+}
+
+func newAPI(tutorService *tutor.Service, catalog *curriculum.Catalog, documentRenderer worksheetDocumentRenderer) *API {
 	if catalog == nil {
 		panic("httpapi.NewAPI: nil curriculum catalog")
 	}
@@ -185,7 +203,7 @@ func NewAPI(tutorService *tutor.Service, catalog *curriculum.Catalog) *API {
 	humaAPI := humago.New(mux, config)
 	registerHealth(humaAPI)
 	registerTutorTurn(humaAPI, tutorService)
-	registerCurriculum(humaAPI, catalog)
+	registerCurriculum(humaAPI, catalog, documentRenderer)
 
 	return &API{Handler: mux, Spec: humaAPI.OpenAPI()}
 }
@@ -200,7 +218,7 @@ func NewServer(address string, tutorService *tutor.Service, catalog *curriculum.
 	}
 }
 
-func registerCurriculum(api huma.API, catalog *curriculum.Catalog) {
+func registerCurriculum(api huma.API, catalog *curriculum.Catalog, documentRenderer worksheetDocumentRenderer) {
 	huma.Register[struct{}, ListCoursesResponse](api, huma.Operation{
 		OperationID: "listCourses",
 		Method:      http.MethodGet,
@@ -333,6 +351,66 @@ func registerCurriculum(api huma.API, catalog *curriculum.Catalog) {
 			ObjectiveIDs: append([]string{}, worksheet.ObjectiveIDs...),
 			Instructions: worksheet.Instructions,
 			Problems:     problems,
+		}}, nil
+	})
+
+	huma.Register[CourseWorksheetDocumentPathInput, huma.StreamResponse](api, huma.Operation{
+		OperationID: "getCourseModuleWorksheetDocument",
+		Method:      http.MethodGet,
+		Path:        "/api/courses/{courseId}/modules/{moduleId}/worksheets/{worksheetId}/documents/{documentId}",
+		Summary:     "Get a printable worksheet document",
+		Description: "Returns either the student worksheet or its solutions as a generated PDF.",
+		Tags:        []string{"curriculum"},
+		Errors:      []int{http.StatusNotFound, http.StatusInternalServerError, http.StatusServiceUnavailable},
+		Responses: map[string]*huma.Response{
+			"200": {
+				Description: http.StatusText(http.StatusOK),
+				Headers: map[string]*huma.Param{
+					"Content-Disposition": {
+						Description: "Attachment disposition with a deterministic worksheet filename.",
+						Schema:      &huma.Schema{Type: huma.TypeString},
+					},
+				},
+				Content: map[string]*huma.MediaType{
+					"application/pdf": {
+						Schema: &huma.Schema{Type: huma.TypeString, Format: "binary"},
+					},
+				},
+			},
+		},
+	}, func(ctx context.Context, input *CourseWorksheetDocumentPathInput) (*huma.StreamResponse, error) {
+		variant, err := worksheetpdf.ParseVariant(input.DocumentID)
+		if err != nil {
+			return nil, huma.Error404NotFound("worksheet document not found")
+		}
+		worksheet, ok := catalog.WorksheetByCourse(input.CourseID, input.ModuleID, input.WorksheetID)
+		if !ok {
+			return nil, huma.Error404NotFound("worksheet not found")
+		}
+		if documentRenderer == nil {
+			return nil, huma.Error503ServiceUnavailable("worksheet PDF rendering is unavailable")
+		}
+
+		pdf, err := documentRenderer.Render(ctx, worksheet, variant)
+		if errors.Is(err, worksheetpdf.ErrToolUnavailable) {
+			log.Printf("worksheet PDF tooling unavailable: %v", err)
+			return nil, huma.Error503ServiceUnavailable("worksheet PDF rendering is unavailable")
+		}
+		if err != nil {
+			log.Printf("render worksheet PDF %s/%s/%s/%s: %v", input.CourseID, input.ModuleID, input.WorksheetID, input.DocumentID, err)
+			return nil, huma.Error500InternalServerError("worksheet PDF rendering failed")
+		}
+		filename, err := worksheetpdf.Filename(worksheet.ID, variant)
+		if err != nil {
+			log.Printf("choose worksheet PDF filename: %v", err)
+			return nil, huma.Error500InternalServerError("worksheet PDF rendering failed")
+		}
+
+		return &huma.StreamResponse{Body: func(streamContext huma.Context) {
+			streamContext.SetHeader("Content-Type", "application/pdf")
+			streamContext.SetHeader("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", filename))
+			streamContext.SetStatus(http.StatusOK)
+			_, _ = streamContext.BodyWriter().Write(pdf)
 		}}, nil
 	})
 }

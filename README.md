@@ -132,6 +132,12 @@ Go operations/types generate OpenAPI, which generates the frontend TanStack Quer
 - Go 1.26+
 - Node.js compatible with Vite 8
 - npm
+- [Pandoc](https://pandoc.org/) for worksheet Markdown-to-LaTeX conversion
+- [Tectonic](https://tectonic-typesetting.github.io/) for worksheet PDF typesetting
+
+Both `pandoc` and `tectonic` must be available on `PATH` for worksheet and
+solution PDF downloads. The API returns `503 Service Unavailable` for those
+document resources when either tool is missing.
 
 ### Start the API
 

@@ -67,6 +67,19 @@ jobs:
         with:
           go-version-file: server/go.mod
           cache-dependency-path: server/go.mod
+      - name: Install worksheet PDF tools
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes pandoc
+          tectonic_archive="tectonic-0.15.0-x86_64-unknown-linux-musl.tar.gz"
+          curl --fail --location --silent --show-error \
+            "https://github.com/tectonic-typesetting/tectonic/releases/download/tectonic%400.15.0/${tectonic_archive}" \
+            --output "/tmp/${tectonic_archive}"
+          echo "dfb82876f2986862996e564fa507a9e576e0c1e3bee63c2c1bd677c2543e6407  /tmp/${tectonic_archive}" | sha256sum --check --strict
+          sudo tar --extract --gzip --file "/tmp/${tectonic_archive}" --directory /usr/local/bin tectonic
+          pandoc --version
+          tectonic --version
       - name: Check formatting
         shell: bash
         run: |
@@ -80,6 +93,8 @@ jobs:
         run: go vet ./...
       - name: Test
         run: go test ./...
+        env:
+          FONZYTOOTER_REQUIRE_PDF_TOOLS: "1"
       - name: Validate curriculum
         run: go run ./cmd/curriculum-check ../curriculum
       - name: Build
