@@ -51,6 +51,53 @@ IDs are application identity; directory and filename choices are storage organiz
 
 Course identity is explicit when modules and lessons are resolved. Do not write new code that assumes a module or lesson is globally rooted merely because the current authored catalog contains one course.
 
+### Persistence-sensitive identity
+
+Some authored IDs are also stored in SQLite learner history. Treat these qualified identities as stable after they are merged:
+
+- course: `courseId`;
+- module: `courseId/moduleId`;
+- lesson: `courseId/moduleId/lessonId`;
+- exercise: `courseId/moduleId/exerciseId`;
+- exercise test: `courseId/moduleId/exerciseId/testId`;
+- review item: `courseId/moduleId/reviewItemId`.
+
+Exercise test IDs are included because test-result history records them. Worksheet and objective IDs are still application identity, but they are not currently persisted as learner-state keys. Extend this policy when a persistence feature begins storing another authored ID.
+
+Pull-request CI derives these identities from both revisions with the authoritative Go curriculum loader. Additions are safe. A rename or removal fails unless it is explicitly recorded in `curriculum/identity-migrations.yaml`; the checker does not guess renames from similar content.
+
+For an intentional rename, add a qualified mapping:
+
+```yaml
+version: 1
+migrations:
+  - entity: lesson
+    from: ai-ml/scientific-python/functions
+    to: ai-ml/scientific-python/functions-and-mappings
+```
+
+For an intentional retirement with no replacement, use `removed: true` instead of `to`:
+
+```yaml
+  - entity: review-item
+    from: ai-ml/scientific-python/functions.definition
+    removed: true
+```
+
+A course or module mapping also accounts for descendants whose local IDs did not change. Use the most specific mapping when a descendant is renamed at the same time. An exercise mapping similarly accounts for its test IDs.
+
+The migration ledger is a sparse, append-only record of breaking changes, not a curriculum manifest or a substitute for the loader. CI rejects removal or rewriting of existing entries so older databases retain their migration path. A new entry must be exercised by the base-to-head identity change in the same pull request; it cannot pre-authorize a future removal. Every historical `from` identity remains reserved and cannot be reintroduced as new curriculum. Recording a change makes it reviewable and supplies the migration intent used by learner-state tooling; it does not silently delete or rewrite SQLite data. Run the database state audit/migration tooling for intentional changes before relying on the new IDs.
+
+To run the same identity comparison locally from `server/`:
+
+```bash
+go run ./cmd/curriculum-identity-check \
+  --repository .. \
+  --base-ref origin/main \
+  --curriculum ../curriculum \
+  --migrations ../curriculum/identity-migrations.yaml
+```
+
 ## Module metadata
 
 Example shape:
