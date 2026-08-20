@@ -67,7 +67,7 @@ func TestPandocConvertsFencedCodeToReadableLatex(t *testing.T) {
 		"pandoc",
 		"--from=markdown+tex_math_dollars+fenced_code_blocks+raw_tex",
 		"--to=latex",
-		"--listings",
+		"--syntax-highlighting=none",
 		"--output="+outputPath,
 		inputPath,
 	)
@@ -78,7 +78,7 @@ func TestPandocConvertsFencedCodeToReadableLatex(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read LaTeX: %v", err)
 	}
-	for _, expected := range []string{"\\begin{lstlisting}", "print(f(3))", "f(3)"} {
+	for _, expected := range []string{"\\begin{verbatim}", "print(f(3))", "f(3)"} {
 		if !strings.Contains(string(latex), expected) {
 			t.Fatalf("Pandoc output omitted %q:\n%s", expected, latex)
 		}

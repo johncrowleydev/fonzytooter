@@ -96,7 +96,7 @@ func (renderer *Renderer) Render(ctx context.Context, worksheet curriculum.Works
 		"--from=markdown+tex_math_dollars+fenced_code_blocks+raw_tex",
 		"--to=latex",
 		"--standalone",
-		"--listings",
+		"--syntax-highlighting=none",
 		"--template="+templatePath,
 		"--output="+texPath,
 		markdownPath,
