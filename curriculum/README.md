@@ -27,6 +27,7 @@ curriculum/
 - `course.yaml` currently uses `id`, `title`, `description`, and explicit non-negative `order`.
 - `module.yaml` uses `id`, `title`, and explicit non-negative `order`. Its ordered `lessons` list is the canonical lesson sequence.
 - Module ordering is scoped to the owning course.
+- Module IDs are unique within the owning course and may be reused by another course.
 - Objectives require descriptions and may reference prerequisite objective IDs. Objective IDs remain globally unique in the current catalog model.
 - Lessons are MDX.
 - Lesson metadata is YAML frontmatter at the beginning of each MDX file. The Go loader preserves the remaining MDX source body and does not execute or compile it.

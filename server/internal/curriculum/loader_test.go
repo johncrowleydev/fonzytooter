@@ -162,14 +162,37 @@ func TestLoadRejectsDuplicateModuleIDs(t *testing.T) {
 	}), `duplicate module id "same"`)
 }
 
-func TestLoadRejectsDuplicateModuleIDsAcrossCourses(t *testing.T) {
-	expectLoadError(t, fstest.MapFS{
-		"sources.yaml":                           &fstest.MapFile{Data: []byte("sources: {}\n")},
-		"courses/first/course.yaml":              &fstest.MapFile{Data: []byte(courseYAML("first", 0))},
-		"courses/first/modules/one/module.yaml":  &fstest.MapFile{Data: []byte(moduleYAML("same", 0, emptyModuleLists))},
-		"courses/second/course.yaml":             &fstest.MapFile{Data: []byte(courseYAML("second", 1))},
-		"courses/second/modules/two/module.yaml": &fstest.MapFile{Data: []byte(moduleYAML("same", 0, emptyModuleLists))},
-	}, `duplicate module id "same"`)
+func TestLoadAllowsCourseScopedModuleAndLessonIDs(t *testing.T) {
+	fsys := fstest.MapFS{
+		"sources.yaml":                              &fstest.MapFile{Data: []byte("sources:\n  shared-source:\n    title: Shared source\n    url: https://example.com/shared\n")},
+		"courses/first/course.yaml":                 &fstest.MapFile{Data: []byte(courseYAML("first", 0))},
+		"courses/first/modules/shared/module.yaml":  &fstest.MapFile{Data: []byte(moduleYAML("shared", 0, "objectives:\n  - id: first.objective\n    title: First objective\n    description: First objective.\n    prerequisites: []\nvideos: []\nlessons:\n  - introduction\n"))},
+		"courses/first/modules/shared/lesson.mdx":   &fstest.MapFile{Data: []byte("---\nid: introduction\ntitle: First introduction\nobjectiveIds:\n  - first.objective\nsourceIds:\n  - shared-source\n---\n# First\n")},
+		"courses/second/course.yaml":                &fstest.MapFile{Data: []byte(courseYAML("second", 1))},
+		"courses/second/modules/shared/module.yaml": &fstest.MapFile{Data: []byte(moduleYAML("shared", 0, "objectives:\n  - id: second.objective\n    title: Second objective\n    description: Second objective.\n    prerequisites: []\nvideos: []\nlessons:\n  - introduction\n"))},
+		"courses/second/modules/shared/lesson.mdx":  &fstest.MapFile{Data: []byte("---\nid: introduction\ntitle: Second introduction\nobjectiveIds:\n  - second.objective\nsourceIds:\n  - shared-source\n---\n# Second\n")},
+	}
+
+	catalog, err := Load(fsys)
+	if err != nil {
+		t.Fatalf("load curriculum with course-scoped module IDs: %v", err)
+	}
+	firstModule, firstOK := catalog.ModuleByCourse("first", "shared")
+	secondModule, secondOK := catalog.ModuleByCourse("second", "shared")
+	if !firstOK || !secondOK || firstModule.CourseID != "first" || secondModule.CourseID != "second" {
+		t.Fatalf("unexpected course-scoped modules: %#v, %v; %#v, %v", firstModule, firstOK, secondModule, secondOK)
+	}
+	firstLesson, firstOK := catalog.LessonByCourse("first", "shared", "introduction")
+	secondLesson, secondOK := catalog.LessonByCourse("second", "shared", "introduction")
+	if !firstOK || !secondOK || firstLesson.Content != "# First\n" || secondLesson.Content != "# Second\n" {
+		t.Fatalf("unexpected course-scoped lessons: %#v, %v; %#v, %v", firstLesson, firstOK, secondLesson, secondOK)
+	}
+	if _, ok := catalog.ModuleByCourse("missing", "shared"); ok {
+		t.Fatal("module lookup ignored course ownership")
+	}
+	if _, ok := catalog.LessonByCourse("missing", "shared", "introduction"); ok {
+		t.Fatal("lesson lookup ignored course ownership")
+	}
 }
 
 func TestLoadRejectsDuplicateModuleOrders(t *testing.T) {
@@ -191,6 +214,17 @@ func TestLoadRejectsDuplicateObjectiveIDsAcrossModules(t *testing.T) {
 		"courses/ai-ml/modules/first/module.yaml":  moduleYAML("first", 0, objective),
 		"courses/ai-ml/modules/second/module.yaml": moduleYAML("second", 1, objective),
 	}), `duplicate objective id "shared"`)
+}
+
+func TestLoadRejectsDuplicateObjectiveIDsAcrossCourses(t *testing.T) {
+	objective := "objectives:\n  - id: shared.objective\n    title: Shared\n    description: Shared objective.\n    prerequisites: []\nvideos: []\nlessons: []\n"
+	expectLoadError(t, fstest.MapFS{
+		"sources.yaml":                              &fstest.MapFile{Data: []byte("sources: {}\n")},
+		"courses/first/course.yaml":                 &fstest.MapFile{Data: []byte(courseYAML("first", 0))},
+		"courses/first/modules/shared/module.yaml":  &fstest.MapFile{Data: []byte(moduleYAML("shared", 0, objective))},
+		"courses/second/course.yaml":                &fstest.MapFile{Data: []byte(courseYAML("second", 1))},
+		"courses/second/modules/shared/module.yaml": &fstest.MapFile{Data: []byte(moduleYAML("shared", 0, objective))},
+	}, `duplicate objective id "shared.objective"`)
 }
 
 func TestLoadRejectsSelfPrerequisite(t *testing.T) {

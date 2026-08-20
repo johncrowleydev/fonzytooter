@@ -56,12 +56,12 @@ func validateSources(sources map[string]sourceAuthoring, errors *errorCollector)
 func validateCourses(courses []courseFile, sources map[string]sourceAuthoring, errors *errorCollector) {
 	courseIDs := map[string]string{}
 	courseOrders := map[int]string{}
-	moduleIDs := map[string]string{}
 	objectiveIDs := map[string]string{}
 	objectivePaths := map[string]string{}
 	modules := []moduleFile{}
 
 	for _, course := range courses {
+		moduleIDs := map[string]string{}
 		if course.metadataOK {
 			metadata := course.metadata
 			if !stableIDPattern.MatchString(metadata.ID) {
