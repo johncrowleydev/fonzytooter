@@ -11,7 +11,7 @@ type Config struct {
 func FromEnv() Config {
 	return Config{
 		Address:        valueOrDefault("FONZYTOOTER_ADDR", ":8080"),
-		DatabasePath:   valueOrDefault("FONZYTOOTER_DATABASE_PATH", "./data/fonzytooter.db"),
+		DatabasePath:   valueOrDefault("FONZYTOOTER_DB_PATH", "./data/fonzytooter.db"),
 		CurriculumPath: valueOrDefault("FONZYTOOTER_CURRICULUM_PATH", "../curriculum"),
 	}
 }

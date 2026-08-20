@@ -155,6 +155,13 @@ cd server
 go run ./cmd/curriculum-check ../curriculum
 ```
 
+Learner state is stored in SQLite at `./data/fonzytooter.db` by default. Override
+the location with `FONZYTOOTER_DB_PATH`; production deployments should use an
+absolute path on persistent storage. The server creates the parent directory and
+runs embedded migrations before it begins serving HTTP. Back up the database
+file as part of the deployment backup policy (including a SQLite-safe checkpoint
+or backup procedure while WAL mode is active).
+
 With Pandoc and Tectonic installed, render every authored student/solutions worksheet and module workbook without storing output:
 
 ```bash
@@ -186,6 +193,6 @@ The project now has the core curriculum delivery path rather than only an initia
 - the global tutor receives explicit course/module/lesson semantic page context and consumes streamed tutor events;
 - the default tutor provider is still an explicit "not configured" provider;
 - the Pyodide exercise boundary is documented and typed, but the full editor/runtime workflow is not yet implemented;
-- learner-state persistence, FSRS, real tutor providers, worksheet uploads, tutor grading, and evidence writes remain future implementation work.
+- SQLite learner-state persistence and automatic migrations are available, while learner activity/progress tables, FSRS, real tutor providers, worksheet uploads, tutor grading, and evidence writes remain future implementation work.
 
 Add capabilities when the learning workflow needs them rather than pre-building an LMS platform.
