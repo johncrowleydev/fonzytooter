@@ -56,6 +56,35 @@ func TestCourseProgressAggregatesReviewAndExerciseEvidence(t *testing.T) {
 	}
 }
 
+func TestCourseProgressUsesSourceLessonEligibilityForVirtualReviewEvidence(t *testing.T) {
+	service, db := evidenceTestService(t)
+	now := time.Date(2026, time.August, 20, 12, 0, 0, 0, time.UTC)
+	service.now = func() time.Time { return now }
+	insertReviewCard(t, db, "review-future", now.Add(24*time.Hour), now.Add(-time.Hour))
+
+	progress, err := service.CourseProgress(context.Background(), "course")
+	if err != nil {
+		t.Fatalf("course progress before source lesson: %v", err)
+	}
+	if progress.DueReviewCount != 0 {
+		t.Fatalf("future source lesson contributed due virtual review evidence: %#v", progress)
+	}
+	recall := progress.Objectives[0].Recall
+	if recall.ReviewItemCount != 2 || recall.DueReviewCount != 0 || recall.NextDueAt == nil || !recall.NextDueAt.Equal(now.Add(24*time.Hour)) {
+		t.Fatalf("persisted schedule was not preserved while virtual item was gated: %#v", recall)
+	}
+
+	insertEvidenceRow(t, db, `INSERT INTO lesson_progress VALUES (?, ?, ?, 1, ?, ?)`, "course", "module", "lesson-one", timestamp(now), timestamp(now))
+	progress, err = service.CourseProgress(context.Background(), "course")
+	if err != nil {
+		t.Fatalf("course progress after source lesson: %v", err)
+	}
+	recall = progress.Objectives[0].Recall
+	if progress.DueReviewCount != 1 || recall.DueReviewCount != 1 || recall.NextDueAt == nil || !recall.NextDueAt.Equal(now) {
+		t.Fatalf("completed source lesson did not introduce virtual review evidence: %#v", progress)
+	}
+}
+
 func TestCourseProgressUsesRecentCompletionThenFallsBackToFirstIncomplete(t *testing.T) {
 	service, db := evidenceTestService(t)
 	now := time.Date(2026, time.August, 20, 12, 0, 0, 0, time.UTC)

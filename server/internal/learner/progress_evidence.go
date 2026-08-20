@@ -35,9 +35,16 @@ func (s *Service) addCourseEvidence(ctx context.Context, course curriculum.Cours
 	if err != nil {
 		return err
 	}
+	eligibility, err := LoadSourceLessonEligibility(ctx, s.db, course.ID)
+	if err != nil {
+		return err
+	}
 	for key, item := range reviewItems {
 		dueAt, stored := storedDue[key]
 		if !stored {
+			if !eligibility.Allows(item) {
+				continue
+			}
 			dueAt = now
 		}
 		isDue := !dueAt.After(now)
