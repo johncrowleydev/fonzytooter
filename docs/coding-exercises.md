@@ -76,6 +76,12 @@ Useful checks include:
 
 The tests themselves can reinforce what "correct" means mathematically.
 
+## Authored definition
+
+Embedded exercise definitions are optional Git-authored YAML files under a module's direct-child `exercises/` directory. They attach to one lesson, reference learning objectives, and contain a prompt, starter code, and visible or hidden trusted Python tests. The curriculum loader validates and indexes this definition without executing Python.
+
+The course-qualified student API returns exercise metadata, prompt, starter code, and visible tests only. Hidden test code remains server-internal curriculum data. A later runtime workflow may use it for checks through a deliberately separate contract; the normal exercise read resource must never disclose it.
+
 ## Browser execution
 
 Pyodide should run in a Web Worker to isolate Python execution from the React UI thread.

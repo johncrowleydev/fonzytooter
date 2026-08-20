@@ -162,6 +162,49 @@ go run ./cmd/worksheet-render-check ../curriculum
 
 The command uses temporary rendering workspaces and leaves no PDFs in the repository. Run it after authoring worksheet Markdown or LaTeX so invalid typesetting fails before review.
 
+## Embedded exercises
+
+A module may contain an optional direct-child `exercises/` directory. Exercise discovery is file-based; do not add an exercise list to `module.yaml`.
+
+```text
+<module>/
+├── module.yaml
+├── lesson.mdx
+└── exercises/
+    └── example.yaml
+```
+
+Each `.yaml` file has this authored shape:
+
+```yaml
+id: python.example
+title: Example exercise
+lessonId: 01-some-lesson
+order: 0
+objectiveIds:
+  - some.objective
+prompt: |
+  Implement `example(x)`.
+starterCode: |
+  def example(x):
+      pass
+tests:
+  - id: basic-case
+    title: Handles a basic case
+    visibility: visible
+    code: |
+      assert example(2) == 4
+  - id: edge-case
+    title: Handles an edge case
+    visibility: hidden
+    code: |
+      assert example(0) == 0
+```
+
+`lessonId` must name a lesson in the owning module. Exercise `order` is scoped to that lesson and must be non-negative and unique there. Every exercise names at least one known objective and includes at least one test. Test visibility is exactly `visible` or `hidden`.
+
+Test code is trusted Git-authored Python. The loader validates its authored structure but does not execute it. The ordinary student API includes visible tests and never includes hidden test code. Runtime execution, package loading, saved workspaces, and attempts are separate learner-workflow concerns.
+
 ## Sources
 
 `curriculum/sources.yaml` is the shared authoritative source registry across courses.
@@ -197,7 +240,7 @@ go run ./cmd/curriculum-check ../curriculum
 
 Current validation includes the curriculum root/course/module structure, strict YAML fields, stable IDs, course/module ordering constraints, lesson declarations/frontmatter, source/objective references, prerequisite references/cycles, duplicate authored identities, and other catalog invariants.
 
-Worksheet validation is part of the same deterministic command. It checks lesson/objective references, lesson-scoped ordering, required authored fields, stable and unique IDs, response layout hints, and non-empty rubrics.
+Worksheet and exercise validation are part of the same deterministic command. Exercise checks include strict fields, lesson/objective references, lesson-scoped ordering, required prose/code, test identities, and the visibility enum. Validation never executes authored Python.
 
 The frontend MDX validation pass recursively compiles authored lesson MDX under all courses:
 

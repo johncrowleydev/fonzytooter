@@ -44,7 +44,7 @@ func TestCurriculumReadAPI(t *testing.T) {
 	}
 	var module ModuleResource
 	decodeJSON(t, moduleResponse, &module)
-	if module.CourseID != "ai-ml" || module.ID != "python" || len(module.Objectives) != 1 || len(module.Videos) != 1 || len(module.Lessons) != 1 || len(module.Worksheets) != 1 {
+	if module.CourseID != "ai-ml" || module.ID != "python" || len(module.Objectives) != 1 || len(module.Videos) != 1 || len(module.Lessons) != 1 || len(module.Worksheets) != 1 || len(module.Exercises) != 1 {
 		t.Fatalf("unexpected module resource: %#v", module)
 	}
 	if module.Lessons[0].ID != "lesson.stable" || len(module.Lessons[0].ObjectiveIDs) != 1 {
@@ -52,6 +52,9 @@ func TestCurriculumReadAPI(t *testing.T) {
 	}
 	if module.Worksheets[0].ID != "worksheet" || module.Worksheets[0].ProblemCount != 1 {
 		t.Fatalf("unexpected worksheet summary: %#v", module.Worksheets[0])
+	}
+	if module.Exercises[0].ID != "python.example" || module.Exercises[0].LessonID != "lesson.stable" {
+		t.Fatalf("unexpected exercise summary: %#v", module.Exercises[0])
 	}
 
 	lessonResponse := serve(t, app.Handler, http.MethodGet, "/api/courses/ai-ml/modules/python/lessons/lesson.stable")
@@ -69,6 +72,9 @@ func TestCurriculumReadAPI(t *testing.T) {
 	if len(lesson.Worksheets) != 1 || lesson.Worksheets[0].ID != "worksheet" {
 		t.Fatalf("lesson did not expose worksheet summaries: %#v", lesson.Worksheets)
 	}
+	if len(lesson.Exercises) != 1 || lesson.Exercises[0].ID != "python.example" {
+		t.Fatalf("lesson did not expose exercise summaries: %#v", lesson.Exercises)
+	}
 
 	worksheetResponse := serve(t, app.Handler, http.MethodGet, "/api/courses/ai-ml/modules/python/worksheets/worksheet")
 	if worksheetResponse.Code != http.StatusOK {
@@ -85,6 +91,22 @@ func TestCurriculumReadAPI(t *testing.T) {
 	if worksheet.CourseID != "ai-ml" || worksheet.ModuleID != "python" || worksheet.ID != "worksheet" || len(worksheet.Problems) != 1 || !worksheet.Problems[0].RequiresWork || worksheet.Problems[0].ResponseLines != 3 {
 		t.Fatalf("unexpected worksheet resource: %#v", worksheet)
 	}
+
+	exerciseResponse := serve(t, app.Handler, http.MethodGet, "/api/courses/ai-ml/modules/python/exercises/python.example")
+	if exerciseResponse.Code != http.StatusOK {
+		t.Fatalf("get exercise status = %d: %s", exerciseResponse.Code, exerciseResponse.Body.String())
+	}
+	exerciseJSON := exerciseResponse.Body.String()
+	if strings.Contains(exerciseJSON, "hidden-case") || strings.Contains(exerciseJSON, "Hidden check") || strings.Contains(exerciseJSON, "secret_solution") || strings.Contains(exerciseJSON, "visibility") || strings.Contains(exerciseJSON, "tests\"") {
+		t.Fatalf("student exercise leaked hidden test data or internal test representation: %s", exerciseJSON)
+	}
+	var exercise ExerciseResource
+	if err := json.Unmarshal([]byte(exerciseJSON), &exercise); err != nil {
+		t.Fatalf("decode exercise JSON: %v", err)
+	}
+	if exercise.CourseID != "ai-ml" || exercise.ModuleID != "python" || exercise.ID != "python.example" || exercise.LessonID != "lesson.stable" || len(exercise.VisibleTests) != 1 || exercise.VisibleTests[0].ID != "visible-case" || exercise.VisibleTests[0].Code != "assert solution()" {
+		t.Fatalf("unexpected exercise resource: %#v", exercise)
+	}
 }
 
 func TestCurriculumReadAPIMissingResourcesUseProblemResponses(t *testing.T) {
@@ -98,6 +120,9 @@ func TestCurriculumReadAPIMissingResourcesUseProblemResponses(t *testing.T) {
 		"/api/courses/other/modules/python/worksheets/worksheet",
 		"/api/courses/ai-ml/modules/wrong-module/worksheets/worksheet",
 		"/api/courses/ai-ml/modules/python/worksheets/missing",
+		"/api/courses/other/modules/python/exercises/python.example",
+		"/api/courses/ai-ml/modules/wrong-module/exercises/python.example",
+		"/api/courses/ai-ml/modules/python/exercises/missing",
 	} {
 		t.Run(path, func(t *testing.T) {
 			response := serve(t, app.Handler, http.MethodGet, path)
@@ -127,6 +152,7 @@ func TestCurriculumOpenAPIContract(t *testing.T) {
 		"/api/courses/{courseId}/modules/{moduleId}": "getCourseModule",
 		"/api/courses/{courseId}/modules/{moduleId}/lessons/{lessonId}":       "getCourseLesson",
 		"/api/courses/{courseId}/modules/{moduleId}/worksheets/{worksheetId}": "getCourseModuleWorksheet",
+		"/api/courses/{courseId}/modules/{moduleId}/exercises/{exerciseId}":   "getCourseModuleExercise",
 	} {
 		item, ok := app.Spec.Paths[path]
 		if !ok || item.Get == nil || item.Get.OperationID != operationID {
@@ -168,6 +194,14 @@ func TestCurriculumOpenAPIContract(t *testing.T) {
 	if problemSchema == nil || problemSchema.Properties["expectedAnswer"] != nil || problemSchema.Properties["rubric"] != nil {
 		t.Fatalf("student worksheet problem schema leaked solution fields: %#v", problemSchema)
 	}
+	exerciseSchema := app.Spec.Components.Schemas.Map()["ExerciseResource"]
+	if exerciseSchema == nil || exerciseSchema.Properties["visibleTests"] == nil || exerciseSchema.Properties["tests"] != nil {
+		t.Fatalf("expected student-safe exercise schema, got %#v", exerciseSchema)
+	}
+	visibleTestSchema := app.Spec.Components.Schemas.Map()["VisibleExerciseTestResource"]
+	if visibleTestSchema == nil || visibleTestSchema.Properties["visibility"] != nil {
+		t.Fatalf("visible exercise test schema exposed internal visibility: %#v", visibleTestSchema)
+	}
 }
 
 func testCatalog(t *testing.T) *curriculum.Catalog {
@@ -181,6 +215,7 @@ func testCatalog(t *testing.T) *curriculum.Catalog {
 		"courses/ai-ml/modules/storage/module.yaml":               &fstest.MapFile{Data: []byte("id: python\ntitle: Python\norder: 2\nobjectives:\n  - id: python.variables\n    title: Use variables\n    description: Bind names to values.\n    prerequisites: []\nvideos:\n  - id: python-video\n    title: Python video\n    url: https://example.com/python\n    objectiveIds:\n      - python.variables\nlessons:\n  - lesson.stable\n")},
 		"courses/ai-ml/modules/storage/not-the-id.mdx":            &fstest.MapFile{Data: []byte("---\nid: lesson.stable\ntitle: Stable lesson\nobjectiveIds:\n  - python.variables\nsourceIds:\n  - go-docs\n---\n# Lesson\n")},
 		"courses/ai-ml/modules/storage/worksheets/worksheet.yaml": &fstest.MapFile{Data: []byte("id: worksheet\ntitle: Worksheet\nlessonId: lesson.stable\norder: 0\nobjectiveIds:\n  - python.variables\ninstructions: Complete the worksheet.\nproblems:\n  - id: problem\n    prompt: Solve it.\n    objectiveIds:\n      - python.variables\n    expectedAnswer: Secret answer.\n    requiresWork: true\n    responseLines: 3\n    rubric:\n      - Secret criterion.\n")},
+		"courses/ai-ml/modules/storage/exercises/example.yaml":    &fstest.MapFile{Data: []byte("id: python.example\ntitle: Example exercise\nlessonId: lesson.stable\norder: 0\nobjectiveIds:\n  - python.variables\nprompt: Implement it.\nstarterCode: pass\ntests:\n  - id: visible-case\n    title: Visible check\n    visibility: visible\n    code: assert solution()\n  - id: hidden-case\n    title: Hidden check\n    visibility: hidden\n    code: assert secret_solution()\n")},
 	})
 	if err != nil {
 		t.Fatalf("load test catalog: %v", err)

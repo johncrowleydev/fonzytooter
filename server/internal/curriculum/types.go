@@ -64,6 +64,31 @@ type WorksheetProblem struct {
 	Rubric         []string
 }
 
+type Exercise struct {
+	CourseID     string
+	ModuleID     string
+	ID           string
+	Title        string
+	LessonID     string
+	Order        int
+	ObjectiveIDs []string
+	Prompt       string
+	StarterCode  string
+	Tests        []ExerciseTest
+}
+
+type ExerciseTest struct {
+	ID         string
+	Title      string
+	Visibility string
+	Code       string
+}
+
+const (
+	ExerciseTestVisible = "visible"
+	ExerciseTestHidden  = "hidden"
+)
+
 type Module struct {
 	CourseID   string
 	ID         string
@@ -73,6 +98,7 @@ type Module struct {
 	Videos     []Video
 	Lessons    []Lesson
 	Worksheets []Worksheet
+	Exercises  []Exercise
 }
 
 type Source struct {
@@ -93,6 +119,9 @@ type Catalog struct {
 	worksheetsByKey    map[worksheetKey]Worksheet
 	worksheetsByModule map[moduleKey][]Worksheet
 	worksheetsByLesson map[lessonKey][]Worksheet
+	exercisesByKey     map[exerciseKey]Exercise
+	exercisesByModule  map[moduleKey][]Exercise
+	exercisesByLesson  map[lessonKey][]Exercise
 	objectives         map[string]Objective
 	sources            map[string]Source
 }
@@ -114,6 +143,12 @@ type worksheetKey struct {
 	worksheetID string
 }
 
+type exerciseKey struct {
+	courseID   string
+	moduleID   string
+	exerciseID string
+}
+
 func NewEmptyCatalog() *Catalog {
 	return &Catalog{
 		courses:            []Course{},
@@ -124,6 +159,9 @@ func NewEmptyCatalog() *Catalog {
 		worksheetsByKey:    make(map[worksheetKey]Worksheet),
 		worksheetsByModule: make(map[moduleKey][]Worksheet),
 		worksheetsByLesson: make(map[lessonKey][]Worksheet),
+		exercisesByKey:     make(map[exerciseKey]Exercise),
+		exercisesByModule:  make(map[moduleKey][]Exercise),
+		exercisesByLesson:  make(map[lessonKey][]Exercise),
 		objectives:         make(map[string]Objective),
 		sources:            make(map[string]Source),
 	}
@@ -164,6 +202,16 @@ func newCatalog(courses []Course, sources map[string]Source) *Catalog {
 				}
 				return module.Worksheets[i].ID < module.Worksheets[j].ID
 			})
+			sort.Slice(module.Exercises, func(i, j int) bool {
+				leftLesson, rightLesson := lessonOrder[module.Exercises[i].LessonID], lessonOrder[module.Exercises[j].LessonID]
+				if leftLesson != rightLesson {
+					return leftLesson < rightLesson
+				}
+				if module.Exercises[i].Order != module.Exercises[j].Order {
+					return module.Exercises[i].Order < module.Exercises[j].Order
+				}
+				return module.Exercises[i].ID < module.Exercises[j].ID
+			})
 			clonedModule := cloneModule(*module)
 			catalog.modules = append(catalog.modules, clonedModule)
 			catalog.modulesByKey[moduleKey{courseID: course.ID, moduleID: module.ID}] = clonedModule
@@ -177,6 +225,14 @@ func newCatalog(courses []Course, sources map[string]Source) *Catalog {
 				catalog.worksheetsByModule[moduleLookupKey] = append(catalog.worksheetsByModule[moduleLookupKey], clonedWorksheet)
 				lessonLookupKey := lessonKey{courseID: course.ID, moduleID: module.ID, lessonID: worksheet.LessonID}
 				catalog.worksheetsByLesson[lessonLookupKey] = append(catalog.worksheetsByLesson[lessonLookupKey], clonedWorksheet)
+			}
+			for _, exercise := range clonedModule.Exercises {
+				clonedExercise := cloneExercise(exercise)
+				catalog.exercisesByKey[exerciseKey{courseID: course.ID, moduleID: module.ID, exerciseID: exercise.ID}] = clonedExercise
+				moduleLookupKey := moduleKey{courseID: course.ID, moduleID: module.ID}
+				catalog.exercisesByModule[moduleLookupKey] = append(catalog.exercisesByModule[moduleLookupKey], clonedExercise)
+				lessonLookupKey := lessonKey{courseID: course.ID, moduleID: module.ID, lessonID: exercise.LessonID}
+				catalog.exercisesByLesson[lessonLookupKey] = append(catalog.exercisesByLesson[lessonLookupKey], clonedExercise)
 			}
 			for _, objective := range module.Objectives {
 				catalog.objectives[objective.ID] = cloneObjective(objective)
@@ -263,6 +319,31 @@ func (c *Catalog) WorksheetsByLesson(courseID, moduleID, lessonID string) []Work
 	return cloneWorksheets(c.worksheetsByLesson[lessonKey{courseID: courseID, moduleID: moduleID, lessonID: lessonID}])
 }
 
+func (c *Catalog) ExerciseByCourse(courseID, moduleID, exerciseID string) (Exercise, bool) {
+	if c == nil {
+		return Exercise{}, false
+	}
+	exercise, ok := c.exercisesByKey[exerciseKey{courseID: courseID, moduleID: moduleID, exerciseID: exerciseID}]
+	if !ok {
+		return Exercise{}, false
+	}
+	return cloneExercise(exercise), true
+}
+
+func (c *Catalog) ExercisesByModule(courseID, moduleID string) []Exercise {
+	if c == nil {
+		return []Exercise{}
+	}
+	return cloneExercises(c.exercisesByModule[moduleKey{courseID: courseID, moduleID: moduleID}])
+}
+
+func (c *Catalog) ExercisesByLesson(courseID, moduleID, lessonID string) []Exercise {
+	if c == nil {
+		return []Exercise{}
+	}
+	return cloneExercises(c.exercisesByLesson[lessonKey{courseID: courseID, moduleID: moduleID, lessonID: lessonID}])
+}
+
 func (c *Catalog) ObjectiveByID(id string) (Objective, bool) {
 	if c == nil {
 		return Objective{}, false
@@ -308,6 +389,13 @@ func (c *Catalog) WorksheetCount() int {
 		return 0
 	}
 	return len(c.worksheetsByKey)
+}
+
+func (c *Catalog) ExerciseCount() int {
+	if c == nil {
+		return 0
+	}
+	return len(c.exercisesByKey)
 }
 
 func (c *Catalog) ObjectiveCount() int {
@@ -361,6 +449,28 @@ func cloneModule(module Module) Module {
 		cloned.Lessons[index] = cloneLesson(lesson)
 	}
 	cloned.Worksheets = cloneWorksheets(module.Worksheets)
+	cloned.Exercises = cloneExercises(module.Exercises)
+	return cloned
+}
+
+func cloneExercises(exercises []Exercise) []Exercise {
+	if exercises == nil {
+		return []Exercise{}
+	}
+	cloned := make([]Exercise, len(exercises))
+	for index, exercise := range exercises {
+		cloned[index] = cloneExercise(exercise)
+	}
+	return cloned
+}
+
+func cloneExercise(exercise Exercise) Exercise {
+	cloned := exercise
+	cloned.ObjectiveIDs = cloneStrings(exercise.ObjectiveIDs)
+	cloned.Tests = append([]ExerciseTest(nil), exercise.Tests...)
+	if cloned.Tests == nil {
+		cloned.Tests = []ExerciseTest{}
+	}
 	return cloned
 }
 

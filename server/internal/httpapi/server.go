@@ -56,6 +56,12 @@ type CourseWorksheetPathInput struct {
 	WorksheetID string `path:"worksheetId"`
 }
 
+type CourseExercisePathInput struct {
+	CourseID   string `path:"courseId"`
+	ModuleID   string `path:"moduleId"`
+	ExerciseID string `path:"exerciseId"`
+}
+
 type CourseWorksheetDocumentPathInput struct {
 	CourseID    string `path:"courseId"`
 	ModuleID    string `path:"moduleId"`
@@ -119,6 +125,14 @@ type WorksheetSummary struct {
 	ProblemCount int      `json:"problemCount"`
 }
 
+type ExerciseSummary struct {
+	ID           string   `json:"id"`
+	Title        string   `json:"title"`
+	LessonID     string   `json:"lessonId"`
+	Order        int      `json:"order"`
+	ObjectiveIDs []string `json:"objectiveIds" nullable:"false"`
+}
+
 type ModuleResource struct {
 	CourseID   string              `json:"courseId"`
 	ID         string              `json:"id"`
@@ -128,6 +142,7 @@ type ModuleResource struct {
 	Videos     []VideoResource     `json:"videos" nullable:"false"`
 	Lessons    []LessonSummary     `json:"lessons" nullable:"false"`
 	Worksheets []WorksheetSummary  `json:"worksheets" nullable:"false"`
+	Exercises  []ExerciseSummary   `json:"exercises" nullable:"false"`
 }
 
 type SourceResource struct {
@@ -145,6 +160,7 @@ type LessonResource struct {
 	Sources      []SourceResource   `json:"sources" nullable:"false"`
 	Content      string             `json:"content" doc:"Raw MDX source body with YAML frontmatter removed."`
 	Worksheets   []WorksheetSummary `json:"worksheets" nullable:"false"`
+	Exercises    []ExerciseSummary  `json:"exercises" nullable:"false"`
 }
 
 type WorksheetProblemResource struct {
@@ -167,6 +183,25 @@ type WorksheetResource struct {
 	Problems     []WorksheetProblemResource `json:"problems" nullable:"false"`
 }
 
+type VisibleExerciseTestResource struct {
+	ID    string `json:"id"`
+	Title string `json:"title"`
+	Code  string `json:"code"`
+}
+
+type ExerciseResource struct {
+	CourseID     string                        `json:"courseId"`
+	ModuleID     string                        `json:"moduleId"`
+	ID           string                        `json:"id"`
+	Title        string                        `json:"title"`
+	LessonID     string                        `json:"lessonId"`
+	Order        int                           `json:"order"`
+	ObjectiveIDs []string                      `json:"objectiveIds" nullable:"false"`
+	Prompt       string                        `json:"prompt"`
+	StarterCode  string                        `json:"starterCode"`
+	VisibleTests []VisibleExerciseTestResource `json:"visibleTests" nullable:"false"`
+}
+
 type ListCoursesResponse struct {
 	Body []CourseSummary
 }
@@ -185,6 +220,10 @@ type GetCourseLessonResponse struct {
 
 type GetCourseWorksheetResponse struct {
 	Body WorksheetResource
+}
+
+type GetCourseExerciseResponse struct {
+	Body ExerciseResource
 }
 
 // NewAPI constructs the application handler and registers every documented
@@ -325,6 +364,34 @@ func registerCurriculum(api huma.API, catalog *curriculum.Catalog, documentRende
 			Sources:      sources,
 			Content:      lesson.Content,
 			Worksheets:   worksheetSummaries(catalog.WorksheetsByLesson(input.CourseID, input.ModuleID, input.LessonID)),
+			Exercises:    exerciseSummaries(catalog.ExercisesByLesson(input.CourseID, input.ModuleID, input.LessonID)),
+		}}, nil
+	})
+
+	huma.Register[CourseExercisePathInput, GetCourseExerciseResponse](api, huma.Operation{
+		OperationID: "getCourseModuleExercise",
+		Method:      http.MethodGet,
+		Path:        "/api/courses/{courseId}/modules/{moduleId}/exercises/{exerciseId}",
+		Summary:     "Get an embedded course exercise",
+		Tags:        []string{"curriculum"},
+		Errors:      []int{http.StatusNotFound},
+	}, func(_ context.Context, input *CourseExercisePathInput) (*GetCourseExerciseResponse, error) {
+		exercise, ok := catalog.ExerciseByCourse(input.CourseID, input.ModuleID, input.ExerciseID)
+		if !ok {
+			return nil, huma.Error404NotFound("exercise not found")
+		}
+		visibleTests := make([]VisibleExerciseTestResource, 0, len(exercise.Tests))
+		for _, test := range exercise.Tests {
+			if test.Visibility != curriculum.ExerciseTestVisible {
+				continue
+			}
+			visibleTests = append(visibleTests, VisibleExerciseTestResource{ID: test.ID, Title: test.Title, Code: test.Code})
+		}
+		return &GetCourseExerciseResponse{Body: ExerciseResource{
+			CourseID: exercise.CourseID, ModuleID: exercise.ModuleID,
+			ID: exercise.ID, Title: exercise.Title, LessonID: exercise.LessonID, Order: exercise.Order,
+			ObjectiveIDs: append([]string{}, exercise.ObjectiveIDs...), Prompt: exercise.Prompt,
+			StarterCode: exercise.StarterCode, VisibleTests: visibleTests,
 		}}, nil
 	})
 
@@ -527,7 +594,19 @@ func moduleResource(module curriculum.Module) ModuleResource {
 		Videos:     videos,
 		Lessons:    lessons,
 		Worksheets: worksheetSummaries(module.Worksheets),
+		Exercises:  exerciseSummaries(module.Exercises),
 	}
+}
+
+func exerciseSummaries(exercises []curriculum.Exercise) []ExerciseSummary {
+	summaries := make([]ExerciseSummary, 0, len(exercises))
+	for _, exercise := range exercises {
+		summaries = append(summaries, ExerciseSummary{
+			ID: exercise.ID, Title: exercise.Title, LessonID: exercise.LessonID,
+			Order: exercise.Order, ObjectiveIDs: append([]string{}, exercise.ObjectiveIDs...),
+		})
+	}
+	return summaries
 }
 
 func worksheetSummaries(worksheets []curriculum.Worksheet) []WorksheetSummary {
