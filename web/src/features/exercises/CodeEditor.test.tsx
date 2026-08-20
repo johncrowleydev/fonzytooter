@@ -1,4 +1,4 @@
-import { render } from '@testing-library/react'
+import { fireEvent, render } from '@testing-library/react'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { CodeEditor } from './CodeEditor'
 
@@ -22,5 +22,24 @@ describe('CodeEditor', () => {
     expect(container.querySelector('.cm-editor')).toBe(editor)
     expect(container.querySelector('.cm-content')).toBe(content)
     expect(content?.getAttribute('contenteditable')).toBe('false')
+  })
+
+  it('recreates the editor when the exercise identity changes', () => {
+    const { container, rerender } = render(
+      <CodeEditor key="exercise-a" onChange={vi.fn()} value={'print("exercise a")'} />,
+    )
+    const firstEditor = container.querySelector('.cm-editor')
+
+    rerender(<CodeEditor key="exercise-b" onChange={vi.fn()} value={'print("exercise b")'} />)
+
+    const secondEditor = container.querySelector('.cm-editor')
+    expect(secondEditor).not.toBe(firstEditor)
+    expect(secondEditor?.textContent).toContain('print("exercise b")')
+    expect(secondEditor?.textContent).not.toContain('print("exercise a")')
+
+    fireEvent.keyDown(container.querySelector('.cm-content')!, { key: 'z', ctrlKey: true })
+
+    expect(secondEditor?.textContent).toContain('print("exercise b")')
+    expect(secondEditor?.textContent).not.toContain('print("exercise a")')
   })
 })

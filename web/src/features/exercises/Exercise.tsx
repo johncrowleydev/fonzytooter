@@ -320,7 +320,7 @@ export function Exercise() {
                 </span>
               </div>
             </div>
-            <CodeEditor disabled={executing} onChange={setCode} value={code} />
+            <CodeEditor key={draftKey} disabled={executing} onChange={setCode} value={code} />
             <div className="flex items-center justify-between gap-4 border-t border-line px-4 py-3 max-sm:flex-col max-sm:items-start">
               <div className="flex gap-2">
                 <Button disabled={executing} onClick={run}>
