@@ -97,6 +97,8 @@ jobs:
           FONZYTOOTER_REQUIRE_PDF_TOOLS: "1"
       - name: Validate curriculum
         run: go run ./cmd/curriculum-check ../curriculum
+      - name: Render worksheet curriculum
+        run: go run ./cmd/worksheet-render-check ../curriculum
       - name: Build
         run: go build ./...
       - name: Generate OpenAPI artifact

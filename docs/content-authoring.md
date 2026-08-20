@@ -151,6 +151,17 @@ problems:
 
 The student worksheet JSON API intentionally omits `expectedAnswer` and `rubric`; those fields remain internal curriculum data for solution rendering and future assessment behavior.
 
+Individual worksheet PDFs and module workbooks are generated on demand from this same validated structure using Pandoc and Tectonic. Workbooks are not separately authored and PDFs are not stored. A workbook compiles the module's ordered worksheets as one document rather than concatenating previously rendered PDFs. Student output excludes expected answers and rubrics; solutions output includes expected answers but still excludes rubric criteria.
+
+Install `pandoc` and `tectonic` on `PATH`, then exercise every checked-in worksheet and non-empty module in both student and solutions form with:
+
+```bash
+cd server
+go run ./cmd/worksheet-render-check ../curriculum
+```
+
+The command uses temporary rendering workspaces and leaves no PDFs in the repository. Run it after authoring worksheet Markdown or LaTeX so invalid typesetting fails before review.
+
 ## Sources
 
 `curriculum/sources.yaml` is the shared authoritative source registry across courses.
