@@ -105,8 +105,8 @@ func (renderer *Renderer) renderMarkdown(ctx context.Context, markdown string, t
 		"--to=latex",
 		"--standalone",
 		"--no-highlight",
-		"--template="+templatePath,
-		"--output="+texPath,
+		"--template=" + templatePath,
+		"--output=" + texPath,
 		markdownPath,
 	}
 	if tableOfContents {
