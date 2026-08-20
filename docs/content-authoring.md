@@ -98,6 +98,37 @@ go run ./cmd/curriculum-identity-check \
   --migrations ../curriculum/identity-migrations.yaml
 ```
 
+### Auditing and migrating learner state
+
+Run the learner-state audit after changing persistence-sensitive curriculum IDs, before removing an old branch or backup that helps explain the change, and whenever progress/history appears to be missing. From `server/`:
+
+```bash
+go run ./cmd/curriculum-state-check audit \
+  --database ./data/fonzytooter.db \
+  --curriculum ../curriculum
+```
+
+Audit mode opens the existing SQLite file read-only. It does not apply database schema migrations, write SQLite metadata, rewrite IDs, or delete rows. It checks every current identity-bearing learner-state table:
+
+- lesson progress and activities;
+- exercise workspaces, attempts, and per-test result history;
+- review cards and review logs.
+
+Findings are grouped by table and include primary keys or qualified curriculum IDs. A non-clean audit exits unsuccessfully so it can also be used in maintenance scripts. An entry marked `removed: true` remains an audit finding by design: the ledger acknowledges the authored removal, while SQLite history remains intact.
+
+For intentional renames, first add the explicit mapping to `curriculum/identity-migrations.yaml`, then apply it to the learner database:
+
+```bash
+go run ./cmd/curriculum-state-check migrate \
+  --database ./data/fonzytooter.db \
+  --curriculum ../curriculum \
+  --migrations ../curriculum/identity-migrations.yaml
+```
+
+Migration mode validates the current curriculum and the complete migration graph before writing. It refuses to run if any historical migration `from` identity exists in the current catalog, defensively preventing state for a reused ID from being rewritten. Append-only rename chains such as `A -> B -> C` resolve directly to the current terminal ID. Cycles, missing terminal IDs, ambiguous mappings, and database-key collisions fail. All affected identity columns are updated in one transaction with foreign keys enforced; any error rolls the transaction back. Lesson completion, saved code, exercise attempts/test results, review scheduling/logs, and activity history are preserved. Entries marked `removed: true` never delete or rewrite historical rows.
+
+Stop the running application before migrating its database and keep the normal database backup appropriate for any maintenance operation. The migration command is idempotent once old IDs no longer remain, and it prints the number of identity values updated for each ledger entry followed by a fresh audit report.
+
 ## Module metadata
 
 Example shape:
