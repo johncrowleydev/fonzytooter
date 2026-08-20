@@ -57,7 +57,7 @@ function WorksheetBlockquote({ className, ...props }: ComponentPropsWithoutRef<'
 function WorksheetCode({ className, ...props }: ComponentPropsWithoutRef<'code'>) {
   const codeClassName = className
     ? withClassName('font-mono text-sm leading-6 text-slate-100', className)
-    : 'rounded bg-panel-soft px-1.5 py-0.5 font-mono text-[0.9em] text-brand-teal'
+    : 'rounded bg-panel-soft px-1.5 py-0.5 font-mono text-sm text-brand-teal'
 
   return <code className={codeClassName} {...props} />
 }
