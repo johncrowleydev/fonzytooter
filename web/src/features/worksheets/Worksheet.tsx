@@ -1,13 +1,14 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import {
+  getCourseModuleWorksheetDocument,
   useGetCourse,
   useGetCourseModule,
   useGetCourseModuleWorksheet,
 } from '../../api/generated/endpoints'
 import type { WorksheetResource } from '../../api/generated/schemas/worksheetResource.zod'
 import { coursePath, lessonPath, modulePath } from '../../app/routes'
-import { Badge, Card, PageIntro } from '../../components/ui'
+import { Badge, Button, Card, PageIntro } from '../../components/ui'
 import { useTutor } from '../tutor/TutorContext'
 import { WorksheetMarkup } from './WorksheetMarkup'
 
@@ -158,6 +159,38 @@ function WorksheetContent({
   lessonTitle: string
   worksheet: WorksheetResource
 }) {
+  const [downloading, setDownloading] = useState<'student' | 'solutions' | null>(null)
+  const [downloadError, setDownloadError] = useState<string | null>(null)
+
+  async function download(documentId: 'student' | 'solutions') {
+    setDownloading(documentId)
+    setDownloadError(null)
+    let objectURL: string | undefined
+    try {
+      const response = await getCourseModuleWorksheetDocument(
+        courseId,
+        moduleId,
+        worksheet.id,
+        documentId,
+      )
+      const fallbackFilename =
+        documentId === 'student' ? `${worksheet.id}.pdf` : `${worksheet.id}-solutions.pdf`
+      const filename =
+        filenameFromContentDisposition(response.headers['content-disposition']) ?? fallbackFilename
+      objectURL = URL.createObjectURL(response.data)
+      const link = document.createElement('a')
+      link.href = objectURL
+      link.download = filename
+      link.click()
+    } catch (error) {
+      setDownloadError(getDownloadErrorMessage(error))
+    } finally {
+      const urlToRevoke = objectURL
+      if (urlToRevoke) window.setTimeout(() => URL.revokeObjectURL(urlToRevoke), 0)
+      setDownloading(null)
+    }
+  }
+
   return (
     <div className="grid max-w-5xl gap-7 max-sm:gap-5">
       <nav
@@ -198,6 +231,34 @@ function WorksheetContent({
       </PageIntro>
 
       <Card className="max-w-3xl">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <p className="text-sm font-semibold text-ink">Printable practice</p>
+            <p className="mt-1 text-xs leading-relaxed text-muted">
+              Download a blank worksheet or a copy with authored solutions.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button disabled={downloading !== null} onClick={() => void download('student')}>
+              {downloading === 'student' ? 'Preparing worksheet…' : 'Download worksheet PDF'}
+            </Button>
+            <Button
+              disabled={downloading !== null}
+              onClick={() => void download('solutions')}
+              variant="outline"
+            >
+              {downloading === 'solutions' ? 'Preparing solutions…' : 'Download solutions PDF'}
+            </Button>
+          </div>
+        </div>
+        {downloadError ? (
+          <p className="mt-3 text-xs text-brand-coral" role="alert">
+            {downloadError}
+          </p>
+        ) : null}
+      </Card>
+
+      <Card className="max-w-3xl">
         <p className="mb-3 text-2xs font-bold uppercase tracking-widest text-faint">Instructions</p>
         <div className="text-sm">
           <WorksheetMarkup source={worksheet.instructions} />
@@ -235,6 +296,18 @@ function WorksheetContent({
       </Link>
     </div>
   )
+}
+
+function filenameFromContentDisposition(disposition: string | undefined) {
+  const match = disposition?.match(/filename="([^"]+)"/i)
+  return match?.[1]
+}
+
+function getDownloadErrorMessage(error: unknown) {
+  if (error instanceof Error && 'status' in error && error.status === 503) {
+    return 'PDF downloads are temporarily unavailable because the rendering tools are not installed.'
+  }
+  return 'The PDF could not be downloaded. Please try again.'
 }
 
 function WorksheetState({
