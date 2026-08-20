@@ -27,6 +27,13 @@ Read the relevant files in `docs/` before making architectural changes. Multi-co
 15. **The HTTP API is resource-oriented REST.** Paths identify resources and collections; HTTP methods carry CRUD/state-transition semantics; resource bodies stay resource-shaped; transport metadata belongs in headers; analogous operations use consistent naming and status codes; action/RPC endpoints are avoided. See `docs/api-style.md`.
 16. **Course is a first-class ownership boundary.** Do not add curriculum routes, APIs, tutor context, persistence keys, worksheets, exercises, projects, or other course-bound state that assumes AI/ML is the only course. AI/ML may be the default for navigation, but it is not the platform-wide identity. See `docs/multi-course.md`.
 
+## Agent workspace safety
+
+- **Never extract archives into tracked repository content.** ZIP files and other temporary source bundles must be extracted either outside the repository or into an explicitly untracked/gitignored working directory. Temporary extracted contents must never enter Git history.
+- **Use Git worktrees for agent tasks.** Each agent/task should normally work in its own worktree and branch, especially when work may happen in parallel. Multiple agents must not mutate the same working tree and risk overwriting or interleaving each other's changes.
+- **Use purpose-based branch and commit prefixes.** Names should describe the reason for the change, such as `docs/`, `fix/`, or `feat/`, rather than the agent or author identity.
+- **Inspect the working tree before committing.** Review `git status` and the relevant diff so temporary files, extracted artifacts, or another agent's work are not accidentally included.
+
 ## Engineering preferences
 
 ### Go
