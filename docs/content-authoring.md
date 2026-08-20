@@ -205,6 +205,38 @@ tests:
 
 Test code is trusted Git-authored Python. The loader validates its authored structure but does not execute it. The ordinary student API includes visible tests and never includes hidden test code. Runtime execution, package loading, saved workspaces, and attempts are separate learner-workflow concerns.
 
+## Review items
+
+A module may contain an optional direct-child `reviews/` directory. Review-item discovery is file-based; do not add a review-item list to `module.yaml`.
+
+```text
+<module>/
+├── module.yaml
+├── lesson.mdx
+└── reviews/
+    └── function-definition.yaml
+```
+
+Each `.yaml` file in that directory has this deliberately small authored shape:
+
+```yaml
+id: functions.definition
+order: 0
+objectiveIds:
+  - python.functions
+sourceLessonId: 02-functions-code-and-mathematics
+prompt: |
+  What condition must a mapping satisfy to be a function?
+answer: |
+  Every input in the domain must map to exactly one output.
+hint: |
+  Focus on the rule for each input, not whether outputs are unique.
+```
+
+`id`, `order`, `objectiveIds`, `sourceLessonId`, `prompt`, and `answer` are required. `hint` is optional. The source lesson must belong to the same module, objective IDs must resolve in the curriculum catalog, and module review items are ordered by non-negative `order` with stable ID as the deterministic tie-breaker.
+
+Review YAML contains authored study content only. Scheduling state, review history, difficulty, intervals, deck metadata, tags, and AI-card metadata do not belong in these Git-authored resources. FSRS and learner review state are separate persistence concerns.
+
 ## Sources
 
 `curriculum/sources.yaml` is the shared authoritative source registry across courses.
@@ -241,6 +273,8 @@ go run ./cmd/curriculum-check ../curriculum
 Current validation includes the curriculum root/course/module structure, strict YAML fields, stable IDs, course/module ordering constraints, lesson declarations/frontmatter, source/objective references, prerequisite references/cycles, duplicate authored identities, and other catalog invariants.
 
 Worksheet and exercise validation are part of the same deterministic command. Exercise checks include strict fields, lesson/objective references, lesson-scoped ordering, required prose/code, test identities, and the visibility enum. Validation never executes authored Python.
+
+Review-item validation is part of the same command. It checks strict YAML fields, stable and module-unique IDs, explicit non-negative order, known objectives, same-module source lessons, and non-empty prompt and answer content.
 
 The frontend MDX validation pass recursively compiles authored lesson MDX under all courses:
 

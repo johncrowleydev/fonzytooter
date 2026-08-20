@@ -30,6 +30,7 @@ import {
   LessonProgressResource,
   LessonResource,
   ModuleResource,
+  ReviewItemResource,
   WorksheetResource,
 } from './schemas'
 import type { ErrorModel, LessonProgressUpdate, ListActivitiesParams } from './schemas'
@@ -1550,6 +1551,229 @@ export const usePutLessonProgress = <
   TContext
 > => {
   return useMutation(getPutLessonProgressMutationOptions(options), queryClient)
+}
+
+export type getCourseModuleReviewItemResponse200 = {
+  data: ReviewItemResource
+  status: 200
+}
+
+export type getCourseModuleReviewItemResponse404 = {
+  data: ErrorModel
+  status: 404
+}
+
+export type getCourseModuleReviewItemResponse422 = {
+  data: ErrorModel
+  status: 422
+}
+
+export type getCourseModuleReviewItemResponse500 = {
+  data: ErrorModel
+  status: 500
+}
+
+export type getCourseModuleReviewItemResponseSuccess = getCourseModuleReviewItemResponse200 & {
+  headers: Record<string, string>
+}
+export type getCourseModuleReviewItemResponseError = (
+  | getCourseModuleReviewItemResponse404
+  | getCourseModuleReviewItemResponse422
+  | getCourseModuleReviewItemResponse500
+) & {
+  headers: Record<string, string>
+}
+
+export const getGetCourseModuleReviewItemUrl = (
+  courseId: string,
+  moduleId: string,
+  reviewItemId: string,
+) => {
+  return `/api/courses/${courseId}/modules/${moduleId}/review-items/${reviewItemId}`
+}
+
+/**
+ * @summary Get an authored review item
+ */
+export const getCourseModuleReviewItem = async (
+  courseId: string,
+  moduleId: string,
+  reviewItemId: string,
+  options?: RequestInit,
+): Promise<getCourseModuleReviewItemResponseSuccess> => {
+  const res = await fetch(getGetCourseModuleReviewItemUrl(courseId, moduleId, reviewItemId), {
+    ...options,
+    method: 'GET',
+  })
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text()
+  if (!res.ok) {
+    const err: globalThis.Error & {
+      info?: getCourseModuleReviewItemResponseError['data']
+      status?: number
+    } = new globalThis.Error()
+    const data: getCourseModuleReviewItemResponseError['data'] = body ? JSON.parse(body) : {}
+    err.info = data
+    err.status = res.status
+    throw err
+  }
+  const data = ReviewItemResource.parse(body ? JSON.parse(body) : {})
+  return {
+    data,
+    status: res.status,
+    headers: Object.fromEntries(
+      [...res.headers.entries()].filter(([name]) => name !== 'set-cookie'),
+    ),
+  } as getCourseModuleReviewItemResponseSuccess
+}
+
+export const getGetCourseModuleReviewItemQueryKey = (
+  courseId: string,
+  moduleId: string,
+  reviewItemId: string,
+) => {
+  return [`/api/courses/${courseId}/modules/${moduleId}/review-items/${reviewItemId}`] as const
+}
+
+export const getGetCourseModuleReviewItemQueryOptions = <
+  TData = Awaited<ReturnType<typeof getCourseModuleReviewItem>>,
+  TError = globalThis.Error & { info?: ErrorModel; status?: number },
+>(
+  courseId: string,
+  moduleId: string,
+  reviewItemId: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof getCourseModuleReviewItem>>, TError, TData>
+    >
+    fetch?: RequestInit
+  },
+) => {
+  const { query: queryOptions, fetch: fetchOptions } = options ?? {}
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetCourseModuleReviewItemQueryKey(courseId, moduleId, reviewItemId)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getCourseModuleReviewItem>>> = ({
+    signal,
+  }) => getCourseModuleReviewItem(courseId, moduleId, reviewItemId, { signal, ...fetchOptions })
+
+  return {
+    queryKey,
+    queryFn,
+    enabled:
+      courseId !== null &&
+      courseId !== undefined &&
+      moduleId !== null &&
+      moduleId !== undefined &&
+      reviewItemId !== null &&
+      reviewItemId !== undefined,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof getCourseModuleReviewItem>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+}
+
+export type GetCourseModuleReviewItemQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getCourseModuleReviewItem>>
+>
+export type GetCourseModuleReviewItemQueryError = globalThis.Error & {
+  info?: ErrorModel
+  status?: number
+}
+
+export function useGetCourseModuleReviewItem<
+  TData = Awaited<ReturnType<typeof getCourseModuleReviewItem>>,
+  TError = globalThis.Error & { info?: ErrorModel; status?: number },
+>(
+  courseId: string,
+  moduleId: string,
+  reviewItemId: string,
+  options: {
+    query: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof getCourseModuleReviewItem>>, TError, TData>
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getCourseModuleReviewItem>>,
+          TError,
+          Awaited<ReturnType<typeof getCourseModuleReviewItem>>
+        >,
+        'initialData'
+      >
+    fetch?: RequestInit
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetCourseModuleReviewItem<
+  TData = Awaited<ReturnType<typeof getCourseModuleReviewItem>>,
+  TError = globalThis.Error & { info?: ErrorModel; status?: number },
+>(
+  courseId: string,
+  moduleId: string,
+  reviewItemId: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof getCourseModuleReviewItem>>, TError, TData>
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getCourseModuleReviewItem>>,
+          TError,
+          Awaited<ReturnType<typeof getCourseModuleReviewItem>>
+        >,
+        'initialData'
+      >
+    fetch?: RequestInit
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetCourseModuleReviewItem<
+  TData = Awaited<ReturnType<typeof getCourseModuleReviewItem>>,
+  TError = globalThis.Error & { info?: ErrorModel; status?: number },
+>(
+  courseId: string,
+  moduleId: string,
+  reviewItemId: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof getCourseModuleReviewItem>>, TError, TData>
+    >
+    fetch?: RequestInit
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Get an authored review item
+ */
+
+export function useGetCourseModuleReviewItem<
+  TData = Awaited<ReturnType<typeof getCourseModuleReviewItem>>,
+  TError = globalThis.Error & { info?: ErrorModel; status?: number },
+>(
+  courseId: string,
+  moduleId: string,
+  reviewItemId: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof getCourseModuleReviewItem>>, TError, TData>
+    >
+    fetch?: RequestInit
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getGetCourseModuleReviewItemQueryOptions(
+    courseId,
+    moduleId,
+    reviewItemId,
+    options,
+  )
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
 }
 
 export type getCourseModuleWorkbookResponse200 = {

@@ -95,6 +95,8 @@ AI-generated cards should be candidates requiring approval/editing rather than s
 
 Review items should map to objective IDs so review performance has semantic meaning beyond "card 123 was hard."
 
+Core review content is implemented as optional Git-authored YAML under each module's `reviews/` directory. Each item identifies its source lesson and one or more curriculum objectives, and keeps prompt, answer, and an optional hint separate from learner state. The curriculum API exposes this authored content for the later review workflow; it does not attach FSRS scheduling fields or review history to the authored resource.
+
 ## Activities
 
 Keep a small activity history to provide useful recency context:

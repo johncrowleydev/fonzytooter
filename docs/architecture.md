@@ -75,6 +75,7 @@ Version-controlled content includes:
 - learning objectives and prerequisite IDs;
 - curated videos;
 - exercises and their definitions;
+- review-item prompts, answers, hints, and objective/source-lesson relationships;
 - project/lab descriptions;
 - source metadata and citation IDs.
 
@@ -110,6 +111,8 @@ stored redundantly. Additional persistent learner state will eventually include:
 Course-bound learner state must carry explicit course identity. The fact that AI/ML is currently the only course must not be used as a persistence key or hidden global assumption.
 
 Do not put authored curriculum prose into SQLite merely because it is convenient to query.
+
+Authored review items are loaded from optional module-local `reviews/*.yaml` files and exposed through the course-qualified curriculum read API. Their prompt, answer, optional hint, ordering, objective references, and source lesson remain Git-owned curriculum. Future FSRS scheduling state and review history remain SQLite-owned learner state rather than fields on the authored curriculum resource.
 
 ## Course and objective-centered model
 
@@ -149,6 +152,7 @@ GET /api/courses/{courseId}
 GET /api/courses/{courseId}/modules/{moduleId}
 GET /api/courses/{courseId}/modules/{moduleId}/lessons/{lessonId}
 GET /api/courses/{courseId}/modules/{moduleId}/exercises/{exerciseId}
+GET /api/courses/{courseId}/modules/{moduleId}/review-items/{reviewItemId}
 ```
 
 The course resource includes its ordered module summaries, so the frontend does not currently need a separate module-collection operation.

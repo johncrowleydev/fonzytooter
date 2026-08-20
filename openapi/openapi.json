@@ -872,6 +872,62 @@
         ],
         "type": "object"
       },
+      "ReviewItemResource": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/ReviewItemResource.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "answer": {
+            "type": "string"
+          },
+          "courseId": {
+            "type": "string"
+          },
+          "hint": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "moduleId": {
+            "type": "string"
+          },
+          "objectiveIds": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "order": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "prompt": {
+            "type": "string"
+          },
+          "sourceLessonId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "courseId",
+          "moduleId",
+          "id",
+          "order",
+          "objectiveIds",
+          "sourceLessonId",
+          "prompt",
+          "answer"
+        ],
+        "type": "object"
+      },
       "SourceResource": {
         "additionalProperties": false,
         "properties": {
@@ -1687,6 +1743,83 @@
         "summary": "Replace lesson progress",
         "tags": [
           "learner"
+        ]
+      }
+    },
+    "/api/courses/{courseId}/modules/{moduleId}/review-items/{reviewItemId}": {
+      "get": {
+        "operationId": "getCourseModuleReviewItem",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "courseId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "moduleId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "reviewItemId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewItemResource"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Get an authored review item",
+        "tags": [
+          "curriculum"
         ]
       }
     },
