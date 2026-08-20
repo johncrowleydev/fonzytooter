@@ -18,6 +18,10 @@ var latexTemplate string
 
 var ErrToolUnavailable = errors.New("worksheet PDF tool unavailable")
 
+const tectonicOnlyCachedEnvironment = "FONZYTOOTER_TECTONIC_ONLY_CACHED"
+
+const tectonicCacheDirectoryEnvironment = "TECTONIC_CACHE_DIR"
+
 type ToolUnavailableError struct {
 	Tool string
 	Err  error
@@ -49,12 +53,18 @@ func (execRunner) Run(ctx context.Context, directory, command string, arguments 
 }
 
 type Renderer struct {
-	runner   commandRunner
-	tempRoot string
+	runner             commandRunner
+	tempRoot           string
+	tectonicOnlyCached bool
+	tectonicCacheDir   string
 }
 
 func NewRenderer() *Renderer {
-	return &Renderer{runner: execRunner{}}
+	return &Renderer{
+		runner:             execRunner{},
+		tectonicOnlyCached: os.Getenv(tectonicOnlyCachedEnvironment) == "1",
+		tectonicCacheDir:   os.Getenv(tectonicCacheDirectoryEnvironment),
+	}
 }
 
 func (renderer *Renderer) Render(ctx context.Context, worksheet curriculum.Worksheet, variant Variant) ([]byte, error) {
@@ -74,6 +84,12 @@ func (renderer *Renderer) RenderWorkbook(ctx context.Context, course curriculum.
 }
 
 func (renderer *Renderer) renderMarkdown(ctx context.Context, markdown string, tableOfContents bool) ([]byte, error) {
+	if renderer.tectonicOnlyCached {
+		if err := renderer.validateTectonicCache(); err != nil {
+			return nil, err
+		}
+	}
+
 	pandoc, err := renderer.runner.LookPath("pandoc")
 	if err != nil {
 		return nil, &ToolUnavailableError{Tool: "pandoc", Err: err}
@@ -117,9 +133,13 @@ func (renderer *Renderer) renderMarkdown(ctx context.Context, markdown string, t
 		return nil, commandError(ctx, "pandoc", err, output)
 	}
 
-	output, err = renderer.runner.Run(ctx, directory, tectonic, "--outdir", directory, texPath)
+	output, err = renderer.runner.Run(ctx, directory, tectonic, renderer.tectonicArguments(directory, texPath)...)
 	if err != nil {
-		return nil, commandError(ctx, "tectonic", err, output)
+		renderErr := commandError(ctx, "tectonic", err, output)
+		if renderer.tectonicOnlyCached {
+			return nil, fmt.Errorf("Tectonic cache-only render failed; the resource cache may need priming or a schema revision: %w", renderErr)
+		}
+		return nil, renderErr
 	}
 
 	pdf, err := os.ReadFile(pdfPath)
@@ -130,6 +150,28 @@ func (renderer *Renderer) renderMarkdown(ctx context.Context, markdown string, t
 		return nil, errors.New("worksheet renderer produced an invalid PDF")
 	}
 	return pdf, nil
+}
+
+func (renderer *Renderer) validateTectonicCache() error {
+	if renderer.tectonicCacheDir == "" {
+		return fmt.Errorf("Tectonic cache-only render requires %s to identify a primed resource cache", tectonicCacheDirectoryEnvironment)
+	}
+	for _, name := range []string{"urls", "redirects", "indexes", "manifests", "files"} {
+		path := filepath.Join(renderer.tectonicCacheDir, name)
+		entries, err := os.ReadDir(path)
+		if err != nil || len(entries) == 0 {
+			return fmt.Errorf("Tectonic cache-only render requires a primed resource cache; %s is missing or empty (prime the cache or increment its schema revision)", path)
+		}
+	}
+	return nil
+}
+
+func (renderer *Renderer) tectonicArguments(directory, texPath string) []string {
+	arguments := []string{"--outdir", directory}
+	if renderer.tectonicOnlyCached {
+		arguments = append(arguments, "--only-cached")
+	}
+	return append(arguments, texPath)
 }
 
 func commandError(ctx context.Context, tool string, err error, output []byte) error {

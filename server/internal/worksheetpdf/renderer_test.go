@@ -94,6 +94,73 @@ func TestRendererUsesTemporaryWorkspaceAndReturnsPDF(t *testing.T) {
 	}
 }
 
+func TestRendererTectonicArguments(t *testing.T) {
+	for _, test := range []struct {
+		name       string
+		onlyCached bool
+		want       []string
+	}{
+		{
+			name: "default allows resource downloads",
+			want: []string{"--outdir", "output", "worksheet.tex"},
+		},
+		{
+			name:       "cache only prohibits resource downloads",
+			onlyCached: true,
+			want:       []string{"--outdir", "output", "--only-cached", "worksheet.tex"},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			renderer := &Renderer{tectonicOnlyCached: test.onlyCached}
+			got := renderer.tectonicArguments("output", "worksheet.tex")
+			if strings.Join(got, "\x00") != strings.Join(test.want, "\x00") {
+				t.Fatalf("Tectonic arguments = %#v, want %#v", got, test.want)
+			}
+		})
+	}
+}
+
+func TestNewRendererReadsTectonicOnlyCachedEnvironment(t *testing.T) {
+	for _, test := range []struct {
+		name  string
+		value string
+		want  bool
+	}{
+		{name: "unset", value: "", want: false},
+		{name: "enabled", value: "1", want: true},
+		{name: "other values remain disabled", value: "true", want: false},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Setenv(tectonicOnlyCachedEnvironment, test.value)
+			t.Setenv(tectonicCacheDirectoryEnvironment, "test-cache")
+			renderer := NewRenderer()
+			if got := renderer.tectonicOnlyCached; got != test.want {
+				t.Fatalf("cache-only mode = %t, want %t", got, test.want)
+			}
+			if renderer.tectonicCacheDir != "test-cache" {
+				t.Fatalf("Tectonic cache directory = %q, want test-cache", renderer.tectonicCacheDir)
+			}
+		})
+	}
+}
+
+func TestRendererRejectsUnprimedCacheBeforeRunningCommands(t *testing.T) {
+	runner := &fakeRunner{}
+	renderer := &Renderer{
+		runner:             runner,
+		tectonicOnlyCached: true,
+		tectonicCacheDir:   t.TempDir(),
+	}
+
+	_, err := renderer.Render(context.Background(), testWorksheet(), Student)
+	if err == nil || !strings.Contains(err.Error(), "requires a primed resource cache") {
+		t.Fatalf("error = %v, want unprimed cache guidance", err)
+	}
+	if len(runner.runs) != 0 {
+		t.Fatalf("commands ran with an unprimed cache: %v", runner.runs)
+	}
+}
+
 func TestRendererReportsMissingTools(t *testing.T) {
 	for _, tool := range []string{"pandoc", "tectonic"} {
 		t.Run(tool, func(t *testing.T) {
