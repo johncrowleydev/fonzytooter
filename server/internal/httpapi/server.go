@@ -62,6 +62,12 @@ type CourseWorksheetDocumentPathInput struct {
 	DocumentID  string `path:"documentId"`
 }
 
+type CourseModuleWorkbookPathInput struct {
+	CourseID   string `path:"courseId"`
+	ModuleID   string `path:"moduleId"`
+	WorkbookID string `path:"workbookId"`
+}
+
 type CourseSummary struct {
 	ID          string `json:"id"`
 	Title       string `json:"title"`
@@ -188,6 +194,7 @@ func NewAPI(tutorService *tutor.Service, catalog *curriculum.Catalog) *API {
 
 type worksheetDocumentRenderer interface {
 	Render(context.Context, curriculum.Worksheet, worksheetpdf.Variant) ([]byte, error)
+	RenderWorkbook(context.Context, curriculum.Course, curriculum.Module, worksheetpdf.Variant) ([]byte, error)
 }
 
 func newAPI(tutorService *tutor.Service, catalog *curriculum.Catalog, documentRenderer worksheetDocumentRenderer) *API {
@@ -404,6 +411,70 @@ func registerCurriculum(api huma.API, catalog *curriculum.Catalog, documentRende
 		if err != nil {
 			log.Printf("choose worksheet PDF filename: %v", err)
 			return nil, huma.Error500InternalServerError("worksheet PDF rendering failed")
+		}
+
+		return &huma.StreamResponse{Body: func(streamContext huma.Context) {
+			streamContext.SetHeader("Content-Type", "application/pdf")
+			streamContext.SetHeader("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", filename))
+			streamContext.SetStatus(http.StatusOK)
+			_, _ = streamContext.BodyWriter().Write(pdf)
+		}}, nil
+	})
+
+	huma.Register[CourseModuleWorkbookPathInput, huma.StreamResponse](api, huma.Operation{
+		OperationID: "getCourseModuleWorkbook",
+		Method:      http.MethodGet,
+		Path:        "/api/courses/{courseId}/modules/{moduleId}/workbooks/{workbookId}",
+		Summary:     "Get a printable module worksheet workbook",
+		Description: "Returns the module's student workbook or solutions workbook as one generated PDF.",
+		Tags:        []string{"curriculum"},
+		Errors:      []int{http.StatusNotFound, http.StatusInternalServerError, http.StatusServiceUnavailable},
+		Responses: map[string]*huma.Response{
+			"200": {
+				Description: http.StatusText(http.StatusOK),
+				Headers: map[string]*huma.Param{
+					"Content-Disposition": {
+						Description: "Attachment disposition with a deterministic module workbook filename.",
+						Schema:      &huma.Schema{Type: huma.TypeString},
+					},
+				},
+				Content: map[string]*huma.MediaType{
+					"application/pdf": {
+						Schema: &huma.Schema{Type: huma.TypeString, Format: "binary"},
+					},
+				},
+			},
+		},
+	}, func(ctx context.Context, input *CourseModuleWorkbookPathInput) (*huma.StreamResponse, error) {
+		variant, err := worksheetpdf.ParseVariant(input.WorkbookID)
+		if err != nil {
+			return nil, huma.Error404NotFound("module workbook not found")
+		}
+		course, ok := catalog.CourseByID(input.CourseID)
+		if !ok {
+			return nil, huma.Error404NotFound("course not found")
+		}
+		module, ok := catalog.ModuleByCourse(input.CourseID, input.ModuleID)
+		if !ok || len(module.Worksheets) == 0 {
+			return nil, huma.Error404NotFound("module workbook not found")
+		}
+		if documentRenderer == nil {
+			return nil, huma.Error503ServiceUnavailable("worksheet PDF rendering is unavailable")
+		}
+
+		pdf, err := documentRenderer.RenderWorkbook(ctx, course, module, variant)
+		if errors.Is(err, worksheetpdf.ErrToolUnavailable) {
+			log.Printf("worksheet PDF tooling unavailable: %v", err)
+			return nil, huma.Error503ServiceUnavailable("worksheet PDF rendering is unavailable")
+		}
+		if err != nil {
+			log.Printf("render module workbook %s/%s/%s: %v", input.CourseID, input.ModuleID, input.WorkbookID, err)
+			return nil, huma.Error500InternalServerError("module workbook rendering failed")
+		}
+		filename, err := worksheetpdf.WorkbookFilename(module.ID, variant)
+		if err != nil {
+			log.Printf("choose module workbook filename: %v", err)
+			return nil, huma.Error500InternalServerError("module workbook rendering failed")
 		}
 
 		return &huma.StreamResponse{Body: func(streamContext huma.Context) {

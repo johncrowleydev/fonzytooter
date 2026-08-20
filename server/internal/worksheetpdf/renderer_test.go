@@ -12,6 +12,7 @@ import (
 type fakeRunner struct {
 	missing string
 	runs    []string
+	args    [][]string
 }
 
 func (runner *fakeRunner) LookPath(file string) (string, error) {
@@ -23,6 +24,7 @@ func (runner *fakeRunner) LookPath(file string) (string, error) {
 
 func (runner *fakeRunner) Run(_ context.Context, directory, command string, arguments ...string) ([]byte, error) {
 	runner.runs = append(runner.runs, command)
+	runner.args = append(runner.args, append([]string(nil), arguments...))
 	switch filepath.Base(command) {
 	case "pandoc", "pandoc.exe":
 		var outputPath string
@@ -40,6 +42,32 @@ func (runner *fakeRunner) Run(_ context.Context, directory, command string, argu
 	default:
 		return nil, errors.New("unexpected command")
 	}
+}
+
+func TestRendererReturnsWorkbookPDFWithTableOfContents(t *testing.T) {
+	runner := &fakeRunner{}
+	renderer := &Renderer{runner: runner, tempRoot: t.TempDir()}
+	course, module := testWorkbook()
+
+	pdf, err := renderer.RenderWorkbook(context.Background(), course, module, Solutions)
+	if err != nil {
+		t.Fatalf("render solutions workbook: %v", err)
+	}
+	if !strings.HasPrefix(string(pdf), "%PDF-") {
+		t.Fatalf("rendered bytes do not start with PDF header: %q", pdf)
+	}
+	if len(runner.args) == 0 || !containsArgument(runner.args[0], "--table-of-contents") {
+		t.Fatalf("Pandoc arguments omitted table of contents: %#v", runner.args)
+	}
+}
+
+func containsArgument(arguments []string, want string) bool {
+	for _, argument := range arguments {
+		if argument == want {
+			return true
+		}
+	}
+	return false
 }
 
 func TestRendererUsesTemporaryWorkspaceAndReturnsPDF(t *testing.T) {

@@ -13,8 +13,17 @@ import (
 )
 
 type fakeWorksheetDocumentRenderer struct {
-	err      error
-	variants []worksheetpdf.Variant
+	err              error
+	variants         []worksheetpdf.Variant
+	workbookVariants []worksheetpdf.Variant
+}
+
+func (renderer *fakeWorksheetDocumentRenderer) RenderWorkbook(_ context.Context, _ curriculum.Course, _ curriculum.Module, variant worksheetpdf.Variant) ([]byte, error) {
+	renderer.workbookVariants = append(renderer.workbookVariants, variant)
+	if renderer.err != nil {
+		return nil, renderer.err
+	}
+	return []byte("%PDF-1.7\ntest workbook"), nil
 }
 
 func (renderer *fakeWorksheetDocumentRenderer) Render(_ context.Context, _ curriculum.Worksheet, variant worksheetpdf.Variant) ([]byte, error) {

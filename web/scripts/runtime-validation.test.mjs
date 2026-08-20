@@ -348,3 +348,29 @@ test('generated worksheet document fetch returns PDF bytes as a Blob', async () 
     globalThis.fetch = originalFetch
   }
 })
+
+test('generated module workbook fetch returns PDF bytes as a Blob', async () => {
+  const client = await importGeneratedClient()
+  const originalFetch = globalThis.fetch
+
+  try {
+    globalThis.fetch = async () =>
+      new Response('%PDF-1.7\nworkbook', {
+        status: 200,
+        headers: {
+          'content-disposition': 'attachment; filename="scientific-python-workbook.pdf"',
+          'content-type': 'application/pdf',
+        },
+      })
+
+    const response = await client.getCourseModuleWorkbook('ai-ml', 'scientific-python', 'student')
+    assert.equal(response.data instanceof Blob, true)
+    assert.equal(await response.data.text(), '%PDF-1.7\nworkbook')
+    assert.equal(
+      response.headers['content-disposition'],
+      'attachment; filename="scientific-python-workbook.pdf"',
+    )
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})

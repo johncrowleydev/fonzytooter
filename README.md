@@ -155,6 +155,13 @@ cd server
 go run ./cmd/curriculum-check ../curriculum
 ```
 
+With Pandoc and Tectonic installed, render every authored student/solutions worksheet and module workbook without storing output:
+
+```bash
+cd server
+go run ./cmd/worksheet-render-check ../curriculum
+```
+
 ### Start the web app
 
 ```bash
@@ -174,10 +181,11 @@ The project now has the core curriculum delivery path rather than only an initia
 - Huma-generated OpenAPI drives the generated Orval/TanStack Query + Zod frontend contract;
 - React Router renders real course, module, and lesson pages from that generated API;
 - authored lesson MDX renders through the trusted lesson component registry, including the current Scientific Python interactives;
+- Git-authored worksheets render in the web UI and as on-demand Pandoc/Tectonic student, solutions, and module workbook PDFs;
 - `/curriculum` remains the simple navigation entry point and redirects to the default AI/ML course;
 - the global tutor receives explicit course/module/lesson semantic page context and consumes streamed tutor events;
 - the default tutor provider is still an explicit "not configured" provider;
 - the Pyodide exercise boundary is documented and typed, but the full editor/runtime workflow is not yet implemented;
-- learner-state persistence, FSRS, real tutor providers, worksheets, and workbook/PDF flows remain future implementation work.
+- learner-state persistence, FSRS, real tutor providers, worksheet uploads, tutor grading, and evidence writes remain future implementation work.
 
 Add capabilities when the learning workflow needs them rather than pre-building an LMS platform.

@@ -62,7 +62,18 @@ func (renderer *Renderer) Render(ctx context.Context, worksheet curriculum.Works
 	if err != nil {
 		return nil, err
 	}
+	return renderer.renderMarkdown(ctx, markdown, false)
+}
 
+func (renderer *Renderer) RenderWorkbook(ctx context.Context, course curriculum.Course, module curriculum.Module, variant Variant) ([]byte, error) {
+	markdown, err := BuildWorkbookMarkdown(course, module, variant)
+	if err != nil {
+		return nil, err
+	}
+	return renderer.renderMarkdown(ctx, markdown, true)
+}
+
+func (renderer *Renderer) renderMarkdown(ctx context.Context, markdown string, tableOfContents bool) ([]byte, error) {
 	pandoc, err := renderer.runner.LookPath("pandoc")
 	if err != nil {
 		return nil, &ToolUnavailableError{Tool: "pandoc", Err: err}
@@ -89,18 +100,19 @@ func (renderer *Renderer) Render(ctx context.Context, worksheet curriculum.Works
 		return nil, fmt.Errorf("write worksheet LaTeX template: %w", err)
 	}
 
-	output, err := renderer.runner.Run(
-		ctx,
-		directory,
-		pandoc,
+	pandocArguments := []string{
 		"--from=markdown+tex_math_dollars+fenced_code_blocks+raw_tex",
 		"--to=latex",
 		"--standalone",
 		"--no-highlight",
-		"--template="+templatePath,
-		"--output="+texPath,
+		"--template=" + templatePath,
+		"--output=" + texPath,
 		markdownPath,
-	)
+	}
+	if tableOfContents {
+		pandocArguments = append([]string{"--table-of-contents"}, pandocArguments...)
+	}
+	output, err := renderer.runner.Run(ctx, directory, pandoc, pandocArguments...)
 	if err != nil {
 		return nil, commandError(ctx, "pandoc", err, output)
 	}

@@ -51,19 +51,13 @@ Printability is an explicit product goal. Some learning work is better done away
 
 ## Worksheet and workbook output
 
-Each worksheet should be available as a printable/downloadable PDF.
+Each worksheet is available on demand as a printable student PDF and a solutions PDF. Fonzytooter converts the validated structured worksheet to Markdown with authored LaTeX preserved, uses Pandoc to produce LaTeX, and uses Tectonic to typeset PDF bytes. Generated PDFs are temporary responses; they are not stored in Git, SQLite, or a PDF cache.
 
-A module should also be able to produce a **workbook** that combines all worksheets assigned to lessons in that module into one PDF. The workbook is an aggregation of the same worksheet content, not a separately authored curriculum artifact.
+A module with worksheets also produces a **workbook** and solutions workbook. The workbook is an aggregation of the same worksheet content, not a separately authored curriculum artifact. It is compiled as one structured document with a cover, table of contents, lesson context, page numbering, and page breaks between worksheets. Fonzytooter does not render separate PDFs and concatenate them.
 
-A module workbook may eventually include useful print-oriented structure such as:
+Student documents include response space based on each problem's authored `responseLines`. Solutions documents include authored expected answers. Neither solutions output exposes internal rubric criteria, which remain available for future assessment behavior.
 
-- a cover page;
-- a table of contents;
-- lesson or concept headings;
-- page numbering;
-- optional answer keys or worked solutions where pedagogically appropriate.
-
-The exact PDF-generation mechanism is an implementation decision and is deliberately not specified here.
+Worksheet and workbook ordering follows module lesson order, worksheet order within each lesson, and stable worksheet ID as the final deterministic tie-breaker.
 
 ## Problem design
 
@@ -148,13 +142,10 @@ The tutor may recommend actions based on the evidence, such as:
 
 ## Scope boundary
 
-This document establishes the curriculum and tutoring role of worksheets. The implemented Git-authoring schema is documented in [`content-authoring.md`](content-authoring.md). This document does **not** yet decide:
+This document establishes the curriculum and tutoring role of worksheets. The implemented Git-authoring schema and render-validation workflow are documented in [`content-authoring.md`](content-authoring.md). This document does **not** yet decide:
 
-- how PDFs are rendered;
-- how workbook PDFs are assembled;
 - how uploads are stored;
 - which vision model/provider performs handwriting interpretation;
 - the final grading data model;
-- whether answer keys are embedded, generated, or stored separately.
 
 Those choices should be made when implementation requirements are concrete enough to justify them.

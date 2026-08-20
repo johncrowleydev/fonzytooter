@@ -49,6 +49,24 @@ func TestRealWorksheetRendering(t *testing.T) {
 	if !strings.HasPrefix(string(solutions), "%PDF-") {
 		t.Fatal("solutions did not produce PDF bytes")
 	}
+
+	course, ok := catalog.CourseByID("ai-ml")
+	if !ok {
+		t.Fatal("expected authored ai-ml course")
+	}
+	module, ok := catalog.ModuleByCourse("ai-ml", "scientific-python")
+	if !ok {
+		t.Fatal("expected authored scientific-python module")
+	}
+	for _, variant := range []Variant{Student, Solutions} {
+		workbook, renderErr := renderer.RenderWorkbook(context.Background(), course, module, variant)
+		if renderErr != nil {
+			t.Fatalf("render real %s workbook: %v", variant, renderErr)
+		}
+		if !strings.HasPrefix(string(workbook), "%PDF-") {
+			t.Fatalf("%s workbook did not produce PDF bytes", variant)
+		}
+	}
 }
 
 func TestPandocConvertsFencedCodeToReadableLatex(t *testing.T) {
