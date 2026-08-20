@@ -67,7 +67,7 @@ func TestPandocConvertsFencedCodeToReadableLatex(t *testing.T) {
 		"pandoc",
 		"--from=markdown+tex_math_dollars+fenced_code_blocks+raw_tex",
 		"--to=latex",
-		"--syntax-highlighting=none",
+		"--no-highlight",
 		"--output="+outputPath,
 		inputPath,
 	)
