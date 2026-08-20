@@ -16,6 +16,7 @@ type PendingRequest = {
   resolve: (value: PythonRunResult | PythonCheckResult) => void
   reject: (reason: Error) => void
   timer: ReturnType<typeof setTimeout>
+  executionStarted: boolean
 }
 
 export class PyodideRunner implements PythonRunner {
@@ -27,6 +28,7 @@ export class PyodideRunner implements PythonRunner {
     private readonly workerFactory: WorkerFactory = () =>
       new Worker(new URL('./python.worker.ts', import.meta.url), { type: 'module' }),
     private readonly timeoutMs = 10_000,
+    private readonly initializationTimeoutMs = 120_000,
   ) {}
 
   run(request: PythonRunRequest): Promise<PythonRunResult> {
@@ -51,16 +53,12 @@ export class PyodideRunner implements PythonRunner {
     const id = `python-${++this.nextRequest}`
     const worker = this.getWorker()
     return new Promise<Result>((resolve, reject) => {
-      const timer = setTimeout(() => {
-        this.pending.delete(id)
-        reject(new Error(`Python execution exceeded ${this.timeoutMs}ms and was stopped`))
-        this.failPending(new Error('Python execution was interrupted when the worker restarted'))
-        this.restartWorker()
-      }, this.timeoutMs)
+      const timer = this.timeout(id, reject, 'initialization', this.initializationTimeoutMs)
       this.pending.set(id, {
         resolve: resolve as (value: PythonRunResult | PythonCheckResult) => void,
         reject,
         timer,
+        executionStarted: false,
       })
       worker.postMessage({ ...request, id } as PythonWorkerRequest)
     })
@@ -79,6 +77,13 @@ export class PyodideRunner implements PythonRunner {
     const response = event.data
     const pending = this.pending.get(response.id)
     if (!pending) return
+    if (response.type === 'execution-started') {
+      if (pending.executionStarted) return
+      clearTimeout(pending.timer)
+      pending.executionStarted = true
+      pending.timer = this.timeout(response.id, pending.reject, 'execution', this.timeoutMs)
+      return
+    }
     clearTimeout(pending.timer)
     this.pending.delete(response.id)
     if (response.type === 'worker-error') {
@@ -101,6 +106,24 @@ export class PyodideRunner implements PythonRunner {
       pending.reject(failure)
     }
     this.pending.clear()
+  }
+
+  private timeout(
+    id: string,
+    reject: (reason: Error) => void,
+    phase: 'initialization' | 'execution',
+    timeoutMs: number,
+  ) {
+    return setTimeout(() => {
+      this.pending.delete(id)
+      const message =
+        phase === 'initialization'
+          ? `Python runtime initialization exceeded ${timeoutMs}ms and was stopped`
+          : `Python execution exceeded ${timeoutMs}ms and was stopped`
+      reject(new Error(message))
+      this.failPending(new Error(`Python ${phase} was interrupted when the worker restarted`))
+      this.restartWorker()
+    }, timeoutMs)
   }
 
   private restartWorker() {

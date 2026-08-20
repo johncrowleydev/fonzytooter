@@ -15,6 +15,7 @@ import { lessonPath, modulePath } from '../../app/routes'
 import { Badge, Button, Card, PageIntro, SectionHeading } from '../../components/ui'
 import { useTutor } from '../tutor/TutorContext'
 import { CodeEditor } from './CodeEditor'
+import { LatestTaskQueue } from './LatestTaskQueue'
 import { PyodideRunner } from './runtime/PyodideRunner'
 import type { PythonCheckResult, PythonRunResult } from './types'
 
@@ -68,21 +69,36 @@ export function Exercise() {
   const currentCode = useRef(code)
   currentCode.current = code
   const draftKey = localDraftKey(courseId, moduleId, exerciseId)
+  const currentDraftKey = useRef(draftKey)
+  currentDraftKey.current = draftKey
+  const saveQueue = useMemo(() => new LatestTaskQueue(), [])
 
-  const saveWorkspace = usePutExerciseWorkspace({
-    mutation: {
-      onSuccess: (response) => {
+  const saveWorkspace = usePutExerciseWorkspace()
+  const saveWorkspaceRef = useRef(saveWorkspace.mutateAsync)
+  saveWorkspaceRef.current = saveWorkspace.mutateAsync
+  const createAttempt = useCreateExerciseAttempt()
+
+  function queueWorkspaceSave(codeToSave: string) {
+    saveQueue.enqueue(async () => {
+      try {
+        const response = await saveWorkspaceRef.current({
+          courseId,
+          moduleId,
+          exerciseId,
+          data: { code: codeToSave },
+        })
+        if (currentDraftKey.current !== draftKey) return
         savedCode.current = response.data.code
         localStorage.setItem(
           draftKey,
           JSON.stringify({ code: currentCode.current, savedCode: response.data.code }),
         )
         setSaveState(currentCode.current === response.data.code ? 'saved' : 'saving')
-      },
-      onError: () => setSaveState('failed'),
-    },
-  })
-  const createAttempt = useCreateExerciseAttempt()
+      } catch {
+        if (currentDraftKey.current === draftKey) setSaveState('failed')
+      }
+    })
+  }
 
   useEffect(() => {
     initialized.current = false
@@ -123,10 +139,10 @@ export function Exercise() {
     setSaveState('saving')
     localStorage.setItem(draftKey, JSON.stringify({ code, savedCode: savedCode.current }))
     const timer = window.setTimeout(() => {
-      saveWorkspace.mutate({ courseId, moduleId, exerciseId, data: { code } })
+      queueWorkspaceSave(code)
     }, 700)
     return () => window.clearTimeout(timer)
-  }, [code, courseId, draftKey, exerciseId, moduleId, saveWorkspace.mutate])
+  }, [code, courseId, draftKey, exerciseId, moduleId])
 
   useEffect(() => () => runner.dispose(), [runner])
 
@@ -259,8 +275,8 @@ export function Exercise() {
         eyebrow={`${course?.title ?? courseId} · Exercise`}
         title={exercise.title}
       />
-      <div className="grid grid-cols-[minmax(0,1fr)_16rem] gap-5 max-xl:grid-cols-1">
-        <main className="grid gap-3.5">
+      <div className="grid grid-cols-4 gap-5 max-xl:grid-cols-1">
+        <main className="col-span-3 grid gap-3.5 max-xl:col-span-1">
           <Card className="overflow-hidden p-0">
             <div className="flex border-b border-line px-5">
               {(['prompt', 'tests'] as const).map((tab) => (

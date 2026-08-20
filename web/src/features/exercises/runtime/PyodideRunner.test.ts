@@ -110,12 +110,22 @@ describe('PyodideRunner', () => {
   it('terminates a timed-out worker and recovers on the next request', async () => {
     vi.useFakeTimers()
     const workers: FakeWorker[] = []
-    const runner = new PyodideRunner(() => {
-      const worker = new FakeWorker()
-      workers.push(worker)
-      return worker as unknown as Worker
-    }, 50)
+    const runner = new PyodideRunner(
+      () => {
+        const worker = new FakeWorker()
+        workers.push(worker)
+        return worker as unknown as Worker
+      },
+      50,
+      200,
+    )
     const timedOut = runner.run({ code: 'while True: pass' })
+    await vi.advanceTimersByTimeAsync(100)
+    expect(workers[0].terminated).toBe(false)
+    workers[0].respond({
+      id: workers[0].requests[0].id,
+      type: 'execution-started',
+    })
     const timeoutExpectation = expect(timedOut).rejects.toThrow('was stopped')
     await vi.advanceTimersByTimeAsync(51)
     await timeoutExpectation

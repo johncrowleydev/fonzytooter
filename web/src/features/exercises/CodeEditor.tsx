@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { python } from '@codemirror/lang-python'
 import { oneDark } from '@codemirror/theme-one-dark'
+import { Compartment } from '@codemirror/state'
 import { basicSetup, EditorView } from 'codemirror'
 
 type CodeEditorProps = {
@@ -12,6 +13,7 @@ type CodeEditorProps = {
 export function CodeEditor({ value, onChange, disabled = false }: CodeEditorProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView>(null)
+  const editable = useRef(new Compartment())
   const onChangeRef = useRef(onChange)
   onChangeRef.current = onChange
 
@@ -24,7 +26,7 @@ export function CodeEditor({ value, onChange, disabled = false }: CodeEditorProp
         basicSetup,
         python(),
         oneDark,
-        EditorView.editable.of(!disabled),
+        editable.current.of(EditorView.editable.of(!disabled)),
         EditorView.lineWrapping,
         EditorView.updateListener.of((update) => {
           if (update.docChanged) onChangeRef.current(update.state.doc.toString())
@@ -41,6 +43,12 @@ export function CodeEditor({ value, onChange, disabled = false }: CodeEditorProp
       viewRef.current = null
       view.destroy()
     }
+  }, [])
+
+  useEffect(() => {
+    viewRef.current?.dispatch({
+      effects: editable.current.reconfigure(EditorView.editable.of(!disabled)),
+    })
   }, [disabled])
 
   useEffect(() => {

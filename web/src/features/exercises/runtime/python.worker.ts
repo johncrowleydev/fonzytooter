@@ -30,16 +30,17 @@ function errorDetails(error: unknown): PythonExecutionError {
   return { name: 'Error', message: String(error) }
 }
 
-async function execute(code: string): Promise<PythonRunResult> {
-  const startedAt = performance.now()
+async function execute(code: string, onReady?: () => void): Promise<PythonRunResult> {
   const pyodide = await getPyodide()
+  await pyodide.loadPackagesFromImports(code)
+  onReady?.()
+  const startedAt = performance.now()
   let stdout = ''
   let stderr = ''
   pyodide.setStdout({ batched: (text) => (stdout += `${text}\n`) })
   pyodide.setStderr({ batched: (text) => (stderr += `${text}\n`) })
   const globals = pyodide.toPy({})
   try {
-    await pyodide.loadPackagesFromImports(code)
     const result = await pyodide.runPythonAsync(code, { globals })
     if (result && typeof result === 'object' && 'destroy' in result) result.destroy()
     return { stdout, stderr, durationMs: Math.round(performance.now() - startedAt) }
@@ -58,13 +59,25 @@ async function execute(code: string): Promise<PythonRunResult> {
 self.addEventListener('message', async (event: MessageEvent<PythonWorkerRequest>) => {
   const request = event.data
   try {
+    let executionStarted = false
+    const reportExecutionStarted = () => {
+      if (executionStarted) return
+      executionStarted = true
+      self.postMessage({ id: request.id, type: 'execution-started' } satisfies PythonWorkerResponse)
+    }
     const response: PythonWorkerResponse =
       request.type === 'run'
-        ? { id: request.id, type: 'run-result', payload: await execute(request.payload.code) }
+        ? {
+            id: request.id,
+            type: 'run-result',
+            payload: await execute(request.payload.code, reportExecutionStarted),
+          }
         : {
             id: request.id,
             type: 'check-result',
-            payload: await runCheckTests(request.payload, execute),
+            payload: await runCheckTests(request.payload, (code) =>
+              execute(code, reportExecutionStarted),
+            ),
           }
     self.postMessage(response)
   } catch (error) {
