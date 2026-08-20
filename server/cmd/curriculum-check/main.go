@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/johncrowleydev/fonzytooter/server/internal/config"
@@ -31,6 +32,13 @@ func main() {
 		fmt.Fprintf(os.Stderr, "curriculum invalid: %v\n", err)
 		os.Exit(1)
 	}
+	writeUnusedSourceWarnings(os.Stderr, catalog)
 
 	fmt.Printf("curriculum valid: %d courses, %d modules, %d lessons, %d objectives, %d sources\n", catalog.CourseCount(), catalog.ModuleCount(), catalog.LessonCount(), catalog.ObjectiveCount(), catalog.SourceCount())
+}
+
+func writeUnusedSourceWarnings(output io.Writer, catalog *curriculum.Catalog) {
+	for _, sourceID := range catalog.UnusedSourceIDs() {
+		fmt.Fprintf(output, "warning: unused source id %q\n", sourceID)
+	}
 }

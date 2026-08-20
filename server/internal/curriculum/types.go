@@ -484,6 +484,33 @@ func (c *Catalog) SourceCount() int {
 	return len(c.sources)
 }
 
+// UnusedSourceIDs returns registered source IDs that no lesson references.
+// Unused sources are diagnostics rather than invalid curriculum because authors
+// may register a source before its first lesson is committed.
+func (c *Catalog) UnusedSourceIDs() []string {
+	if c == nil {
+		return []string{}
+	}
+	used := make(map[string]struct{})
+	for _, course := range c.courses {
+		for _, module := range course.Modules {
+			for _, lesson := range module.Lessons {
+				for _, sourceID := range lesson.SourceIDs {
+					used[sourceID] = struct{}{}
+				}
+			}
+		}
+	}
+	unused := make([]string, 0)
+	for sourceID := range c.sources {
+		if _, ok := used[sourceID]; !ok {
+			unused = append(unused, sourceID)
+		}
+	}
+	sort.Strings(unused)
+	return unused
+}
+
 func cloneCourses(courses []Course) []Course {
 	cloned := make([]Course, len(courses))
 	for index, course := range courses {

@@ -27,7 +27,6 @@ func TestLoadBuildsOrderedImmutableExerciseCatalog(t *testing.T) {
 		"00-later-filename.yaml": lessonTwo,
 		"50-later-order.yaml":    lessonOneLater,
 		"99-earlier-order.yaml":  lessonOneEarlier,
-		"ignored.txt":            "not curriculum",
 	}))
 	if err != nil {
 		t.Fatalf("load exercise curriculum: %v", err)

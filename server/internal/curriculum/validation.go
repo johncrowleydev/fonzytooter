@@ -80,10 +80,15 @@ func validateCourses(courses []courseFile, sources map[string]sourceAuthoring, e
 			}
 			if metadata.Order == nil {
 				errors.addf(course.path, "course %q is missing required order", metadata.ID)
-			} else if previous, ok := courseOrders[*metadata.Order]; ok {
-				errors.addf(course.path, "duplicate course order %d (already declared in %s)", *metadata.Order, previous)
 			} else {
-				courseOrders[*metadata.Order] = course.path
+				if *metadata.Order < 0 {
+					errors.addf(course.path, "course %q order must be non-negative", metadata.ID)
+				}
+				if previous, ok := courseOrders[*metadata.Order]; ok {
+					errors.addf(course.path, "duplicate course order %d (already declared in %s)", *metadata.Order, previous)
+				} else {
+					courseOrders[*metadata.Order] = course.path
+				}
 			}
 		}
 
@@ -155,6 +160,7 @@ func validateReviewItemObjectiveIDs(pathName, reviewItemID string, ids []string,
 		errors.addf(pathName, "review item %q has no objectiveIds", reviewItemID)
 		return
 	}
+	validateUniqueStrings(pathName, fmt.Sprintf("review item %q", reviewItemID), "objectiveIds", ids, errors)
 	for _, objectiveID := range ids {
 		if _, ok := objectiveIDs[objectiveID]; !ok {
 			errors.addf(pathName, "review item %q has unknown objective id %q", reviewItemID, objectiveID)
@@ -229,6 +235,7 @@ func validateExerciseObjectiveIDs(pathName, owner string, ids []string, objectiv
 		errors.addf(pathName, "%s has no objectiveIds", owner)
 		return
 	}
+	validateUniqueStrings(pathName, owner, "objectiveIds", ids, errors)
 	for _, objectiveID := range ids {
 		if _, ok := objectiveIDs[objectiveID]; !ok {
 			errors.addf(pathName, "%s has unknown objective id %q", owner, objectiveID)
@@ -362,6 +369,7 @@ func validateWorksheetObjectiveIDs(pathName, owner string, ids []string, objecti
 		errors.addf(pathName, "%s has no objectiveIds", owner)
 		return
 	}
+	validateUniqueStrings(pathName, owner, "objectiveIds", ids, errors)
 	for _, objectiveID := range ids {
 		if _, ok := objectiveIDs[objectiveID]; !ok {
 			errors.addf(pathName, "%s has unknown objective id %q", owner, objectiveID)
@@ -385,10 +393,15 @@ func validateModule(module moduleFile, moduleIDs map[string]string, moduleOrders
 	}
 	if metadata.Order == nil {
 		errors.addf(metadataPath, "module %q is missing required order", metadata.ID)
-	} else if previous, ok := moduleOrders[*metadata.Order]; ok {
-		errors.addf(metadataPath, "duplicate module order %d (already declared in %s)", *metadata.Order, previous)
 	} else {
-		moduleOrders[*metadata.Order] = metadataPath
+		if *metadata.Order < 0 {
+			errors.addf(metadataPath, "module %q order must be non-negative", metadata.ID)
+		}
+		if previous, ok := moduleOrders[*metadata.Order]; ok {
+			errors.addf(metadataPath, "duplicate module order %d (already declared in %s)", *metadata.Order, previous)
+		} else {
+			moduleOrders[*metadata.Order] = metadataPath
+		}
 	}
 
 	validateModuleObjectives(metadata, metadataPath, objectiveIDs, objectivePaths, errors)
@@ -404,6 +417,10 @@ func validateModuleObjectives(metadata moduleAuthoring, metadataPath string, obj
 		if strings.TrimSpace(objective.Title) == "" {
 			errors.addf(metadataPath, "objective %q has empty title", objective.ID)
 		}
+		if strings.TrimSpace(objective.Description) == "" {
+			errors.addf(metadataPath, "objective %q has empty description", objective.ID)
+		}
+		validateUniqueStrings(metadataPath, fmt.Sprintf("objective %q", objective.ID), "prerequisites", objective.Prerequisites, errors)
 		if previous, ok := objectiveIDs[objective.ID]; ok {
 			errors.addf(metadataPath, "duplicate objective id %q (already declared in %s)", objective.ID, previous)
 		} else {
@@ -430,6 +447,7 @@ func validateModuleVideos(metadata moduleAuthoring, metadataPath string, errors 
 		if err := validateHTTPURL(video.URL); err != nil {
 			errors.addf(metadataPath, "video %q: %v", video.ID, err)
 		}
+		validateUniqueStrings(metadataPath, fmt.Sprintf("video %q", video.ID), "objectiveIds", video.ObjectiveIDs, errors)
 	}
 }
 
@@ -437,12 +455,9 @@ func validateModuleLessonReferences(module moduleFile, errors *errorCollector) {
 	if !module.metadataOK {
 		return
 	}
+	validateUniqueStrings(module.path, fmt.Sprintf("module %q", module.metadata.ID), "lessons", module.metadata.Lessons, errors)
 	declared := map[string]struct{}{}
 	for _, lessonID := range module.metadata.Lessons {
-		if _, ok := declared[lessonID]; ok {
-			errors.addf(module.path, "duplicate lesson id reference %q", lessonID)
-			continue
-		}
 		declared[lessonID] = struct{}{}
 	}
 
@@ -484,6 +499,8 @@ func validateLessonFiles(module moduleFile, objectiveIDs map[string]string, sour
 		if strings.TrimSpace(lesson.content) == "" {
 			errors.addf(lesson.path, "lesson %q has empty content body", metadata.ID)
 		}
+		validateUniqueStrings(lesson.path, fmt.Sprintf("lesson %q", metadata.ID), "objectiveIds", metadata.ObjectiveIDs, errors)
+		validateUniqueStrings(lesson.path, fmt.Sprintf("lesson %q", metadata.ID), "sourceIds", metadata.SourceIDs, errors)
 		for _, objectiveID := range metadata.ObjectiveIDs {
 			if _, ok := objectiveIDs[objectiveID]; !ok {
 				errors.addf(lesson.path, "unknown objective id %q", objectiveID)
@@ -588,4 +605,20 @@ func sortedKeys[T any](values map[string]T) []string {
 	}
 	sort.Strings(keys)
 	return keys
+}
+
+func validateUniqueStrings(pathName, owner, field string, values []string, errors *errorCollector) {
+	seen := make(map[string]struct{}, len(values))
+	reported := make(map[string]struct{})
+	for _, value := range values {
+		if _, ok := seen[value]; !ok {
+			seen[value] = struct{}{}
+			continue
+		}
+		if _, ok := reported[value]; ok {
+			continue
+		}
+		reported[value] = struct{}{}
+		errors.addf(pathName, "%s field %s contains duplicate value %q", owner, field, value)
+	}
 }

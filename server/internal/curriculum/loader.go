@@ -449,10 +449,11 @@ func loadReviewItems(fsys fs.FS, modulePath string, collector *errorCollector) [
 
 	reviewItems := make([]reviewItemFile, 0, len(entries))
 	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".yaml") {
+		reviewItemPath := path.Join(reviewsPath, entry.Name())
+		if !validateAuthoredYAMLEntry(entry, reviewItemPath, collector) {
 			continue
 		}
-		reviewItem := reviewItemFile{path: path.Join(reviewsPath, entry.Name())}
+		reviewItem := reviewItemFile{path: reviewItemPath}
 		data, readErr := fs.ReadFile(fsys, reviewItem.path)
 		if readErr != nil {
 			collector.add(reviewItem.path, readErr)
@@ -480,10 +481,11 @@ func loadExercises(fsys fs.FS, modulePath string, collector *errorCollector) []e
 
 	exercises := make([]exerciseFile, 0, len(entries))
 	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".yaml") {
+		exercisePath := path.Join(exercisesPath, entry.Name())
+		if !validateAuthoredYAMLEntry(entry, exercisePath, collector) {
 			continue
 		}
-		exercise := exerciseFile{path: path.Join(exercisesPath, entry.Name())}
+		exercise := exerciseFile{path: exercisePath}
 		data, readErr := fs.ReadFile(fsys, exercise.path)
 		if readErr != nil {
 			collector.add(exercise.path, readErr)
@@ -511,10 +513,11 @@ func loadWorksheets(fsys fs.FS, modulePath string, collector *errorCollector) []
 
 	worksheets := make([]worksheetFile, 0, len(entries))
 	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".yaml") {
+		worksheetPath := path.Join(worksheetsPath, entry.Name())
+		if !validateAuthoredYAMLEntry(entry, worksheetPath, collector) {
 			continue
 		}
-		worksheet := worksheetFile{path: path.Join(worksheetsPath, entry.Name())}
+		worksheet := worksheetFile{path: worksheetPath}
 		data, readErr := fs.ReadFile(fsys, worksheet.path)
 		if readErr != nil {
 			collector.add(worksheet.path, readErr)
@@ -529,12 +532,39 @@ func loadWorksheets(fsys fs.FS, modulePath string, collector *errorCollector) []
 	return worksheets
 }
 
+func validateAuthoredYAMLEntry(entry fs.DirEntry, entryPath string, collector *errorCollector) bool {
+	if entry.IsDir() {
+		collector.add(entryPath, errors.New("unexpected directory; authored YAML files must be direct children"))
+		return false
+	}
+	if path.Ext(entry.Name()) != ".yaml" {
+		collector.add(entryPath, errors.New("unexpected entry; expected a .yaml file"))
+		return false
+	}
+	if entry.Type().IsRegular() {
+		return true
+	}
+	info, err := entry.Info()
+	if err != nil {
+		collector.add(entryPath, fmt.Errorf("cannot inspect authored YAML file: %w", err))
+		return false
+	}
+	if !info.Mode().IsRegular() {
+		collector.add(entryPath, errors.New("authored YAML entry is not a regular file"))
+		return false
+	}
+	return true
+}
+
 func loadLessons(fsys fs.FS, modulePath string, collector *errorCollector) []lessonFile {
 	lessons := []lessonFile{}
 	walkErr := fs.WalkDir(fsys, modulePath, func(filePath string, entry fs.DirEntry, err error) error {
 		if err != nil {
 			collector.add(filePath, err)
 			return nil
+		}
+		if filePath != modulePath && entry.IsDir() {
+			return fs.SkipDir
 		}
 		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".mdx") {
 			return nil
