@@ -93,7 +93,10 @@ curriculum/
 
 ### SQLite is authoritative for learner state
 
-Persistent learner state will eventually include:
+SQLite is the implemented learner-state store. The server opens it through
+`database/sql`, applies embedded Goose migrations before serving HTTP, and uses
+`modernc.org/sqlite` as the driver. Persistent learner state will eventually
+include:
 
 - objective progress;
 - spaced-repetition scheduling and review history;
@@ -228,7 +231,6 @@ Back up the database file. Do not introduce distributed infrastructure unless th
 
 The following should remain open until implementation pressure clarifies them:
 
-- exact SQLite driver and migration package;
 - exact FSRS library/schema mapping;
 - authentication/reverse-proxy strategy for public internet exposure;
 - how Codex subscription authentication is hosted on EC2;
