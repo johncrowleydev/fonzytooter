@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"testing/fstest"
 	"time"
 
 	"github.com/johncrowleydev/fonzytooter/server/internal/curriculum"
@@ -135,6 +136,36 @@ func TestCourseProgressDerivesIntroducedObjectivesAndNextLesson(t *testing.T) {
 	}
 	if _, err := service.CourseProgress(context.Background(), "missing"); !errors.Is(err, ErrCourseNotFound) {
 		t.Fatalf("expected missing course error, got %v", err)
+	}
+}
+
+func TestCourseProgressIntroducesEarlierModuleObjectiveFromLaterCompletedLesson(t *testing.T) {
+	catalog, err := curriculum.Load(fstest.MapFS{
+		"sources.yaml":                           &fstest.MapFile{Data: []byte("sources: {}\n")},
+		"courses/test/course.yaml":               &fstest.MapFile{Data: []byte("id: test\ntitle: Test\ndescription: Test course.\norder: 0\n")},
+		"courses/test/modules/first/module.yaml": &fstest.MapFile{Data: []byte("id: first\ntitle: First\norder: 0\nobjectives:\n  - id: shared.objective\n    title: Shared objective\n    prerequisites: []\nvideos: []\nlessons: []\n")},
+		"courses/test/modules/later/module.yaml": &fstest.MapFile{Data: []byte("id: later\ntitle: Later\norder: 1\nobjectives: []\nvideos: []\nlessons:\n  - later.lesson\n")},
+		"courses/test/modules/later/lesson.mdx":  &fstest.MapFile{Data: []byte("---\nid: later.lesson\ntitle: Later lesson\nobjectiveIds:\n  - shared.objective\nsourceIds: []\n---\n# Later lesson\n")},
+	})
+	if err != nil {
+		t.Fatalf("load cross-module curriculum: %v", err)
+	}
+	db, err := database.Open(context.Background(), filepath.Join(t.TempDir(), "fonzytooter.db"))
+	if err != nil {
+		t.Fatalf("open test database: %v", err)
+	}
+	t.Cleanup(func() { _ = db.Close() })
+	service := NewService(db, catalog)
+	if _, err := service.SetLessonProgress(context.Background(), "test", "later", "later.lesson", true); err != nil {
+		t.Fatalf("complete later lesson: %v", err)
+	}
+
+	progress, err := service.CourseProgress(context.Background(), "test")
+	if err != nil {
+		t.Fatalf("get course progress: %v", err)
+	}
+	if len(progress.Objectives) != 1 || !progress.Objectives[0].Introduced {
+		t.Fatalf("expected earlier-module objective to be introduced, got %#v", progress.Objectives)
 	}
 }
 

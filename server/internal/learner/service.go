@@ -236,6 +236,8 @@ func (s *Service) CourseProgress(ctx context.Context, courseID string) (CoursePr
 				}
 			}
 		}
+	}
+	for _, module := range course.Modules {
 		for _, objective := range module.Objectives {
 			result.Objectives = append(result.Objectives, ObjectiveProgress{
 				CourseID: course.ID, ModuleID: module.ID, ID: objective.ID,
