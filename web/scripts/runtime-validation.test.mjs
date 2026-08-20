@@ -317,3 +317,34 @@ test('generated fetch responses preserve serialized response headers', async () 
     globalThis.fetch = originalFetch
   }
 })
+
+test('generated worksheet document fetch returns PDF bytes as a Blob', async () => {
+  const client = await importGeneratedClient()
+  const originalFetch = globalThis.fetch
+
+  try {
+    globalThis.fetch = async () =>
+      new Response('%PDF-1.7\ntest', {
+        status: 200,
+        headers: {
+          'content-disposition': 'attachment; filename="worksheet.pdf"',
+          'content-type': 'application/pdf',
+        },
+      })
+
+    const response = await client.getCourseModuleWorksheetDocument(
+      'ai-ml',
+      'scientific-python',
+      'worksheet',
+      'student',
+    )
+    assert.equal(response.data instanceof Blob, true)
+    assert.equal(await response.data.text(), '%PDF-1.7\ntest')
+    assert.equal(
+      response.headers['content-disposition'],
+      'attachment; filename="worksheet.pdf"',
+    )
+  } finally {
+    globalThis.fetch = originalFetch
+  }
+})
