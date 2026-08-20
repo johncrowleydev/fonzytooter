@@ -7,13 +7,16 @@
 import * as zod from 'zod'
 import { NextLessonResource } from './nextLessonResource.zod'
 import { ObjectiveProgressResource } from './objectiveProgressResource.zod'
+import { PracticeExerciseResource } from './practiceExerciseResource.zod'
 
 export const CourseProgressResource = zod.strictObject({
   $schema: zod.url().optional().describe('A URL to the JSON Schema for this object.'),
   completedLessonCount: zod.int(),
   courseId: zod.string(),
+  dueReviewCount: zod.int(),
   nextLesson: NextLessonResource.optional(),
   objectives: zod.array(ObjectiveProgressResource),
+  practiceExercise: PracticeExerciseResource.optional(),
   totalLessonCount: zod.int(),
 })
 

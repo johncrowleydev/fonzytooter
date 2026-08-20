@@ -5,17 +5,21 @@
  * OpenAPI spec version: 0.1.0
  */
 import * as zod from 'zod'
+import { ApplicationEvidenceResource } from './applicationEvidenceResource.zod'
+import { RecallEvidenceResource } from './recallEvidenceResource.zod'
 
 export const ObjectiveProgressResource = zod.strictObject({
-  application: zod.enum(['not_assessed']),
+  application: ApplicationEvidenceResource,
+  completedLessonCount: zod.int(),
   courseId: zod.string(),
   description: zod.string(),
   id: zod.string(),
   introduced: zod.boolean(),
+  linkedLessonCount: zod.int(),
   moduleId: zod.string(),
-  recall: zod.enum(['not_assessed']),
+  recall: RecallEvidenceResource,
   title: zod.string(),
-  transfer: zod.enum(['not_assessed']),
+  transferAssessed: zod.boolean(),
 })
 
 export type ObjectiveProgressResource = zod.input<typeof ObjectiveProgressResource>

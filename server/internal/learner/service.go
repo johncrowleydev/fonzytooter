@@ -12,7 +12,6 @@ import (
 
 const (
 	ActivityLessonCompleted = "lesson_completed"
-	EvidenceNotAssessed     = "not_assessed"
 	DefaultActivityLimit    = 20
 	MaxActivityLimit        = 100
 )
@@ -40,20 +39,39 @@ type CourseProgress struct {
 	CourseID             string
 	CompletedLessonCount int
 	TotalLessonCount     int
+	DueReviewCount       int
 	Objectives           []ObjectiveProgress
 	NextLesson           *NextLesson
+	PracticeExercise     *PracticeExercise
 }
 
 type ObjectiveProgress struct {
-	CourseID    string
-	ModuleID    string
-	ID          string
-	Title       string
-	Description string
-	Introduced  bool
-	Recall      string
-	Application string
-	Transfer    string
+	CourseID             string
+	ModuleID             string
+	ID                   string
+	Title                string
+	Description          string
+	Introduced           bool
+	LinkedLessonCount    int
+	CompletedLessonCount int
+	Recall               RecallEvidence
+	Application          ApplicationEvidence
+	TransferAssessed     bool
+}
+
+type RecallEvidence struct {
+	ReviewItemCount  int
+	ReviewsCompleted int
+	DueReviewCount   int
+	LastReviewedAt   *time.Time
+	NextDueAt        *time.Time
+}
+
+type ApplicationEvidence struct {
+	ExerciseCount       int
+	Attempts            int
+	FullyPassedAttempts int
+	LastCheckedAt       *time.Time
 }
 
 type NextLesson struct {
@@ -62,6 +80,19 @@ type NextLesson struct {
 	ModuleTitle string
 	LessonID    string
 	LessonTitle string
+}
+
+type PracticeExercise struct {
+	CourseID      string
+	ModuleID      string
+	ModuleTitle   string
+	ExerciseID    string
+	ExerciseTitle string
+}
+
+type courseLessonRef struct {
+	module curriculum.Module
+	lesson curriculum.Lesson
 }
 
 type Activity struct {
@@ -197,7 +228,7 @@ func (s *Service) CourseProgress(ctx context.Context, courseID string) (CoursePr
 	}
 
 	rows, err := s.db.QueryContext(ctx, `
-		SELECT module_id, lesson_id
+		SELECT module_id, lesson_id, completed_at
 		FROM lesson_progress
 		WHERE course_id = ? AND completed = 1
 	`, courseID)
@@ -205,13 +236,21 @@ func (s *Service) CourseProgress(ctx context.Context, courseID string) (CoursePr
 		return CourseProgress{}, fmt.Errorf("read completed lessons: %w", err)
 	}
 	defer rows.Close()
-	completed := make(map[string]struct{})
+	completed := make(map[string]time.Time)
 	for rows.Next() {
 		var moduleID, lessonID string
-		if err := rows.Scan(&moduleID, &lessonID); err != nil {
+		var completedAt sql.NullString
+		if err := rows.Scan(&moduleID, &lessonID, &completedAt); err != nil {
 			return CourseProgress{}, fmt.Errorf("scan completed lesson: %w", err)
 		}
-		completed[lessonKey(moduleID, lessonID)] = struct{}{}
+		when := time.Time{}
+		if completedAt.Valid {
+			when, err = time.Parse(time.RFC3339Nano, completedAt.String)
+			if err != nil {
+				return CourseProgress{}, fmt.Errorf("parse completed lesson time: %w", err)
+			}
+		}
+		completed[lessonKey(moduleID, lessonID)] = when
 	}
 	if err := rows.Err(); err != nil {
 		return CourseProgress{}, fmt.Errorf("iterate completed lessons: %w", err)
@@ -222,33 +261,74 @@ func (s *Service) CourseProgress(ctx context.Context, courseID string) (CoursePr
 		Objectives: []ObjectiveProgress{},
 	}
 	introduced := make(map[string]bool)
+	objectiveIndex := make(map[string]int)
+	orderedLessons := make([]courseLessonRef, 0)
 	for _, module := range course.Modules {
 		for _, lesson := range module.Lessons {
+			orderedLessons = append(orderedLessons, courseLessonRef{module: module, lesson: lesson})
 			result.TotalLessonCount++
 			if _, ok := completed[lessonKey(module.ID, lesson.ID)]; ok {
 				result.CompletedLessonCount++
 				for _, objectiveID := range lesson.ObjectiveIDs {
 					introduced[objectiveID] = true
 				}
-			} else if result.NextLesson == nil {
-				result.NextLesson = &NextLesson{
-					CourseID: course.ID, ModuleID: module.ID, ModuleTitle: module.Title,
-					LessonID: lesson.ID, LessonTitle: lesson.Title,
-				}
 			}
 		}
 	}
 	for _, module := range course.Modules {
 		for _, objective := range module.Objectives {
+			objectiveIndex[objective.ID] = len(result.Objectives)
 			result.Objectives = append(result.Objectives, ObjectiveProgress{
 				CourseID: course.ID, ModuleID: module.ID, ID: objective.ID,
 				Title: objective.Title, Description: objective.Description,
-				Introduced: introduced[objective.ID], Recall: EvidenceNotAssessed,
-				Application: EvidenceNotAssessed, Transfer: EvidenceNotAssessed,
+				Introduced: introduced[objective.ID],
 			})
 		}
 	}
+	for _, item := range orderedLessons {
+		for _, objectiveID := range item.lesson.ObjectiveIDs {
+			index, ok := objectiveIndex[objectiveID]
+			if !ok {
+				continue
+			}
+			result.Objectives[index].LinkedLessonCount++
+			if _, ok := completed[lessonKey(item.module.ID, item.lesson.ID)]; ok {
+				result.Objectives[index].CompletedLessonCount++
+			}
+		}
+	}
+	result.NextLesson = nextLesson(course, orderedLessons, completed)
+	if err := s.addCourseEvidence(ctx, course, objectiveIndex, &result); err != nil {
+		return CourseProgress{}, err
+	}
 	return result, nil
+}
+
+func nextLesson(course curriculum.Course, lessons []courseLessonRef, completed map[string]time.Time) *NextLesson {
+	latestIndex := -1
+	latestAt := time.Time{}
+	for index, item := range lessons {
+		when, ok := completed[lessonKey(item.module.ID, item.lesson.ID)]
+		if ok && (latestIndex < 0 || when.After(latestAt)) {
+			latestIndex, latestAt = index, when
+		}
+	}
+	if latestIndex >= 0 && latestIndex+1 < len(lessons) {
+		candidate := lessons[latestIndex+1]
+		if _, done := completed[lessonKey(candidate.module.ID, candidate.lesson.ID)]; !done {
+			return nextLessonValue(course, candidate.module, candidate.lesson)
+		}
+	}
+	for _, candidate := range lessons {
+		if _, done := completed[lessonKey(candidate.module.ID, candidate.lesson.ID)]; !done {
+			return nextLessonValue(course, candidate.module, candidate.lesson)
+		}
+	}
+	return nil
+}
+
+func nextLessonValue(course curriculum.Course, module curriculum.Module, lesson curriculum.Lesson) *NextLesson {
+	return &NextLesson{CourseID: course.ID, ModuleID: module.ID, ModuleTitle: module.Title, LessonID: lesson.ID, LessonTitle: lesson.Title}
 }
 
 func (s *Service) Activities(ctx context.Context, courseID string, limit int) ([]Activity, error) {
