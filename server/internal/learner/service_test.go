@@ -143,7 +143,7 @@ func TestCourseProgressIntroducesEarlierModuleObjectiveFromLaterCompletedLesson(
 	catalog, err := curriculum.Load(fstest.MapFS{
 		"sources.yaml":                           &fstest.MapFile{Data: []byte("sources: {}\n")},
 		"courses/test/course.yaml":               &fstest.MapFile{Data: []byte("id: test\ntitle: Test\ndescription: Test course.\norder: 0\n")},
-		"courses/test/modules/first/module.yaml": &fstest.MapFile{Data: []byte("id: first\ntitle: First\norder: 0\nobjectives:\n  - id: shared.objective\n    title: Shared objective\n    prerequisites: []\nvideos: []\nlessons: []\n")},
+		"courses/test/modules/first/module.yaml": &fstest.MapFile{Data: []byte("id: first\ntitle: First\norder: 0\nobjectives:\n  - id: shared.objective\n    title: Shared objective\n    description: Shared objective.\n    prerequisites: []\nvideos: []\nlessons: []\n")},
 		"courses/test/modules/later/module.yaml": &fstest.MapFile{Data: []byte("id: later\ntitle: Later\norder: 1\nobjectives: []\nvideos: []\nlessons:\n  - later.lesson\n")},
 		"courses/test/modules/later/lesson.mdx":  &fstest.MapFile{Data: []byte("---\nid: later.lesson\ntitle: Later lesson\nobjectiveIds:\n  - shared.objective\nsourceIds: []\n---\n# Later lesson\n")},
 	})

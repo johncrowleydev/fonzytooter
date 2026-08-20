@@ -68,7 +68,7 @@ func TestLoadUsesDeclaredOrderAndFrontmatterIDs(t *testing.T) {
 	fsys := fstest.MapFS{
 		"sources.yaml":                                     &fstest.MapFile{Data: []byte("sources:\n  go-docs:\n    title: Go documentation\n    url: https://go.dev/doc/\n")},
 		"courses/ai-ml/course.yaml":                        &fstest.MapFile{Data: []byte(courseYAML("ai-ml", 0))},
-		"courses/ai-ml/modules/10-second/module.yaml":      &fstest.MapFile{Data: []byte("id: second\ntitle: Second\norder: 1\nobjectives:\n  - id: second.objective\n    title: Second objective\n    prerequisites: []\nvideos: []\nlessons:\n  - second.lesson\n")},
+		"courses/ai-ml/modules/10-second/module.yaml":      &fstest.MapFile{Data: []byte("id: second\ntitle: Second\norder: 1\nobjectives:\n  - id: second.objective\n    title: Second objective\n    description: A second objective.\n    prerequisites: []\nvideos: []\nlessons:\n  - second.lesson\n")},
 		"courses/ai-ml/modules/10-second/storage-name.mdx": &fstest.MapFile{Data: []byte("---\r\nid: second.lesson\r\ntitle: Second lesson\r\nobjectiveIds: []\r\nsourceIds:\r\n  - go-docs\r\n---\r\n# Second lesson\r\n")},
 		"courses/ai-ml/modules/00-first/module.yaml":       &fstest.MapFile{Data: []byte("id: first\ntitle: First\norder: 0\nobjectives: []\nvideos: []\nlessons:\n  - first.lesson\n")},
 		"courses/ai-ml/modules/00-first/storage-name.mdx":  &fstest.MapFile{Data: []byte("---\nid: first.lesson\ntitle: First lesson\nobjectiveIds:\n  - second.objective\nsourceIds: []\n---\n# First lesson\n")},
@@ -141,7 +141,7 @@ func TestLoadRejectsUnknownLessonFrontmatterAndPrerequisiteCycles(t *testing.T) 
 	fsys := fstest.MapFS{
 		"sources.yaml":                             &fstest.MapFile{Data: []byte("sources: {}\n")},
 		"courses/ai-ml/course.yaml":                &fstest.MapFile{Data: []byte(courseYAML("ai-ml", 0))},
-		"courses/ai-ml/modules/module/module.yaml": &fstest.MapFile{Data: []byte("id: module\ntitle: Module\norder: 0\nobjectives:\n  - id: a\n    title: A\n    prerequisites:\n      - b\n  - id: b\n    title: B\n    prerequisites:\n      - c\n  - id: c\n    title: C\n    prerequisites:\n      - a\nvideos: []\nlessons:\n  - lesson\n")},
+		"courses/ai-ml/modules/module/module.yaml": &fstest.MapFile{Data: []byte("id: module\ntitle: Module\norder: 0\nobjectives:\n  - id: a\n    title: A\n    description: Objective A.\n    prerequisites:\n      - b\n  - id: b\n    title: B\n    description: Objective B.\n    prerequisites:\n      - c\n  - id: c\n    title: C\n    description: Objective C.\n    prerequisites:\n      - a\nvideos: []\nlessons:\n  - lesson\n")},
 		"courses/ai-ml/modules/module/lesson.mdx":  &fstest.MapFile{Data: []byte("---\nid: lesson\ntitle: Lesson\nobjetiveIds: []\nsourceIds: []\n---\n# Lesson\n")},
 	}
 
@@ -186,7 +186,7 @@ func TestLoadRejectsUnknownModuleFields(t *testing.T) {
 }
 
 func TestLoadRejectsDuplicateObjectiveIDsAcrossModules(t *testing.T) {
-	objective := "objectives:\n  - id: shared\n    title: Shared\n    prerequisites: []\nvideos: []\nlessons: []\n"
+	objective := "objectives:\n  - id: shared\n    title: Shared\n    description: Shared objective.\n    prerequisites: []\nvideos: []\nlessons: []\n"
 	expectLoadError(t, curriculumFS(map[string]string{
 		"courses/ai-ml/modules/first/module.yaml":  moduleYAML("first", 0, objective),
 		"courses/ai-ml/modules/second/module.yaml": moduleYAML("second", 1, objective),
@@ -195,13 +195,13 @@ func TestLoadRejectsDuplicateObjectiveIDsAcrossModules(t *testing.T) {
 
 func TestLoadRejectsSelfPrerequisite(t *testing.T) {
 	expectLoadError(t, curriculumFS(map[string]string{
-		"courses/ai-ml/modules/one/module.yaml": moduleYAML("one", 0, "objectives:\n  - id: foo\n    title: Foo\n    prerequisites:\n      - foo\nvideos: []\nlessons: []\n"),
+		"courses/ai-ml/modules/one/module.yaml": moduleYAML("one", 0, "objectives:\n  - id: foo\n    title: Foo\n    description: Foo objective.\n    prerequisites:\n      - foo\nvideos: []\nlessons: []\n"),
 	}), `objective "foo" cannot list itself as a prerequisite`)
 }
 
 func TestLoadRejectsUnknownPrerequisite(t *testing.T) {
 	expectLoadError(t, curriculumFS(map[string]string{
-		"courses/ai-ml/modules/one/module.yaml": moduleYAML("one", 0, "objectives:\n  - id: foo\n    title: Foo\n    prerequisites:\n      - bar\nvideos: []\nlessons: []\n"),
+		"courses/ai-ml/modules/one/module.yaml": moduleYAML("one", 0, "objectives:\n  - id: foo\n    title: Foo\n    description: Foo objective.\n    prerequisites:\n      - bar\nvideos: []\nlessons: []\n"),
 	}), `objective "foo" has unknown prerequisite "bar"`)
 }
 
@@ -229,7 +229,7 @@ func TestLoadRejectsDuplicateLessonIDReferences(t *testing.T) {
 	expectLoadError(t, curriculumFS(map[string]string{
 		"courses/ai-ml/modules/one/module.yaml": moduleYAML("one", 0, "objectives: []\nvideos: []\nlessons:\n  - lesson\n  - lesson\n"),
 		"courses/ai-ml/modules/one/lesson.mdx":  lessonMDX("lesson"),
-	}), `duplicate lesson id reference "lesson"`)
+	}), `module "one" field lessons contains duplicate value "lesson"`)
 }
 
 func TestSplitFrontmatterRequiresDelimiters(t *testing.T) {
@@ -263,11 +263,11 @@ func TestLoadBuildsImmutableMultiCourseCatalog(t *testing.T) {
 	fsys := fstest.MapFS{
 		"sources.yaml":                                  &fstest.MapFile{Data: []byte("sources:\n  shared-source:\n    title: Shared source\n    url: https://example.com/shared\n")},
 		"courses/second/course.yaml":                    &fstest.MapFile{Data: []byte(courseYAML("second-course", 0))},
-		"courses/second/modules/beta/module.yaml":       &fstest.MapFile{Data: []byte(moduleYAML("beta", 0, "objectives:\n  - id: beta.objective\n    title: Beta objective\n    prerequisites: []\nvideos: []\nlessons:\n  - shared-lesson\n"))},
+		"courses/second/modules/beta/module.yaml":       &fstest.MapFile{Data: []byte(moduleYAML("beta", 0, "objectives:\n  - id: beta.objective\n    title: Beta objective\n    description: Beta objective.\n    prerequisites: []\nvideos: []\nlessons:\n  - shared-lesson\n"))},
 		"courses/second/modules/beta/lesson.mdx":        &fstest.MapFile{Data: []byte("---\nid: shared-lesson\ntitle: Beta lesson\nobjectiveIds:\n  - beta.objective\nsourceIds:\n  - shared-source\n---\n# Beta\n")},
 		"courses/first/course.yaml":                     &fstest.MapFile{Data: []byte(courseYAML("first-course", 1))},
 		"courses/first/modules/alpha-later/module.yaml": &fstest.MapFile{Data: []byte(moduleYAML("alpha-later", 1, emptyModuleLists))},
-		"courses/first/modules/alpha/module.yaml":       &fstest.MapFile{Data: []byte(moduleYAML("alpha", 0, "objectives:\n  - id: alpha.objective\n    title: Alpha objective\n    prerequisites:\n      - beta.objective\nvideos: []\nlessons:\n  - shared-lesson\n"))},
+		"courses/first/modules/alpha/module.yaml":       &fstest.MapFile{Data: []byte(moduleYAML("alpha", 0, "objectives:\n  - id: alpha.objective\n    title: Alpha objective\n    description: Alpha objective.\n    prerequisites:\n      - beta.objective\nvideos: []\nlessons:\n  - shared-lesson\n"))},
 		"courses/first/modules/alpha/lesson.mdx":        &fstest.MapFile{Data: []byte("---\nid: shared-lesson\ntitle: Alpha lesson\nobjectiveIds:\n  - alpha.objective\nsourceIds:\n  - shared-source\n---\n# Alpha\n")},
 	}
 
@@ -328,9 +328,9 @@ func TestLoadValidatesPrerequisiteCyclesAcrossCourses(t *testing.T) {
 	fsys := fstest.MapFS{
 		"sources.yaml":                              &fstest.MapFile{Data: []byte("sources: {}\n")},
 		"courses/first/course.yaml":                 &fstest.MapFile{Data: []byte(courseYAML("first", 0))},
-		"courses/first/modules/first/module.yaml":   &fstest.MapFile{Data: []byte(moduleYAML("first-module", 0, "objectives:\n  - id: first.objective\n    title: First\n    prerequisites:\n      - second.objective\nvideos: []\nlessons: []\n"))},
+		"courses/first/modules/first/module.yaml":   &fstest.MapFile{Data: []byte(moduleYAML("first-module", 0, "objectives:\n  - id: first.objective\n    title: First\n    description: First objective.\n    prerequisites:\n      - second.objective\nvideos: []\nlessons: []\n"))},
 		"courses/second/course.yaml":                &fstest.MapFile{Data: []byte(courseYAML("second", 1))},
-		"courses/second/modules/second/module.yaml": &fstest.MapFile{Data: []byte(moduleYAML("second-module", 0, "objectives:\n  - id: second.objective\n    title: Second\n    prerequisites:\n      - first.objective\nvideos: []\nlessons: []\n"))},
+		"courses/second/modules/second/module.yaml": &fstest.MapFile{Data: []byte(moduleYAML("second-module", 0, "objectives:\n  - id: second.objective\n    title: Second\n    description: Second objective.\n    prerequisites:\n      - first.objective\nvideos: []\nlessons: []\n"))},
 	}
 
 	expectLoadError(t, fsys, "objective prerequisite cycle", "courses/")

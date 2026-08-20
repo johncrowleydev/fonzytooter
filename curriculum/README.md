@@ -24,13 +24,15 @@ curriculum/
 - Stable IDs use `^[a-z0-9]+(?:[.-][a-z0-9]+)*$`: lowercase letters and numbers separated by single dots or hyphens.
 - Courses are the top-level authored learning paths; modules belong to exactly one course.
 - Courses live under `courses/<course-directory>/`, with metadata in `course.yaml` and modules under that course's `modules/` directory.
-- `course.yaml` currently uses `id`, `title`, `description`, and explicit `order`.
-- `module.yaml` uses `id`, `title`, and explicit `order`. Its ordered `lessons` list is the canonical lesson sequence.
+- `course.yaml` currently uses `id`, `title`, `description`, and explicit non-negative `order`.
+- `module.yaml` uses `id`, `title`, and explicit non-negative `order`. Its ordered `lessons` list is the canonical lesson sequence.
 - Module ordering is scoped to the owning course.
-- Objectives describe capabilities and may reference prerequisite objective IDs. Objective IDs remain globally unique in the current catalog model.
+- Objectives require descriptions and may reference prerequisite objective IDs. Objective IDs remain globally unique in the current catalog model.
 - Lessons are MDX.
 - Lesson metadata is YAML frontmatter at the beginning of each MDX file. The Go loader preserves the remaining MDX source body and does not execute or compile it.
 - Videos are curated resources attached to modules/objectives.
+- Optional `worksheets/`, `exercises/`, and `reviews/` directories are closed-world: every direct child must be a regular `.yaml` file.
+- Reference arrays do not allow duplicate IDs.
 - Technical lesson content must cite reputable sources from the shared `sources.yaml` registry.
 - Larger labs/projects reference external Git repositories rather than embedding a second execution environment into Fonzytooter.
 

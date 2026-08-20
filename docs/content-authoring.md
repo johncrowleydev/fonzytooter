@@ -75,6 +75,7 @@ lessons:
 ```
 
 Module order is scoped to its owning course. Its ordered `lessons` list is the canonical lesson sequence.
+Course and module order values are explicit and non-negative. Objective descriptions are required authored content, not optional display metadata.
 
 Each module should have a curated YouTube playlist/resource sequence where useful. A video may support one or more objectives.
 
@@ -118,6 +119,8 @@ A module may contain an optional direct-child `worksheets/` directory. Worksheet
 └── worksheets/
     └── function-practice.yaml
 ```
+
+The directory is closed-world: every direct child must be a regular `.yaml` file. Unsupported extensions, backup files, and nested directories fail validation instead of being silently ignored.
 
 Each `.yaml` file in that directory has this authored shape:
 
@@ -174,6 +177,8 @@ A module may contain an optional direct-child `exercises/` directory. Exercise d
     └── example.yaml
 ```
 
+Like `worksheets/`, this directory is closed-world and contains only direct-child regular `.yaml` files.
+
 Each `.yaml` file has this authored shape:
 
 ```yaml
@@ -216,6 +221,8 @@ A module may contain an optional direct-child `reviews/` directory. Review-item 
 └── reviews/
     └── function-definition.yaml
 ```
+
+Like the other file-discovered content directories, `reviews/` contains only direct-child regular `.yaml` files.
 
 Each `.yaml` file in that directory has this deliberately small authored shape:
 
@@ -271,6 +278,8 @@ go run ./cmd/curriculum-check ../curriculum
 ```
 
 Current validation includes the curriculum root/course/module structure, strict YAML fields, stable IDs, course/module ordering constraints, lesson declarations/frontmatter, source/objective references, prerequisite references/cycles, duplicate authored identities, and other catalog invariants.
+
+Authored reference arrays reject duplicate values. A successful check also emits sorted warnings for source-registry entries that no lesson currently references. Unused sources remain valid so a source can be registered before its first lesson is committed; unknown source references remain validation errors.
 
 Worksheet and exercise validation are part of the same deterministic command. Exercise checks include strict fields, lesson/objective references, lesson-scoped ordering, required prose/code, test identities, and the visibility enum. Validation never executes authored Python.
 
