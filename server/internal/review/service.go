@@ -11,14 +11,16 @@ import (
 	fsrs "github.com/open-spaced-repetition/go-fsrs/v4"
 
 	"github.com/johncrowleydev/fonzytooter/server/internal/curriculum"
+	"github.com/johncrowleydev/fonzytooter/server/internal/learner"
 )
 
 const ActivityReviewCompleted = "review_completed"
 
 var (
-	ErrCourseNotFound     = errors.New("course not found")
-	ErrReviewItemNotFound = errors.New("review item not found")
-	ErrInvalidRating      = errors.New("invalid review rating")
+	ErrCourseNotFound        = errors.New("course not found")
+	ErrReviewItemNotFound    = errors.New("review item not found")
+	ErrReviewItemNotEligible = errors.New("review item source lesson is not completed")
+	ErrInvalidRating         = errors.New("invalid review rating")
 )
 
 type Clock interface {
@@ -95,6 +97,10 @@ func (s *Service) Cards(ctx context.Context, courseID string, dueOnly bool) ([]C
 	if err != nil {
 		return nil, err
 	}
+	eligibility, err := learner.LoadSourceLessonEligibility(ctx, s.db, courseID)
+	if err != nil {
+		return nil, err
+	}
 
 	now := s.clock.Now().UTC()
 	type orderedCard struct {
@@ -108,6 +114,10 @@ func (s *Service) Cards(ctx context.Context, courseID string, dueOnly bool) ([]C
 			key := cardKey{moduleID: module.ID, reviewItemID: item.ID}
 			schedule, exists := stored[key]
 			if !exists {
+				if !eligibility.Allows(item) {
+					authoredIndex++
+					continue
+				}
 				schedule = fsrs.NewCard(now)
 			}
 			isDue := !schedule.Due.After(now)
@@ -156,8 +166,8 @@ func (s *Service) Cards(ctx context.Context, courseID string, dueOnly bool) ([]C
 	return result, nil
 }
 
-func (s *Service) Submit(ctx context.Context, courseID, reviewItemID string, rating Rating) (SubmittedReview, error) {
-	item, err := s.findReviewItem(courseID, reviewItemID)
+func (s *Service) Submit(ctx context.Context, courseID, moduleID, reviewItemID string, rating Rating) (SubmittedReview, error) {
+	item, err := s.findReviewItem(courseID, moduleID, reviewItemID)
 	if err != nil {
 		return SubmittedReview{}, err
 	}
@@ -178,6 +188,13 @@ func (s *Service) Submit(ctx context.Context, courseID, reviewItemID string, rat
 		return SubmittedReview{}, err
 	}
 	if !found {
+		eligibility, err := learner.LoadSourceLessonEligibility(ctx, tx, courseID)
+		if err != nil {
+			return SubmittedReview{}, err
+		}
+		if !eligibility.Allows(item) {
+			return SubmittedReview{}, ErrReviewItemNotEligible
+		}
 		before = fsrs.NewCard(now)
 	}
 	after, err := s.scheduler.Next(before, now, grade)
@@ -215,28 +232,15 @@ func (s *Service) Submit(ctx context.Context, courseID, reviewItemID string, rat
 	}, nil
 }
 
-func (s *Service) findReviewItem(courseID, reviewItemID string) (curriculum.ReviewItem, error) {
-	course, ok := s.catalog.CourseByID(courseID)
-	if !ok {
+func (s *Service) findReviewItem(courseID, moduleID, reviewItemID string) (curriculum.ReviewItem, error) {
+	if _, ok := s.catalog.CourseByID(courseID); !ok {
 		return curriculum.ReviewItem{}, ErrCourseNotFound
 	}
-	var found *curriculum.ReviewItem
-	for _, module := range course.Modules {
-		for _, item := range module.ReviewItems {
-			if item.ID != reviewItemID {
-				continue
-			}
-			if found != nil {
-				return curriculum.ReviewItem{}, fmt.Errorf("review item id %q is ambiguous within course %q", reviewItemID, courseID)
-			}
-			copy := item
-			found = &copy
-		}
-	}
-	if found == nil {
+	item, ok := s.catalog.ReviewItemByCourse(courseID, moduleID, reviewItemID)
+	if !ok {
 		return curriculum.ReviewItem{}, ErrReviewItemNotFound
 	}
-	return *found, nil
+	return item, nil
 }
 
 func (s *Service) previews(card fsrs.Card, now time.Time) ([]Preview, error) {

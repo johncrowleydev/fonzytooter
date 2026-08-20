@@ -33,7 +33,7 @@ func TestReviewAPIListsVirtualCardsAndCreatesRating(t *testing.T) {
 	}
 	assertHTTPTableCount(t, db, "review_cards", 0)
 
-	response = serveJSON(t, app.Handler, http.MethodPost, "/api/courses/course/review-cards/first/reviews", `{"rating":"good"}`)
+	response = serveJSON(t, app.Handler, http.MethodPost, "/api/courses/course/modules/module/review-cards/first/reviews", `{"rating":"good"}`)
 	if response.Code != http.StatusCreated {
 		t.Fatalf("create review status = %d: %s", response.Code, response.Body.String())
 	}
@@ -64,9 +64,10 @@ func TestReviewAPIRejectsMalformedAndMissingResources(t *testing.T) {
 		body   string
 		status int
 	}{
-		{http.MethodPost, "/api/courses/course/review-cards/first/reviews", `{"rating":"perfect"}`, http.StatusUnprocessableEntity},
-		{http.MethodPost, "/api/courses/course/review-cards/missing/reviews", `{"rating":"good"}`, http.StatusNotFound},
-		{http.MethodPost, "/api/courses/missing/review-cards/first/reviews", `{"rating":"good"}`, http.StatusNotFound},
+		{http.MethodPost, "/api/courses/course/modules/module/review-cards/first/reviews", `{"rating":"perfect"}`, http.StatusUnprocessableEntity},
+		{http.MethodPost, "/api/courses/course/modules/module/review-cards/missing/reviews", `{"rating":"good"}`, http.StatusNotFound},
+		{http.MethodPost, "/api/courses/course/modules/missing/review-cards/first/reviews", `{"rating":"good"}`, http.StatusNotFound},
+		{http.MethodPost, "/api/courses/missing/modules/module/review-cards/first/reviews", `{"rating":"good"}`, http.StatusNotFound},
 		{http.MethodGet, "/api/courses/missing/review-cards?due=true", "", http.StatusNotFound},
 	}
 	for _, test := range tests {
@@ -93,7 +94,7 @@ func TestReviewOpenAPIContract(t *testing.T) {
 	if collection.Post != nil {
 		t.Fatal("review-card collection exposes unintended POST")
 	}
-	reviews := app.Spec.Paths["/api/courses/{courseId}/review-cards/{reviewItemId}/reviews"]
+	reviews := app.Spec.Paths["/api/courses/{courseId}/modules/{moduleId}/review-cards/{reviewItemId}/reviews"]
 	if reviews == nil || reviews.Post == nil || reviews.Post.OperationID != "createReviewCardReview" {
 		t.Fatalf("missing subordinate review creation: %#v", reviews)
 	}
@@ -124,6 +125,12 @@ func testReviewAPI(t *testing.T) (*API, *sql.DB) {
 	}
 	t.Cleanup(func() { _ = db.Close() })
 	clock := reviewTestClock{now: time.Date(2026, time.August, 20, 14, 30, 0, 0, time.UTC)}
+	if _, err := db.Exec(`
+		INSERT INTO lesson_progress (course_id, module_id, lesson_id, completed, completed_at, updated_at)
+		VALUES ('course', 'module', 'lesson', 1, ?, ?)
+	`, clock.now.Format(time.RFC3339Nano), clock.now.Format(time.RFC3339Nano)); err != nil {
+		t.Fatalf("complete source lesson: %v", err)
+	}
 	service := review.NewService(db, catalog, clock)
 	return NewAPI(tutor.NewService(tutor.NewUnavailableProvider()), catalog, nil, service), db
 }

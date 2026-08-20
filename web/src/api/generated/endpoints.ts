@@ -2354,6 +2354,176 @@ export const usePutLessonProgress = <
   return useMutation(getPutLessonProgressMutationOptions(options), queryClient)
 }
 
+export type createReviewCardReviewResponse201 = {
+  data: ReviewCardResource
+  status: 201
+}
+
+export type createReviewCardReviewResponse404 = {
+  data: ErrorModel
+  status: 404
+}
+
+export type createReviewCardReviewResponse409 = {
+  data: ErrorModel
+  status: 409
+}
+
+export type createReviewCardReviewResponse422 = {
+  data: ErrorModel
+  status: 422
+}
+
+export type createReviewCardReviewResponse500 = {
+  data: ErrorModel
+  status: 500
+}
+
+export type createReviewCardReviewResponseSuccess = createReviewCardReviewResponse201 & {
+  headers: Record<string, string>
+}
+export type createReviewCardReviewResponseError = (
+  | createReviewCardReviewResponse404
+  | createReviewCardReviewResponse409
+  | createReviewCardReviewResponse422
+  | createReviewCardReviewResponse500
+) & {
+  headers: Record<string, string>
+}
+
+export const getCreateReviewCardReviewUrl = (
+  courseId: string,
+  moduleId: string,
+  reviewItemId: string,
+) => {
+  return `/api/courses/${courseId}/modules/${moduleId}/review-cards/${reviewItemId}/reviews`
+}
+
+/**
+ * Applies one rating and atomically records the updated FSRS card, immutable log, and learner activity.
+ * @summary Create a review-card rating
+ */
+export const createReviewCardReview = async (
+  courseId: string,
+  moduleId: string,
+  reviewItemId: string,
+  reviewSubmission: NonReadonly<ReviewSubmission>,
+  options?: RequestInit,
+): Promise<createReviewCardReviewResponseSuccess> => {
+  const res = await fetch(getCreateReviewCardReviewUrl(courseId, moduleId, reviewItemId), {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(reviewSubmission),
+  })
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text()
+  if (!res.ok) {
+    const err: globalThis.Error & {
+      info?: createReviewCardReviewResponseError['data']
+      status?: number
+    } = new globalThis.Error()
+    const data: createReviewCardReviewResponseError['data'] = body ? JSON.parse(body) : {}
+    err.info = data
+    err.status = res.status
+    throw err
+  }
+  const data = ReviewCardResource.parse(body ? JSON.parse(body) : {})
+  return {
+    data,
+    status: res.status,
+    headers: Object.fromEntries(
+      [...res.headers.entries()].filter(([name]) => name !== 'set-cookie'),
+    ),
+  } as createReviewCardReviewResponseSuccess
+}
+
+export const getCreateReviewCardReviewMutationOptions = <
+  TError = globalThis.Error & { info?: ErrorModel; status?: number },
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createReviewCardReview>>,
+    TError,
+    {
+      courseId: string
+      moduleId: string
+      reviewItemId: string
+      data: NonReadonly<ReviewSubmission>
+    },
+    TContext
+  >
+  fetch?: RequestInit
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createReviewCardReview>>,
+  TError,
+  { courseId: string; moduleId: string; reviewItemId: string; data: NonReadonly<ReviewSubmission> },
+  TContext
+> => {
+  const mutationKey = ['createReviewCardReview']
+  const { mutation: mutationOptions, fetch: fetchOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, fetch: undefined }
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createReviewCardReview>>,
+    {
+      courseId: string
+      moduleId: string
+      reviewItemId: string
+      data: NonReadonly<ReviewSubmission>
+    }
+  > = (props) => {
+    const { courseId, moduleId, reviewItemId, data } = props ?? {}
+
+    return createReviewCardReview(courseId, moduleId, reviewItemId, data, fetchOptions)
+  }
+
+  return { mutationFn, ...mutationOptions }
+}
+
+export type CreateReviewCardReviewMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createReviewCardReview>>
+>
+export type CreateReviewCardReviewMutationBody = NonReadonly<ReviewSubmission>
+export type CreateReviewCardReviewMutationError = globalThis.Error & {
+  info?: ErrorModel
+  status?: number
+}
+
+/**
+ * @summary Create a review-card rating
+ */
+export const useCreateReviewCardReview = <
+  TError = globalThis.Error & { info?: ErrorModel; status?: number },
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof createReviewCardReview>>,
+      TError,
+      {
+        courseId: string
+        moduleId: string
+        reviewItemId: string
+        data: NonReadonly<ReviewSubmission>
+      },
+      TContext
+    >
+    fetch?: RequestInit
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof createReviewCardReview>>,
+  TError,
+  { courseId: string; moduleId: string; reviewItemId: string; data: NonReadonly<ReviewSubmission> },
+  TContext
+> => {
+  return useMutation(getCreateReviewCardReviewMutationOptions(options), queryClient)
+}
+
 export type getCourseModuleReviewItemResponse200 = {
   data: ReviewItemResource
   status: 200
@@ -3657,150 +3827,6 @@ export function useListReviewCards<
   }
 
   return withQueryKey(query, queryOptions.queryKey)
-}
-
-export type createReviewCardReviewResponse201 = {
-  data: ReviewCardResource
-  status: 201
-}
-
-export type createReviewCardReviewResponse404 = {
-  data: ErrorModel
-  status: 404
-}
-
-export type createReviewCardReviewResponse422 = {
-  data: ErrorModel
-  status: 422
-}
-
-export type createReviewCardReviewResponse500 = {
-  data: ErrorModel
-  status: 500
-}
-
-export type createReviewCardReviewResponseSuccess = createReviewCardReviewResponse201 & {
-  headers: Record<string, string>
-}
-export type createReviewCardReviewResponseError = (
-  | createReviewCardReviewResponse404
-  | createReviewCardReviewResponse422
-  | createReviewCardReviewResponse500
-) & {
-  headers: Record<string, string>
-}
-
-export const getCreateReviewCardReviewUrl = (courseId: string, reviewItemId: string) => {
-  return `/api/courses/${courseId}/review-cards/${reviewItemId}/reviews`
-}
-
-/**
- * Applies one rating and atomically records the updated FSRS card, immutable log, and learner activity.
- * @summary Create a review-card rating
- */
-export const createReviewCardReview = async (
-  courseId: string,
-  reviewItemId: string,
-  reviewSubmission: NonReadonly<ReviewSubmission>,
-  options?: RequestInit,
-): Promise<createReviewCardReviewResponseSuccess> => {
-  const res = await fetch(getCreateReviewCardReviewUrl(courseId, reviewItemId), {
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(reviewSubmission),
-  })
-
-  const body = [204, 205, 304].includes(res.status) ? null : await res.text()
-  if (!res.ok) {
-    const err: globalThis.Error & {
-      info?: createReviewCardReviewResponseError['data']
-      status?: number
-    } = new globalThis.Error()
-    const data: createReviewCardReviewResponseError['data'] = body ? JSON.parse(body) : {}
-    err.info = data
-    err.status = res.status
-    throw err
-  }
-  const data = ReviewCardResource.parse(body ? JSON.parse(body) : {})
-  return {
-    data,
-    status: res.status,
-    headers: Object.fromEntries(
-      [...res.headers.entries()].filter(([name]) => name !== 'set-cookie'),
-    ),
-  } as createReviewCardReviewResponseSuccess
-}
-
-export const getCreateReviewCardReviewMutationOptions = <
-  TError = globalThis.Error & { info?: ErrorModel; status?: number },
-  TContext = unknown,
->(options?: {
-  mutation?: UseMutationOptions<
-    Awaited<ReturnType<typeof createReviewCardReview>>,
-    TError,
-    { courseId: string; reviewItemId: string; data: NonReadonly<ReviewSubmission> },
-    TContext
-  >
-  fetch?: RequestInit
-}): UseMutationOptions<
-  Awaited<ReturnType<typeof createReviewCardReview>>,
-  TError,
-  { courseId: string; reviewItemId: string; data: NonReadonly<ReviewSubmission> },
-  TContext
-> => {
-  const mutationKey = ['createReviewCardReview']
-  const { mutation: mutationOptions, fetch: fetchOptions } = options
-    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
-      ? options
-      : { ...options, mutation: { ...options.mutation, mutationKey } }
-    : { mutation: { mutationKey }, fetch: undefined }
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof createReviewCardReview>>,
-    { courseId: string; reviewItemId: string; data: NonReadonly<ReviewSubmission> }
-  > = (props) => {
-    const { courseId, reviewItemId, data } = props ?? {}
-
-    return createReviewCardReview(courseId, reviewItemId, data, fetchOptions)
-  }
-
-  return { mutationFn, ...mutationOptions }
-}
-
-export type CreateReviewCardReviewMutationResult = NonNullable<
-  Awaited<ReturnType<typeof createReviewCardReview>>
->
-export type CreateReviewCardReviewMutationBody = NonReadonly<ReviewSubmission>
-export type CreateReviewCardReviewMutationError = globalThis.Error & {
-  info?: ErrorModel
-  status?: number
-}
-
-/**
- * @summary Create a review-card rating
- */
-export const useCreateReviewCardReview = <
-  TError = globalThis.Error & { info?: ErrorModel; status?: number },
-  TContext = unknown,
->(
-  options?: {
-    mutation?: UseMutationOptions<
-      Awaited<ReturnType<typeof createReviewCardReview>>,
-      TError,
-      { courseId: string; reviewItemId: string; data: NonReadonly<ReviewSubmission> },
-      TContext
-    >
-    fetch?: RequestInit
-  },
-  queryClient?: QueryClient,
-): UseMutationResult<
-  Awaited<ReturnType<typeof createReviewCardReview>>,
-  TError,
-  { courseId: string; reviewItemId: string; data: NonReadonly<ReviewSubmission> },
-  TContext
-> => {
-  return useMutation(getCreateReviewCardReviewMutationOptions(options), queryClient)
 }
 
 export type getHealthResponse200 = {

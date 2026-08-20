@@ -21,6 +21,7 @@ type ReviewCardQueryInput struct {
 
 type ReviewCardReviewPathInput struct {
 	CourseID     string `path:"courseId"`
+	ModuleID     string `path:"moduleId"`
 	ReviewItemID string `path:"reviewItemId"`
 	Body         ReviewSubmission
 }
@@ -97,22 +98,22 @@ func registerReviews(api huma.API, service *review.Service) {
 	huma.Register[ReviewCardReviewPathInput, CreateCardReviewResponse](api, huma.Operation{
 		OperationID:   "createReviewCardReview",
 		Method:        http.MethodPost,
-		Path:          "/api/courses/{courseId}/review-cards/{reviewItemId}/reviews",
+		Path:          "/api/courses/{courseId}/modules/{moduleId}/review-cards/{reviewItemId}/reviews",
 		Summary:       "Create a review-card rating",
 		Description:   "Applies one rating and atomically records the updated FSRS card, immutable log, and learner activity.",
 		Tags:          []string{"learner"},
 		DefaultStatus: http.StatusCreated,
-		Errors:        []int{http.StatusNotFound, http.StatusUnprocessableEntity, http.StatusInternalServerError},
+		Errors:        []int{http.StatusNotFound, http.StatusConflict, http.StatusUnprocessableEntity, http.StatusInternalServerError},
 	}, func(ctx context.Context, input *ReviewCardReviewPathInput) (*CreateCardReviewResponse, error) {
 		if service == nil {
 			return nil, huma.Error500InternalServerError("review service is unavailable")
 		}
-		result, err := service.Submit(ctx, input.CourseID, input.ReviewItemID, input.Body.Rating)
+		result, err := service.Submit(ctx, input.CourseID, input.ModuleID, input.ReviewItemID, input.Body.Rating)
 		if err != nil {
 			return nil, reviewError("create review", err)
 		}
 		return &CreateCardReviewResponse{
-			Location: fmt.Sprintf("/api/courses/%s/review-cards/%s/reviews/%d", input.CourseID, input.ReviewItemID, result.ID),
+			Location: fmt.Sprintf("/api/courses/%s/modules/%s/review-cards/%s/reviews/%d", input.CourseID, input.ModuleID, input.ReviewItemID, result.ID),
 			Body:     reviewCardResource(result.Card),
 		}, nil
 	})
@@ -142,6 +143,8 @@ func reviewError(operation string, err error) error {
 		return huma.Error404NotFound(err.Error())
 	case errors.Is(err, review.ErrInvalidRating):
 		return huma.Error422UnprocessableEntity(err.Error())
+	case errors.Is(err, review.ErrReviewItemNotEligible):
+		return huma.Error409Conflict(err.Error())
 	default:
 		log.Printf("%s: %v", operation, err)
 		return huma.Error500InternalServerError("review scheduling is unavailable")

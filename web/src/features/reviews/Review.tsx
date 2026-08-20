@@ -67,6 +67,7 @@ export function Review() {
       onRate={async (card, rating) => {
         await createReview.mutateAsync({
           courseId: card.courseId,
+          moduleId: card.moduleId,
           reviewItemId: card.id,
           data: { rating },
         })
