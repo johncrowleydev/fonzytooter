@@ -193,6 +193,7 @@ The project now has the core curriculum delivery path rather than only an initia
 - the global tutor receives explicit course/module/lesson semantic page context and consumes streamed tutor events;
 - the default tutor provider is still an explicit "not configured" provider;
 - the Pyodide exercise boundary is documented and typed, but the full editor/runtime workflow is not yet implemented;
-- SQLite learner-state persistence and automatic migrations are available, while learner activity/progress tables, FSRS, real tutor providers, worksheet uploads, tutor grading, and evidence writes remain future implementation work.
+- lesson completion, objective introduction, and recent learner activity now persist through SQLite-backed generated APIs and drive the lesson, progress, and dashboard UI;
+- recall, application, transfer, FSRS, real tutor providers, worksheet uploads, tutor grading, and other evidence writes remain future implementation work.
 
 Add capabilities when the learning workflow needs them rather than pre-building an LMS platform.

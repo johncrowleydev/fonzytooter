@@ -43,6 +43,8 @@ jobs:
           test -z "$(git -C .. ls-files --others --exclude-standard -- web/src/api/generated)"
       - name: Test frontend API contract
         run: npm run api:test
+      - name: Test frontend features
+        run: npm test
       - name: Validate curriculum MDX
         run: npm run curriculum:mdx
       - name: Check formatting

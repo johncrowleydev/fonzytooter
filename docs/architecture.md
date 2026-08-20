@@ -95,13 +95,13 @@ curriculum/
 
 SQLite is the implemented learner-state store. The server opens it through
 `database/sql`, applies embedded Goose migrations before serving HTTP, and uses
-`modernc.org/sqlite` as the driver. Persistent learner state will eventually
-include:
+`modernc.org/sqlite` as the driver. Lesson completion and a bounded activity
+history are persisted now. Objective introduction and the next incomplete
+lesson are derived from that state plus the Git-authored catalog rather than
+stored redundantly. Additional persistent learner state will eventually include:
 
-- objective progress;
 - spaced-repetition scheduling and review history;
 - exercise workspaces and attempts;
-- activity history;
 - notes/bookmarks;
 - tutor conversations;
 - project status;
