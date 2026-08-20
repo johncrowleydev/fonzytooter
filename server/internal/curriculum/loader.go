@@ -50,6 +50,26 @@ type lessonFrontmatter struct {
 	SourceIDs    []string `yaml:"sourceIds"`
 }
 
+type worksheetAuthoring struct {
+	ID           string                      `yaml:"id"`
+	Title        string                      `yaml:"title"`
+	LessonID     string                      `yaml:"lessonId"`
+	Order        *int                        `yaml:"order"`
+	ObjectiveIDs []string                    `yaml:"objectiveIds"`
+	Instructions string                      `yaml:"instructions"`
+	Problems     []worksheetProblemAuthoring `yaml:"problems"`
+}
+
+type worksheetProblemAuthoring struct {
+	ID             string   `yaml:"id"`
+	Prompt         string   `yaml:"prompt"`
+	ObjectiveIDs   []string `yaml:"objectiveIds"`
+	ExpectedAnswer string   `yaml:"expectedAnswer"`
+	RequiresWork   *bool    `yaml:"requiresWork"`
+	ResponseLines  *int     `yaml:"responseLines"`
+	Rubric         []string `yaml:"rubric"`
+}
+
 type sourceAuthoring struct {
 	Title string `yaml:"title"`
 	URL   string `yaml:"url"`
@@ -70,6 +90,13 @@ type moduleFile struct {
 	path       string
 	metadata   moduleAuthoring
 	lessons    []lessonFile
+	worksheets []worksheetFile
+	metadataOK bool
+}
+
+type worksheetFile struct {
+	path       string
+	metadata   worksheetAuthoring
 	metadataOK bool
 }
 
@@ -121,6 +148,7 @@ func Load(fsys fs.FS) (*Catalog, error) {
 				Objectives: make([]Objective, 0, len(module.metadata.Objectives)),
 				Videos:     make([]Video, 0, len(module.metadata.Videos)),
 				Lessons:    make([]Lesson, 0, len(module.metadata.Lessons)),
+				Worksheets: make([]Worksheet, 0, len(module.worksheets)),
 			}
 			for _, objective := range module.metadata.Objectives {
 				loadedModule.Objectives = append(loadedModule.Objectives, Objective{
@@ -161,6 +189,31 @@ func Load(fsys fs.FS) (*Catalog, error) {
 					SourceIDs:    cloneStrings(lesson.metadata.SourceIDs),
 					Content:      lesson.content,
 				})
+			}
+			for _, worksheet := range module.worksheets {
+				loadedWorksheet := Worksheet{
+					CourseID:     course.metadata.ID,
+					ModuleID:     module.metadata.ID,
+					ID:           worksheet.metadata.ID,
+					Title:        worksheet.metadata.Title,
+					LessonID:     worksheet.metadata.LessonID,
+					Order:        *worksheet.metadata.Order,
+					ObjectiveIDs: cloneStrings(worksheet.metadata.ObjectiveIDs),
+					Instructions: worksheet.metadata.Instructions,
+					Problems:     make([]WorksheetProblem, 0, len(worksheet.metadata.Problems)),
+				}
+				for _, problem := range worksheet.metadata.Problems {
+					loadedWorksheet.Problems = append(loadedWorksheet.Problems, WorksheetProblem{
+						ID:             problem.ID,
+						Prompt:         problem.Prompt,
+						ObjectiveIDs:   cloneStrings(problem.ObjectiveIDs),
+						ExpectedAnswer: problem.ExpectedAnswer,
+						RequiresWork:   *problem.RequiresWork,
+						ResponseLines:  *problem.ResponseLines,
+						Rubric:         cloneStrings(problem.Rubric),
+					})
+				}
+				loadedModule.Worksheets = append(loadedModule.Worksheets, loadedWorksheet)
 			}
 			loadedCourse.Modules = append(loadedCourse.Modules, loadedModule)
 		}
@@ -302,9 +355,41 @@ func loadModules(fsys fs.FS, modulesPath string, collector *errorCollector) []mo
 		}
 
 		module.lessons = loadLessons(fsys, modulePath, collector)
+		module.worksheets = loadWorksheets(fsys, modulePath, collector)
 		modules = append(modules, module)
 	}
 	return modules
+}
+
+func loadWorksheets(fsys fs.FS, modulePath string, collector *errorCollector) []worksheetFile {
+	worksheetsPath := path.Join(modulePath, "worksheets")
+	entries, err := fs.ReadDir(fsys, worksheetsPath)
+	if errors.Is(err, fs.ErrNotExist) {
+		return []worksheetFile{}
+	}
+	if err != nil {
+		collector.add(worksheetsPath, err)
+		return []worksheetFile{}
+	}
+
+	worksheets := make([]worksheetFile, 0, len(entries))
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".yaml") {
+			continue
+		}
+		worksheet := worksheetFile{path: path.Join(worksheetsPath, entry.Name())}
+		data, readErr := fs.ReadFile(fsys, worksheet.path)
+		if readErr != nil {
+			collector.add(worksheet.path, readErr)
+		} else if decodeErr := decodeYAML(data, &worksheet.metadata); decodeErr != nil {
+			collector.add(worksheet.path, decodeErr)
+		} else {
+			worksheet.metadataOK = true
+		}
+		worksheets = append(worksheets, worksheet)
+	}
+	sort.Slice(worksheets, func(i, j int) bool { return worksheets[i].path < worksheets[j].path })
+	return worksheets
 }
 
 func loadLessons(fsys fs.FS, modulePath string, collector *errorCollector) []lessonFile {

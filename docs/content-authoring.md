@@ -107,6 +107,50 @@ Vectors ...
 
 Interactive components should be added when they genuinely improve understanding, not because MDX makes them possible.
 
+## Worksheets
+
+A module may contain an optional direct-child `worksheets/` directory. Worksheet discovery is file-based; do not add a worksheet list to `module.yaml`.
+
+```text
+<module>/
+├── module.yaml
+├── lesson.mdx
+└── worksheets/
+    └── function-practice.yaml
+```
+
+Each `.yaml` file in that directory has this authored shape:
+
+```yaml
+id: function-practice
+title: Function Practice
+lessonId: functions
+order: 0
+objectiveIds:
+  - mathematics.functions
+instructions: |
+  Show your reasoning for each problem.
+problems:
+  - id: evaluate-function
+    prompt: |
+      Evaluate $f(3)$ when $f(x)=2x+1$.
+    objectiveIds:
+      - mathematics.functions
+    expectedAnswer: |
+      $f(3)=2(3)+1=7$.
+    requiresWork: true
+    responseLines: 4
+    rubric:
+      - Substitutes the input into the function correctly.
+      - Computes the final value as `7`.
+```
+
+`lessonId` must name a lesson in the owning module. Worksheet `order` is scoped to that lesson; order values must be unique within a lesson. Module-wide worksheet presentation follows the module's declared lesson order, then worksheet order within each lesson.
+
+`instructions`, `prompt`, and `expectedAnswer` are Markdown and may contain LaTeX math using dollar delimiters. The loader preserves this prose exactly as authored. `requiresWork` and `responseLines` must be explicit for every problem, and `responseLines` must be greater than zero.
+
+The student worksheet JSON API intentionally omits `expectedAnswer` and `rubric`; those fields remain internal curriculum data for solution rendering and future assessment behavior.
+
 ## Sources
 
 `curriculum/sources.yaml` is the shared authoritative source registry across courses.
@@ -141,6 +185,8 @@ go run ./cmd/curriculum-check ../curriculum
 ```
 
 Current validation includes the curriculum root/course/module structure, strict YAML fields, stable IDs, course/module ordering constraints, lesson declarations/frontmatter, source/objective references, prerequisite references/cycles, duplicate authored identities, and other catalog invariants.
+
+Worksheet validation is part of the same deterministic command. It checks lesson/objective references, lesson-scoped ordering, required authored fields, stable and unique IDs, response layout hints, and non-empty rubrics.
 
 The frontend MDX validation pass recursively compiles authored lesson MDX under all courses:
 
