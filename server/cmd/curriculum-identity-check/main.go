@@ -83,6 +83,14 @@ func run(args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stderr, "add an explicit rename or removal to curriculum/identity-migrations.yaml")
 		return 1
 	}
+	if err := curriculumidentity.ValidateNewMigrationsApplied(baseMigrations, migrations, result.AppliedMigrations); err != nil {
+		fmt.Fprintln(stderr, err)
+		return 1
+	}
+	if err := curriculumidentity.ValidateReservedMigrationSources(head, migrations); err != nil {
+		fmt.Fprintln(stderr, err)
+		return 1
+	}
 
 	fmt.Fprintf(stdout, "curriculum identity compatible: %d base identities, %d additions, %d applied migrations\n", len(base), len(result.Additions), len(result.AppliedMigrations))
 	return 0

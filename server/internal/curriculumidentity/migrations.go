@@ -142,6 +142,57 @@ func ValidateAppendOnly(base, head []Migration) error {
 	return errors.New("identity migration ledger is append-only: " + strings.Join(parts, "; "))
 }
 
+// ValidateNewMigrationsApplied prevents ledger entries from pre-authorizing a
+// future identity change. Every entry first introduced by the head revision
+// must account for an identity that disappeared in that same comparison.
+func ValidateNewMigrationsApplied(base, head, applied []Migration) error {
+	baseKeys := make(map[string]struct{}, len(base))
+	for _, migration := range base {
+		baseKeys[migration.key()] = struct{}{}
+	}
+	appliedKeys := make(map[string]struct{}, len(applied))
+	for _, migration := range applied {
+		appliedKeys[migration.key()] = struct{}{}
+	}
+
+	unused := make([]string, 0)
+	for _, migration := range head {
+		if _, existed := baseKeys[migration.key()]; existed {
+			continue
+		}
+		if _, used := appliedKeys[migration.key()]; !used {
+			unused = append(unused, fmt.Sprintf("%s %s", migration.Entity, migration.From))
+		}
+	}
+	sort.Strings(unused)
+	if len(unused) != 0 {
+		return errors.New("new identity migrations must be exercised by the current base-to-head change: " + strings.Join(unused, ", "))
+	}
+	return nil
+}
+
+// ValidateReservedMigrationSources prevents a retired identity from being
+// reused while its historical migration still maps that identity elsewhere.
+func ValidateReservedMigrationSources(head []Identity, migrations []Migration) error {
+	headKeys := make(map[string]struct{}, len(head))
+	for _, current := range head {
+		headKeys[current.key()] = struct{}{}
+	}
+
+	reused := make([]string, 0)
+	for _, migration := range migrations {
+		source := migration.Source()
+		if _, exists := headKeys[source.key()]; exists {
+			reused = append(reused, source.String())
+		}
+	}
+	sort.Strings(reused)
+	if len(reused) != 0 {
+		return errors.New("identity migration sources are reserved and cannot exist in the current curriculum: " + strings.Join(reused, ", "))
+	}
+	return nil
+}
+
 func parseQualifiedID(value string, arity int) ([]string, error) {
 	parts := strings.Split(value, "/")
 	if len(parts) != arity {

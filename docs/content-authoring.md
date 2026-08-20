@@ -86,7 +86,7 @@ For an intentional retirement with no replacement, use `removed: true` instead o
 
 A course or module mapping also accounts for descendants whose local IDs did not change. Use the most specific mapping when a descendant is renamed at the same time. An exercise mapping similarly accounts for its test IDs.
 
-The migration ledger is a sparse, append-only record of breaking changes, not a curriculum manifest or a substitute for the loader. CI rejects removal or rewriting of existing entries so older databases retain their migration path. Recording a change makes it reviewable and supplies the migration intent used by learner-state tooling; it does not silently delete or rewrite SQLite data. Run the database state audit/migration tooling for intentional changes before relying on the new IDs.
+The migration ledger is a sparse, append-only record of breaking changes, not a curriculum manifest or a substitute for the loader. CI rejects removal or rewriting of existing entries so older databases retain their migration path. A new entry must be exercised by the base-to-head identity change in the same pull request; it cannot pre-authorize a future removal. Every historical `from` identity remains reserved and cannot be reintroduced as new curriculum. Recording a change makes it reviewable and supplies the migration intent used by learner-state tooling; it does not silently delete or rewrite SQLite data. Run the database state audit/migration tooling for intentional changes before relying on the new IDs.
 
 To run the same identity comparison locally from `server/`:
 

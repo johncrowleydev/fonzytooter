@@ -163,6 +163,41 @@ func TestValidateAppendOnlyRejectsRemovedAndRewrittenHistoryDeterministically(t 
 	}
 }
 
+func TestValidateNewMigrationsAppliedRejectsPreauthorizationDeterministically(t *testing.T) {
+	head := parse(t, `version: 1
+migrations:
+  - entity: lesson
+    from: course/module/zeta
+    removed: true
+  - entity: lesson
+    from: course/module/alpha
+    to: course/module/beta
+`)
+	err := ValidateNewMigrationsApplied(nil, head, nil)
+	want := "new identity migrations must be exercised by the current base-to-head change: lesson course/module/alpha, lesson course/module/zeta"
+	if err == nil || err.Error() != want {
+		t.Fatalf("migration usage error = %v, want %q", err, want)
+	}
+}
+
+func TestValidateNewMigrationsAppliedAllowsCurrentBreakingChange(t *testing.T) {
+	base := parse(t, "version: 1\nmigrations: []\n")
+	head := parse(t, "version: 1\nmigrations:\n  - entity: lesson\n    from: course/module/old\n    to: course/module/new\n")
+	if err := ValidateNewMigrationsApplied(base, head, head); err != nil {
+		t.Fatalf("validate exercised migration: %v", err)
+	}
+}
+
+func TestValidateReservedMigrationSourcesRejectsReusedIdentity(t *testing.T) {
+	migrations := parse(t, "version: 1\nmigrations:\n  - entity: lesson\n    from: course/module/old\n    to: course/module/new\n")
+	head := []Identity{identity(LessonKind, "course", "module", "old")}
+	err := ValidateReservedMigrationSources(head, migrations)
+	want := "identity migration sources are reserved and cannot exist in the current curriculum: lesson course/module/old"
+	if err == nil || err.Error() != want {
+		t.Fatalf("reserved source error = %v, want %q", err, want)
+	}
+}
+
 func parse(t *testing.T, input string) []Migration {
 	t.Helper()
 	migrations, err := ParseMigrations([]byte(input))
