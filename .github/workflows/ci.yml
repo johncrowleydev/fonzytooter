@@ -57,7 +57,10 @@ jobs:
   server:
     name: Server
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
+    env:
+      TECTONIC_CACHE_DIR: ${{ github.workspace }}/.cache/tectonic-fonzytooter
+      FONZYTOOTER_TECTONIC_ONLY_CACHED: "1"
     defaults:
       run:
         working-directory: server
@@ -84,6 +87,37 @@ jobs:
           sudo tar --extract --gzip --file "/tmp/${tectonic_archive}" --directory /usr/local/bin tectonic
           pandoc --version
           tectonic --version
+      - name: Restore Tectonic resource cache
+        id: tectonic-cache
+        uses: actions/cache/restore@v5
+        with:
+          path: ${{ env.TECTONIC_CACHE_DIR }}
+          key: tectonic-${{ runner.os }}-0.15.0-bundle-v33-v1
+      - name: Prime Tectonic resource cache
+        if: steps.tectonic-cache.outputs.cache-hit != 'true'
+        shell: bash
+        env:
+          FONZYTOOTER_TECTONIC_ONLY_CACHED: "0"
+        run: |
+          delays=(10 30)
+          for attempt in 1 2 3; do
+            if go run ./cmd/worksheet-render-check ../curriculum; then
+              exit 0
+            fi
+            if [ "$attempt" -eq 3 ]; then
+              echo "::error::Unable to prime the Tectonic resource cache after ${attempt} attempts"
+              exit 1
+            fi
+            delay="${delays[$((attempt - 1))]}"
+            echo "Tectonic cache priming attempt ${attempt} failed; retrying in ${delay}s"
+            sleep "$delay"
+          done
+      - name: Save primed Tectonic resource cache
+        if: steps.tectonic-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v5
+        with:
+          path: ${{ env.TECTONIC_CACHE_DIR }}
+          key: ${{ steps.tectonic-cache.outputs.cache-primary-key }}
       - name: Check formatting
         shell: bash
         run: |
