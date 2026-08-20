@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useGetCourse, useGetCourseLesson, useGetCourseModule } from '../../api/generated/endpoints'
 import type { LessonResource } from '../../api/generated/schemas/lessonResource.zod'
-import { coursePath, lessonPath, modulePath } from '../../app/routes'
-import { Card, PageIntro, SectionHeading } from '../../components/ui'
+import { coursePath, lessonPath, modulePath, worksheetPath } from '../../app/routes'
+import { Badge, Card, PageIntro, SectionHeading } from '../../components/ui'
 import { useTutor } from '../tutor/TutorContext'
 import { safeExternalUrl } from '../curriculum/externalLinks'
 import { LessonMdx } from './LessonMdx'
@@ -163,6 +163,11 @@ export function Lesson() {
         <div className="mx-auto mt-12 max-w-3xl text-base leading-loose text-body max-sm:mt-9 max-sm:text-sm max-sm:leading-8">
           <LessonMdx source={lesson.content} />
           <LessonSources sources={lesson.sources} />
+          <LessonWorksheets
+            courseId={course.id}
+            moduleId={module.id}
+            worksheets={lesson.worksheets}
+          />
         </div>
       </article>
 
@@ -195,6 +200,48 @@ export function Lesson() {
         )}
       </nav>
     </div>
+  )
+}
+
+function LessonWorksheets({
+  courseId,
+  moduleId,
+  worksheets,
+}: {
+  courseId: string
+  moduleId: string
+  worksheets: LessonResource['worksheets']
+}) {
+  if (worksheets.length === 0) return null
+
+  return (
+    <section className="mt-11 border-t border-line pt-7">
+      <SectionHeading
+        eyebrow="Practice"
+        title="Worksheets"
+        detail="Reinforce this lesson with focused written practice."
+      />
+      <div className="grid gap-3">
+        {worksheets.map((worksheet) => (
+          <Link
+            key={worksheet.id}
+            className="flex items-center gap-4 rounded-xl border border-line bg-panel px-5 py-4 text-ink no-underline shadow-lg transition hover:border-line-strong hover:text-brand-teal"
+            to={worksheetPath(courseId, moduleId, worksheet.id)}
+          >
+            <Badge tone="teal">Worksheet</Badge>
+            <span className="min-w-0 flex-1">
+              <strong className="block text-sm">{worksheet.title}</strong>
+              <small className="mt-1 block text-2xs text-faint">
+                {worksheet.problemCount} {worksheet.problemCount === 1 ? 'problem' : 'problems'}
+              </small>
+            </span>
+            <span className="text-base text-faint" aria-hidden="true">
+              →
+            </span>
+          </Link>
+        ))}
+      </div>
+    </section>
   )
 }
 

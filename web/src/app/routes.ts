@@ -11,3 +11,7 @@ export function modulePath(courseId: string, moduleId: string) {
 export function lessonPath(courseId: string, moduleId: string, lessonId: string) {
   return `${modulePath(courseId, moduleId)}/lessons/${lessonId}`
 }
+
+export function worksheetPath(courseId: string, moduleId: string, worksheetId: string) {
+  return `${modulePath(courseId, moduleId)}/worksheets/${worksheetId}`
+}
