@@ -34,7 +34,11 @@ export function App() {
             element={<Worksheet />}
           />
           <Route path="/review" element={<Review />} />
-          <Route path="/exercise/:exerciseId" element={<Exercise />} />
+          <Route
+            path="/courses/:courseId/modules/:moduleId/exercises/:exerciseId"
+            element={<Exercise />}
+          />
+          <Route path="/exercise/:exerciseId" element={<Navigate to="/curriculum" replace />} />
           <Route path="/progress" element={<Progress />} />
           <Route path="/projects" element={<Projects />} />
           <Route path="/projects/:projectId" element={<ProjectDetail />} />

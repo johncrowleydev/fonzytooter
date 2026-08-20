@@ -1,152 +1,333 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import ReactMarkdown from 'react-markdown'
 import { Link, useParams } from 'react-router-dom'
-import { DEFAULT_COURSE_ID, modulePath } from '../../app/routes'
+import {
+  useCreateExerciseAttempt,
+  useGetCourse,
+  useGetCourseLesson,
+  useGetCourseModule,
+  useGetCourseModuleExercise,
+  useGetExerciseCheckDefinition,
+  useGetExerciseWorkspace,
+  usePutExerciseWorkspace,
+} from '../../api/generated/endpoints'
+import { lessonPath, modulePath } from '../../app/routes'
 import { Badge, Button, Card, PageIntro, SectionHeading } from '../../components/ui'
-import type { MockCheckResult } from '../../prototype/types'
 import { useTutor } from '../tutor/TutorContext'
+import { CodeEditor } from './CodeEditor'
+import { LatestTaskQueue } from './LatestTaskQueue'
+import { PyodideRunner } from './runtime/PyodideRunner'
+import type { PythonCheckResult, PythonRunResult } from './types'
 
-const starterCode = `def gradient_descent(gradient, start, learning_rate, steps):
-    """Return the final value after a sequence of updates."""
-    value = start
-    for _ in range(steps):
-        value = value - learning_rate * gradient(value)
-    return value
-`
+type SaveState = 'saved' | 'saving' | 'failed'
 
-const exerciseTabStyles = {
-  active: 'border-brand-coral text-ink',
-  inactive: 'border-transparent text-faint',
-} as const
+type LocalDraft = {
+  code: string
+  savedCode: string
+}
+
+function localDraftKey(courseId: string, moduleId: string, exerciseId: string) {
+  return `fonzytooter:exercise:${courseId}:${moduleId}:${exerciseId}`
+}
+
+function readLocalDraft(key: string): LocalDraft | undefined {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(key) ?? 'null') as LocalDraft | null
+    return parsed && typeof parsed.code === 'string' && typeof parsed.savedCode === 'string'
+      ? parsed
+      : undefined
+  } catch {
+    return undefined
+  }
+}
 
 export function Exercise() {
-  const { exerciseId = 'gradient-descent-exercise' } = useParams()
+  const { courseId = '', moduleId = '', exerciseId = '' } = useParams()
   const { setPageContext, openTutorWithContext } = useTutor()
-  const [code, setCode] = useState(starterCode)
-  const [output, setOutput] = useState<string[]>([])
-  const [check, setCheck] = useState<MockCheckResult | null>(null)
+  const runner = useMemo(() => new PyodideRunner(), [])
+  const exerciseQuery = useGetCourseModuleExercise(courseId, moduleId, exerciseId)
+  const workspaceQuery = useGetExerciseWorkspace(courseId, moduleId, exerciseId)
+  const checkDefinitionQuery = useGetExerciseCheckDefinition(courseId, moduleId, exerciseId, {
+    query: { enabled: false },
+  })
+  const courseQuery = useGetCourse(courseId)
+  const moduleQuery = useGetCourseModule(courseId, moduleId)
+  const lessonId = exerciseQuery.data?.data.lessonId ?? ''
+  const lessonQuery = useGetCourseLesson(courseId, moduleId, lessonId, {
+    query: { enabled: lessonId.length > 0 },
+  })
+  const [code, setCode] = useState('')
+  const [saveState, setSaveState] = useState<SaveState>('saved')
+  const [runResult, setRunResult] = useState<PythonRunResult>()
+  const [checkResult, setCheckResult] = useState<PythonCheckResult>()
+  const [executionError, setExecutionError] = useState<string>()
   const [activeTab, setActiveTab] = useState<'prompt' | 'tests'>('prompt')
+  const [executing, setExecuting] = useState(false)
+  const initialized = useRef(false)
+  const skipNextSave = useRef(false)
+  const savedCode = useRef('')
+  const currentCode = useRef(code)
+  currentCode.current = code
+  const draftKey = localDraftKey(courseId, moduleId, exerciseId)
+  const currentDraftKey = useRef(draftKey)
+  currentDraftKey.current = draftKey
+  const saveQueue = useMemo(() => new LatestTaskQueue(), [])
+
+  const saveWorkspace = usePutExerciseWorkspace()
+  const saveWorkspaceRef = useRef(saveWorkspace.mutateAsync)
+  saveWorkspaceRef.current = saveWorkspace.mutateAsync
+  const createAttempt = useCreateExerciseAttempt()
+
+  function queueWorkspaceSave(codeToSave: string) {
+    saveQueue.enqueue(async () => {
+      try {
+        const response = await saveWorkspaceRef.current({
+          courseId,
+          moduleId,
+          exerciseId,
+          data: { code: codeToSave },
+        })
+        if (currentDraftKey.current !== draftKey) return
+        savedCode.current = response.data.code
+        localStorage.setItem(
+          draftKey,
+          JSON.stringify({ code: currentCode.current, savedCode: response.data.code }),
+        )
+        setSaveState(currentCode.current === response.data.code ? 'saved' : 'saving')
+      } catch {
+        if (currentDraftKey.current === draftKey) setSaveState('failed')
+      }
+    })
+  }
+
+  useEffect(() => {
+    initialized.current = false
+    setCode('')
+    setRunResult(undefined)
+    setCheckResult(undefined)
+  }, [draftKey])
+
+  useEffect(() => {
+    if (initialized.current || !workspaceQuery.data) return
+    const serverCode = workspaceQuery.data.data.code
+    const local = readLocalDraft(draftKey)
+    const recoveredCode = local?.savedCode === serverCode ? local.code : serverCode
+    savedCode.current = serverCode
+    skipNextSave.current = true
+    setCode(recoveredCode)
+    setSaveState(recoveredCode === serverCode ? 'saved' : 'saving')
+    initialized.current = true
+  }, [draftKey, workspaceQuery.data])
+
+  useEffect(() => {
+    if (initialized.current || !workspaceQuery.isError || !exerciseQuery.data) return
+    const local = readLocalDraft(draftKey)
+    const fallback = local?.code ?? exerciseQuery.data.data.starterCode
+    savedCode.current = local?.savedCode ?? fallback
+    skipNextSave.current = true
+    setCode(fallback)
+    setSaveState('failed')
+    initialized.current = true
+  }, [draftKey, exerciseQuery.data, workspaceQuery.isError])
+
+  useEffect(() => {
+    if (skipNextSave.current) {
+      skipNextSave.current = false
+      return
+    }
+    if (!initialized.current || code === savedCode.current) return
+    setSaveState('saving')
+    localStorage.setItem(draftKey, JSON.stringify({ code, savedCode: savedCode.current }))
+    const timer = window.setTimeout(() => {
+      queueWorkspaceSave(code)
+    }, 700)
+    return () => window.clearTimeout(timer)
+  }, [code, courseId, draftKey, exerciseId, moduleId])
+
+  useEffect(() => () => runner.dispose(), [runner])
+
+  const exercise = exerciseQuery.data?.data
+  const course = courseQuery.data?.data
+  const module = moduleQuery.data?.data
+  const lesson = lessonQuery.data?.data
+  const objectives =
+    module?.objectives.filter((objective) => exercise?.objectiveIds.includes(objective.id)) ?? []
+  const execution = useMemo(
+    () =>
+      checkResult
+        ? {
+            passed: checkResult.tests.filter((test) => test.status === 'passed').length,
+            failed: checkResult.tests.filter((test) => test.status !== 'passed').length,
+            summary: checkResult.tests.every((test) => test.status === 'passed')
+              ? 'All authored checks passed.'
+              : 'One or more authored checks need attention.',
+          }
+        : undefined,
+    [checkResult],
+  )
+
   useEffect(() => {
     setPageContext({
       type: 'exercise',
-      title: 'Implement gradient descent',
+      title: exercise?.title ?? 'Exercise',
+      courseId,
+      courseTitle: course?.title,
+      moduleId,
+      moduleTitle: module?.title,
+      lessonId: exercise?.lessonId,
+      lessonTitle: lesson?.title,
       exerciseId,
-      exerciseTitle: 'Implement gradient descent',
-      objectiveIds: ['nn.backpropagation'],
+      exerciseTitle: exercise?.title,
+      objectiveIds: exercise?.objectiveIds,
       code,
-      lastExecution: check ?? undefined,
+      lastExecution: execution,
     })
-  }, [check, code, exerciseId, setPageContext])
+  }, [
+    code,
+    course,
+    courseId,
+    exercise,
+    exerciseId,
+    execution,
+    lesson,
+    module,
+    moduleId,
+    setPageContext,
+  ])
 
-  const run = () =>
-    setOutput([
-      '> running example on f(x) = x²',
-      'step 00  x = 4.0000  loss = 16.0000',
-      'step 08  x = 0.1678  loss = 0.0282',
-      'done in 18ms',
-    ])
-  const runCheck = () => {
-    setCheck({ passed: 2, failed: 1, summary: 'One convergence property still needs attention.' })
-    setOutput([
-      '> checking gradient_descent',
-      '✓ function returns a numeric value',
-      '✓ does not mutate input',
-      '✗ expected final loss < 0.01, got 0.037',
-      '3 tests completed in 22ms',
-    ])
+  async function run() {
+    setExecuting(true)
+    setExecutionError(undefined)
+    setCheckResult(undefined)
+    try {
+      setRunResult(await runner.run({ code }))
+    } catch (error) {
+      setExecutionError(error instanceof Error ? error.message : String(error))
+    } finally {
+      setExecuting(false)
+    }
+  }
+
+  async function check() {
+    setExecuting(true)
+    setExecutionError(undefined)
+    setRunResult(undefined)
+    try {
+      const definition = await checkDefinitionQuery.refetch()
+      if (!definition.data) throw new Error('Exercise checks are unavailable')
+      const result = await runner.check({ code, tests: definition.data.data.tests })
+      setCheckResult(result)
+      await createAttempt.mutateAsync({
+        courseId,
+        moduleId,
+        exerciseId,
+        data: {
+          codeSnapshot: code,
+          durationMs: result.durationMs,
+          results: result.tests.map((test) => ({
+            testId: test.testId,
+            status: test.status,
+            message: test.message,
+            durationMs: test.durationMs,
+          })),
+        },
+      })
+    } catch (error) {
+      setExecutionError(error instanceof Error ? error.message : String(error))
+    } finally {
+      setExecuting(false)
+    }
+  }
+
+  if (exerciseQuery.isLoading || workspaceQuery.isLoading) {
+    return <Card className="p-8 text-sm text-muted">Loading exercise workspace…</Card>
+  }
+  if (!exercise) {
+    return <Card className="p-8 text-sm text-brand-coral">Exercise not found.</Card>
+  }
+
+  const output = checkResult ?? runResult
+  const passed = checkResult?.tests.filter((test) => test.status === 'passed').length ?? 0
+  const failed = checkResult?.tests.filter((test) => test.status !== 'passed').length ?? 0
+  const saveLabels: Record<SaveState, string> = {
+    saved: 'Saved',
+    saving: 'Saving…',
+    failed: 'Save failed · local draft kept',
   }
 
   return (
     <div className="grid max-w-6xl gap-7 max-sm:gap-5">
-      <Link
-        className="justify-self-start text-xs font-bold text-muted no-underline hover:text-ink"
-        to={modulePath(DEFAULT_COURSE_ID, 'neural-networks')}
-      >
-        ← Neural Networks From Scratch
-      </Link>
-      <div className="flex items-start justify-between gap-5 max-sm:block">
-        <PageIntro compact eyebrow="Exercise" title="Implement gradient descent" />
+      <div className="flex flex-wrap gap-2 text-xs text-muted">
+        <Link className="font-bold no-underline hover:text-ink" to={modulePath(courseId, moduleId)}>
+          ← {module?.title ?? moduleId}
+        </Link>
+        {lesson ? (
+          <Link
+            className="no-underline hover:text-ink"
+            to={lessonPath(courseId, moduleId, lesson.id)}
+          >
+            / {lesson.title}
+          </Link>
+        ) : null}
       </div>
-      <div className="grid grid-cols-[minmax(0,1fr)_245px] gap-5 max-xl:grid-cols-1">
-        <main className="grid gap-3.5">
+      <PageIntro
+        compact
+        eyebrow={`${course?.title ?? courseId} · Exercise`}
+        title={exercise.title}
+      />
+      <div className="grid grid-cols-4 gap-5 max-xl:grid-cols-1">
+        <main className="col-span-3 grid gap-3.5 max-xl:col-span-1">
           <Card className="overflow-hidden p-0">
             <div className="flex border-b border-line px-5">
-              <button
-                className={`mr-4 border-0 border-b-2 bg-transparent px-2 pb-3 pt-3.5 text-xs ${activeTab === 'prompt' ? exerciseTabStyles.active : exerciseTabStyles.inactive}`}
-                onClick={() => setActiveTab('prompt')}
-                type="button"
-              >
-                Prompt
-              </button>
-              <button
-                className={`mr-4 border-0 border-b-2 bg-transparent px-2 pb-3 pt-3.5 text-xs ${activeTab === 'tests' ? exerciseTabStyles.active : exerciseTabStyles.inactive}`}
-                onClick={() => setActiveTab('tests')}
-                type="button"
-              >
-                Tests
-              </button>
+              {(['prompt', 'tests'] as const).map((tab) => (
+                <button
+                  className={`mr-4 border-0 border-b-2 bg-transparent px-2 py-3 text-xs ${activeTab === tab ? 'border-brand-coral text-ink' : 'border-transparent text-faint'}`}
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  type="button"
+                >
+                  {tab === 'prompt' ? 'Prompt' : 'Visible tests'}
+                </button>
+              ))}
             </div>
-            {activeTab === 'prompt' ? (
-              <div className="px-6 pb-5 pt-4">
-                <p className="m-0 text-xs leading-relaxed text-muted">
-                  Write <code>gradient_descent()</code> so that it repeatedly updates a value using
-                  the gradient and a learning rate.
-                </p>
-                <div className="mt-4 grid grid-cols-[24px_1fr] gap-x-2.5 gap-y-2">
-                  <span className="font-mono text-2xs text-brand-coral">01</span>
-                  <p className="m-0 text-xs text-muted">Start from the supplied value.</p>
-                  <span className="font-mono text-2xs text-brand-coral">02</span>
-                  <p className="m-0 text-xs text-muted">
-                    Take exactly <code>steps</code> updates.
-                  </p>
-                  <span className="font-mono text-2xs text-brand-coral">03</span>
-                  <p className="m-0 text-xs text-muted">
-                    Return a value close to the minimum of a simple quadratic.
-                  </p>
+            <div className="prose prose-sm max-w-none px-6 py-5 text-muted">
+              {activeTab === 'prompt' ? (
+                <ReactMarkdown>{exercise.prompt}</ReactMarkdown>
+              ) : (
+                <div className="grid gap-4">
+                  {exercise.visibleTests.map((test) => (
+                    <div key={test.id}>
+                      <p className="mb-2 font-semibold text-ink">{test.title}</p>
+                      <pre className="overflow-x-auto rounded-lg bg-slate-950 p-3 text-xs text-slate-200">
+                        <code>{test.code}</code>
+                      </pre>
+                    </div>
+                  ))}
                 </div>
-              </div>
-            ) : (
-              <div className="px-6 pb-5 pt-4">
-                <p className="m-0 text-xs leading-relaxed text-muted">
-                  The checker looks for behavior rather than a magic string.
-                </p>
-                <div className="mt-4 grid grid-cols-[24px_1fr] gap-x-2.5 gap-y-2">
-                  <span className="font-mono text-2xs text-brand-coral">✓</span>
-                  <p className="m-0 text-xs text-muted">Converges on a simple quadratic.</p>
-                  <span className="font-mono text-2xs text-brand-coral">✓</span>
-                  <p className="m-0 text-xs text-muted">Preserves the input value.</p>
-                  <span className="font-mono text-2xs text-brand-coral">✓</span>
-                  <p className="m-0 text-xs text-muted">
-                    Reaches a loss below the target tolerance.
-                  </p>
-                </div>
-              </div>
-            )}
+              )}
+            </div>
           </Card>
           <Card className="overflow-hidden p-0">
-            <div className="flex items-center justify-between gap-3 border-b border-line px-5 py-3.5">
+            <div className="border-b border-line px-5 py-3.5">
               <div>
                 <p className="mb-1 font-mono text-xs text-ink">workspace.py</p>
-                <span className="flex items-center gap-1.5 text-2xs text-faint">
-                  <span className="size-2 rounded-full border border-brand-gold bg-brand-gold ring-2 ring-inset ring-panel" />
-                  Unsaved changes
+                <span
+                  className={
+                    saveState === 'failed' ? 'text-2xs text-brand-coral' : 'text-2xs text-faint'
+                  }
+                >
+                  {saveLabels[saveState]}
                 </span>
               </div>
-              <span className="font-mono text-2xs text-faint">Python · 8 lines</span>
             </div>
-            <textarea
-              className="block min-h-72 w-full resize-y border-0 bg-slate-950 px-6 py-5 font-mono text-xs leading-relaxed text-slate-200 outline-0 focus:ring-1 focus:ring-brand-teal/30 max-sm:min-h-64 max-sm:p-4 max-sm:text-xs"
-              spellCheck={false}
-              value={code}
-              onChange={(event) => setCode(event.target.value)}
-              aria-label="Python exercise editor"
-            />
-            <div className="flex items-center justify-between gap-4 border-t border-line px-4 py-3 max-sm:items-start max-sm:flex-col">
+            <CodeEditor key={draftKey} disabled={executing} onChange={setCode} value={code} />
+            <div className="flex items-center justify-between gap-4 border-t border-line px-4 py-3 max-sm:flex-col max-sm:items-start">
               <div className="flex gap-2">
-                <Button onClick={run}>
-                  Run <span>▶</span>
+                <Button disabled={executing} onClick={run}>
+                  Run ▶
                 </Button>
-                <Button variant="secondary" onClick={runCheck}>
-                  Check <span>✓</span>
+                <Button disabled={executing} onClick={check} variant="secondary">
+                  Check ✓
                 </Button>
               </div>
               <button
@@ -154,17 +335,23 @@ export function Exercise() {
                 onClick={() =>
                   openTutorWithContext({
                     type: 'exercise',
-                    title: 'Implement gradient descent',
+                    title: exercise.title,
+                    courseId,
+                    courseTitle: course?.title,
+                    moduleId,
+                    moduleTitle: module?.title,
+                    lessonId: exercise.lessonId,
+                    lessonTitle: lesson?.title,
                     exerciseId,
-                    exerciseTitle: 'Implement gradient descent',
-                    objectiveIds: ['nn.backpropagation'],
+                    exerciseTitle: exercise.title,
+                    objectiveIds: exercise.objectiveIds,
                     code,
-                    lastExecution: check ?? undefined,
+                    lastExecution: execution,
                   })
                 }
                 type="button"
               >
-                <span>✦</span> Ask tutor
+                ✦ Ask tutor
               </button>
             </div>
           </Card>
@@ -174,58 +361,71 @@ export function Exercise() {
                 eyebrow="Feedback"
                 title="Output"
                 action={
-                  check ? (
-                    <Badge tone="gold">
-                      {check.passed} passed · {check.failed} failed
+                  checkResult ? (
+                    <Badge tone={failed ? 'gold' : 'teal'}>
+                      {passed} passed · {failed} failed
                     </Badge>
-                  ) : (
-                    <span className="text-2xs text-faint">Run or check to see output</span>
-                  )
+                  ) : null
                 }
               />
             </div>
-            <div className="min-h-44 px-5 pb-5 pt-3 font-mono text-xs leading-loose">
-              {output.length ? (
-                output.map((line, index) => (
-                  <div
-                    key={`${line}-${index}`}
-                    className={`flex gap-2 ${line.startsWith('✓') ? 'text-brand-teal' : line.startsWith('✗') ? 'text-brand-coral' : 'text-muted'}`}
-                  >
-                    <span className="w-3 text-faint">
-                      {line.startsWith('>')
-                        ? ''
-                        : line.startsWith('✓')
-                          ? '✓'
-                          : line.startsWith('✗')
-                            ? '×'
-                            : '·'}
-                    </span>
-                    {line}
-                  </div>
-                ))
-              ) : (
-                <div className="grid min-h-32 place-items-center content-center text-center text-faint">
-                  <span className="text-2xl">⌁</span>
-                  <p className="font-sans text-xs leading-normal">
-                    Nothing run yet.
-                    <br />
-                    Output appears here.
-                  </p>
+            <div className="min-h-44 px-5 pb-5 pt-3 text-xs leading-relaxed">
+              {executionError ? <p className="text-brand-coral">{executionError}</p> : null}
+              {output?.stdout ? (
+                <pre className="whitespace-pre-wrap font-mono text-muted">{output.stdout}</pre>
+              ) : null}
+              {output?.stderr ? (
+                <pre className="whitespace-pre-wrap font-mono text-brand-coral">
+                  {output.stderr}
+                </pre>
+              ) : null}
+              {runResult?.error ? (
+                <p className="text-brand-coral">
+                  {runResult.error.name}: {runResult.error.message}
+                </p>
+              ) : null}
+              {checkResult ? (
+                <div className="grid gap-2">
+                  {checkResult.tests.map((test) => (
+                    <div
+                      className="flex items-start gap-3 rounded-lg border border-line p-3"
+                      key={test.testId}
+                    >
+                      <span
+                        className={
+                          test.status === 'passed' ? 'text-brand-teal' : 'text-brand-coral'
+                        }
+                      >
+                        {test.status === 'passed' ? '✓' : '×'}
+                      </span>
+                      <div>
+                        <p className="font-semibold text-ink">
+                          {test.title}
+                          {test.visibility === 'hidden' ? ' · hidden check' : ''}
+                        </p>
+                        {test.message ? <p className="mt-1 text-muted">{test.message}</p> : null}
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              )}
+              ) : !output && !executionError ? (
+                <div className="grid min-h-32 place-items-center content-center text-center text-faint">
+                  Run or check your code to see output.
+                </div>
+              ) : null}
             </div>
           </Card>
         </main>
         <aside className="grid content-start gap-3.5 max-xl:grid-cols-2 max-sm:grid-cols-1">
           <Card>
-            <p className="text-2xs font-bold uppercase tracking-widest text-faint">Objective</p>
-            <h3 className="my-2 text-base">Gradient descent</h3>
-            <div className="mt-5 flex gap-2 border-t border-line pt-4 text-xs text-brand-gold">
-              <span>◐</span>
-              <strong className="font-medium leading-relaxed text-muted">
-                Implement an update from a gradient
-              </strong>
-            </div>
+            <p className="text-2xs font-bold uppercase tracking-widest text-faint">
+              Learning objectives
+            </p>
+            <ul className="mt-3 grid gap-2 text-xs text-muted">
+              {objectives.map((objective) => (
+                <li key={objective.id}>{objective.title}</li>
+              ))}
+            </ul>
           </Card>
         </aside>
       </div>

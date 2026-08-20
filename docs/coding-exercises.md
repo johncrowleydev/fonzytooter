@@ -27,7 +27,34 @@ Git repository + IDE
 
 See [`courses/ai-ml.md`](courses/ai-ml.md) for how those environments fit into the current AI/ML course plan.
 
-## Planned UI
+## Embedded workflow
+
+The implemented editor uses CodeMirror 6 and runs Pyodide 314.0.5 in a
+module-type Web Worker. Pyodide is loaded once per worker and remains warm.
+The application-facing `PythonRunner` boundary owns request correlation,
+structured results, and timeout recovery; React components do not receive
+Pyodide objects or proxies.
+
+The normal exercise resource exposes only visible authored tests. The separate
+course-qualified `check-definition` read resource supplies all test code to the
+learner's own browser when Check is requested. Each authored check gets a fresh
+Python namespace, and only stable test IDs, titles, statuses, diagnostics, and
+durations are persisted. Hidden source is never rendered in the exercise UI.
+
+Workspace code is saved to SQLite after a short debounce. A browser-local draft
+is retained for failure recovery while the server workspace remains the
+cross-device source of truth. Exploratory Run output is not assessment evidence;
+Check creates an immutable attempt, normalized test-result rows, and an
+`exercise_checked` learner activity.
+
+The runtime pins the official stable Pyodide distribution and exact CDN base:
+
+```text
+Pyodide 314.0.5
+https://cdn.jsdelivr.net/pyodide/v314.0.5/full/
+```
+
+## UI
 
 ```text
 ┌─────────────────────────────────────────────────────┐
@@ -92,8 +119,8 @@ Conceptually:
 
 ```ts
 interface PythonRunner {
-  run(request: PythonRunRequest): Promise<PythonRunResult>
-  check(request: PythonCheckRequest): Promise<PythonCheckResult>
+  run(request: PythonRunRequest): Promise<PythonRunResult>;
+  check(request: PythonCheckRequest): Promise<PythonCheckResult>;
 }
 ```
 

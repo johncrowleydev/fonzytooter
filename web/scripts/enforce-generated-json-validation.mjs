@@ -12,7 +12,7 @@ const source = fs.readFileSync(generatedClientPath, 'utf8')
 const openapi = JSON.parse(fs.readFileSync(openapiPath, 'utf8'))
 
 const responseValidationPattern =
-  /  const parsedBody = body \? \(contentType\.includes\('json'\) \? JSON\.parse\(body\) : body\) : \{\}\r?\n  const data = contentType\.includes\('json'\) \? ([A-Za-z_$][\w$]*)\.parse\(parsedBody\) : parsedBody/g
+  /  const parsedBody = body \? \(contentType\.includes\('json'\) \? JSON\.parse\(body\) : body\) : \{\}\r?\n  const data = contentType\.includes\('json'\)\s*\? ([A-Za-z_$][\w$]*)\.parse\(parsedBody\)\s*:\s*parsedBody/g
 
 const generated = source.replace(
   responseValidationPattern,

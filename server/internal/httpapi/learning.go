@@ -72,17 +72,18 @@ type ActivityQueryInput struct {
 }
 
 type ActivityResource struct {
-	ID           int64     `json:"id"`
-	Kind         string    `json:"kind"`
-	CourseID     string    `json:"courseId"`
-	CourseTitle  string    `json:"courseTitle"`
-	ModuleID     *string   `json:"moduleId,omitempty"`
-	ModuleTitle  *string   `json:"moduleTitle,omitempty"`
-	LessonID     *string   `json:"lessonId,omitempty"`
-	LessonTitle  *string   `json:"lessonTitle,omitempty"`
-	ExerciseID   *string   `json:"exerciseId,omitempty"`
-	ReviewItemID *string   `json:"reviewItemId,omitempty"`
-	OccurredAt   time.Time `json:"occurredAt"`
+	ID            int64     `json:"id"`
+	Kind          string    `json:"kind"`
+	CourseID      string    `json:"courseId"`
+	CourseTitle   string    `json:"courseTitle"`
+	ModuleID      *string   `json:"moduleId,omitempty"`
+	ModuleTitle   *string   `json:"moduleTitle,omitempty"`
+	LessonID      *string   `json:"lessonId,omitempty"`
+	LessonTitle   *string   `json:"lessonTitle,omitempty"`
+	ExerciseID    *string   `json:"exerciseId,omitempty"`
+	ExerciseTitle *string   `json:"exerciseTitle,omitempty"`
+	ReviewItemID  *string   `json:"reviewItemId,omitempty"`
+	OccurredAt    time.Time `json:"occurredAt"`
 }
 
 type ActivityListResponse struct {
@@ -187,7 +188,8 @@ func registerLearning(api huma.API, service *learner.Service) {
 				CourseTitle: activity.CourseTitle, ModuleID: activity.ModuleID,
 				ModuleTitle: activity.ModuleTitle, LessonID: activity.LessonID,
 				LessonTitle: activity.LessonTitle, ExerciseID: activity.ExerciseID,
-				ReviewItemID: activity.ReviewItemID, OccurredAt: activity.OccurredAt,
+				ExerciseTitle: activity.ExerciseTitle, ReviewItemID: activity.ReviewItemID,
+				OccurredAt: activity.OccurredAt,
 			})
 		}
 		return &ActivityListResponse{Body: body}, nil

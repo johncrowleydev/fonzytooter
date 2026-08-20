@@ -25,7 +25,10 @@ import {
   CourseProgressResource,
   CourseResource,
   CourseSummaryList,
+  ExerciseAttemptResource,
+  ExerciseCheckDefinitionResource,
   ExerciseResource,
+  ExerciseWorkspaceResource,
   Health,
   LessonProgressResource,
   LessonResource,
@@ -33,7 +36,13 @@ import {
   ReviewItemResource,
   WorksheetResource,
 } from './schemas'
-import type { ErrorModel, LessonProgressUpdate, ListActivitiesParams } from './schemas'
+import type {
+  CreateExerciseAttemptInputBody,
+  ErrorModel,
+  LessonProgressUpdate,
+  ListActivitiesParams,
+  PutExerciseWorkspaceInputBody,
+} from './schemas'
 
 // https://stackoverflow.com/questions/49579094/typescript-conditional-types-filter-out-readonly-properties-pick-only-requir/49579497#49579497
 type IfEquals<X, Y, A = X, B = never> =
@@ -1002,6 +1011,794 @@ export function useGetCourseModuleExercise<
   }
 
   return withQueryKey(query, queryOptions.queryKey)
+}
+
+export type createExerciseAttemptResponse201 = {
+  data: ExerciseAttemptResource
+  status: 201
+}
+
+export type createExerciseAttemptResponse404 = {
+  data: ErrorModel
+  status: 404
+}
+
+export type createExerciseAttemptResponse422 = {
+  data: ErrorModel
+  status: 422
+}
+
+export type createExerciseAttemptResponse500 = {
+  data: ErrorModel
+  status: 500
+}
+
+export type createExerciseAttemptResponseSuccess = createExerciseAttemptResponse201 & {
+  headers: Record<string, string>
+}
+export type createExerciseAttemptResponseError = (
+  | createExerciseAttemptResponse404
+  | createExerciseAttemptResponse422
+  | createExerciseAttemptResponse500
+) & {
+  headers: Record<string, string>
+}
+
+export const getCreateExerciseAttemptUrl = (
+  courseId: string,
+  moduleId: string,
+  exerciseId: string,
+) => {
+  return `/api/courses/${courseId}/modules/${moduleId}/exercises/${exerciseId}/attempts`
+}
+
+/**
+ * @summary Create an exercise attempt
+ */
+export const createExerciseAttempt = async (
+  courseId: string,
+  moduleId: string,
+  exerciseId: string,
+  createExerciseAttemptInputBody: NonReadonly<CreateExerciseAttemptInputBody>,
+  options?: RequestInit,
+): Promise<createExerciseAttemptResponseSuccess> => {
+  const res = await fetch(getCreateExerciseAttemptUrl(courseId, moduleId, exerciseId), {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(createExerciseAttemptInputBody),
+  })
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text()
+  if (!res.ok) {
+    const err: globalThis.Error & {
+      info?: createExerciseAttemptResponseError['data']
+      status?: number
+    } = new globalThis.Error()
+    const data: createExerciseAttemptResponseError['data'] = body ? JSON.parse(body) : {}
+    err.info = data
+    err.status = res.status
+    throw err
+  }
+  const data = ExerciseAttemptResource.parse(body ? JSON.parse(body) : {})
+  return {
+    data,
+    status: res.status,
+    headers: Object.fromEntries(
+      [...res.headers.entries()].filter(([name]) => name !== 'set-cookie'),
+    ),
+  } as createExerciseAttemptResponseSuccess
+}
+
+export const getCreateExerciseAttemptMutationOptions = <
+  TError = globalThis.Error & { info?: ErrorModel; status?: number },
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createExerciseAttempt>>,
+    TError,
+    {
+      courseId: string
+      moduleId: string
+      exerciseId: string
+      data: NonReadonly<CreateExerciseAttemptInputBody>
+    },
+    TContext
+  >
+  fetch?: RequestInit
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createExerciseAttempt>>,
+  TError,
+  {
+    courseId: string
+    moduleId: string
+    exerciseId: string
+    data: NonReadonly<CreateExerciseAttemptInputBody>
+  },
+  TContext
+> => {
+  const mutationKey = ['createExerciseAttempt']
+  const { mutation: mutationOptions, fetch: fetchOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, fetch: undefined }
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createExerciseAttempt>>,
+    {
+      courseId: string
+      moduleId: string
+      exerciseId: string
+      data: NonReadonly<CreateExerciseAttemptInputBody>
+    }
+  > = (props) => {
+    const { courseId, moduleId, exerciseId, data } = props ?? {}
+
+    return createExerciseAttempt(courseId, moduleId, exerciseId, data, fetchOptions)
+  }
+
+  return { mutationFn, ...mutationOptions }
+}
+
+export type CreateExerciseAttemptMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createExerciseAttempt>>
+>
+export type CreateExerciseAttemptMutationBody = NonReadonly<CreateExerciseAttemptInputBody>
+export type CreateExerciseAttemptMutationError = globalThis.Error & {
+  info?: ErrorModel
+  status?: number
+}
+
+/**
+ * @summary Create an exercise attempt
+ */
+export const useCreateExerciseAttempt = <
+  TError = globalThis.Error & { info?: ErrorModel; status?: number },
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof createExerciseAttempt>>,
+      TError,
+      {
+        courseId: string
+        moduleId: string
+        exerciseId: string
+        data: NonReadonly<CreateExerciseAttemptInputBody>
+      },
+      TContext
+    >
+    fetch?: RequestInit
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof createExerciseAttempt>>,
+  TError,
+  {
+    courseId: string
+    moduleId: string
+    exerciseId: string
+    data: NonReadonly<CreateExerciseAttemptInputBody>
+  },
+  TContext
+> => {
+  return useMutation(getCreateExerciseAttemptMutationOptions(options), queryClient)
+}
+
+export type getExerciseCheckDefinitionResponse200 = {
+  data: ExerciseCheckDefinitionResource
+  status: 200
+}
+
+export type getExerciseCheckDefinitionResponse404 = {
+  data: ErrorModel
+  status: 404
+}
+
+export type getExerciseCheckDefinitionResponse422 = {
+  data: ErrorModel
+  status: 422
+}
+
+export type getExerciseCheckDefinitionResponse500 = {
+  data: ErrorModel
+  status: 500
+}
+
+export type getExerciseCheckDefinitionResponseSuccess = getExerciseCheckDefinitionResponse200 & {
+  headers: Record<string, string>
+}
+export type getExerciseCheckDefinitionResponseError = (
+  | getExerciseCheckDefinitionResponse404
+  | getExerciseCheckDefinitionResponse422
+  | getExerciseCheckDefinitionResponse500
+) & {
+  headers: Record<string, string>
+}
+
+export const getGetExerciseCheckDefinitionUrl = (
+  courseId: string,
+  moduleId: string,
+  exerciseId: string,
+) => {
+  return `/api/courses/${courseId}/modules/${moduleId}/exercises/${exerciseId}/check-definition`
+}
+
+/**
+ * @summary Get an exercise check definition
+ */
+export const getExerciseCheckDefinition = async (
+  courseId: string,
+  moduleId: string,
+  exerciseId: string,
+  options?: RequestInit,
+): Promise<getExerciseCheckDefinitionResponseSuccess> => {
+  const res = await fetch(getGetExerciseCheckDefinitionUrl(courseId, moduleId, exerciseId), {
+    ...options,
+    method: 'GET',
+  })
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text()
+  if (!res.ok) {
+    const err: globalThis.Error & {
+      info?: getExerciseCheckDefinitionResponseError['data']
+      status?: number
+    } = new globalThis.Error()
+    const data: getExerciseCheckDefinitionResponseError['data'] = body ? JSON.parse(body) : {}
+    err.info = data
+    err.status = res.status
+    throw err
+  }
+  const data = ExerciseCheckDefinitionResource.parse(body ? JSON.parse(body) : {})
+  return {
+    data,
+    status: res.status,
+    headers: Object.fromEntries(
+      [...res.headers.entries()].filter(([name]) => name !== 'set-cookie'),
+    ),
+  } as getExerciseCheckDefinitionResponseSuccess
+}
+
+export const getGetExerciseCheckDefinitionQueryKey = (
+  courseId: string,
+  moduleId: string,
+  exerciseId: string,
+) => {
+  return [
+    `/api/courses/${courseId}/modules/${moduleId}/exercises/${exerciseId}/check-definition`,
+  ] as const
+}
+
+export const getGetExerciseCheckDefinitionQueryOptions = <
+  TData = Awaited<ReturnType<typeof getExerciseCheckDefinition>>,
+  TError = globalThis.Error & { info?: ErrorModel; status?: number },
+>(
+  courseId: string,
+  moduleId: string,
+  exerciseId: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof getExerciseCheckDefinition>>, TError, TData>
+    >
+    fetch?: RequestInit
+  },
+) => {
+  const { query: queryOptions, fetch: fetchOptions } = options ?? {}
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetExerciseCheckDefinitionQueryKey(courseId, moduleId, exerciseId)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getExerciseCheckDefinition>>> = ({
+    signal,
+  }) => getExerciseCheckDefinition(courseId, moduleId, exerciseId, { signal, ...fetchOptions })
+
+  return {
+    queryKey,
+    queryFn,
+    enabled:
+      courseId !== null &&
+      courseId !== undefined &&
+      moduleId !== null &&
+      moduleId !== undefined &&
+      exerciseId !== null &&
+      exerciseId !== undefined,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof getExerciseCheckDefinition>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+}
+
+export type GetExerciseCheckDefinitionQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getExerciseCheckDefinition>>
+>
+export type GetExerciseCheckDefinitionQueryError = globalThis.Error & {
+  info?: ErrorModel
+  status?: number
+}
+
+export function useGetExerciseCheckDefinition<
+  TData = Awaited<ReturnType<typeof getExerciseCheckDefinition>>,
+  TError = globalThis.Error & { info?: ErrorModel; status?: number },
+>(
+  courseId: string,
+  moduleId: string,
+  exerciseId: string,
+  options: {
+    query: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof getExerciseCheckDefinition>>, TError, TData>
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getExerciseCheckDefinition>>,
+          TError,
+          Awaited<ReturnType<typeof getExerciseCheckDefinition>>
+        >,
+        'initialData'
+      >
+    fetch?: RequestInit
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetExerciseCheckDefinition<
+  TData = Awaited<ReturnType<typeof getExerciseCheckDefinition>>,
+  TError = globalThis.Error & { info?: ErrorModel; status?: number },
+>(
+  courseId: string,
+  moduleId: string,
+  exerciseId: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof getExerciseCheckDefinition>>, TError, TData>
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getExerciseCheckDefinition>>,
+          TError,
+          Awaited<ReturnType<typeof getExerciseCheckDefinition>>
+        >,
+        'initialData'
+      >
+    fetch?: RequestInit
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetExerciseCheckDefinition<
+  TData = Awaited<ReturnType<typeof getExerciseCheckDefinition>>,
+  TError = globalThis.Error & { info?: ErrorModel; status?: number },
+>(
+  courseId: string,
+  moduleId: string,
+  exerciseId: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof getExerciseCheckDefinition>>, TError, TData>
+    >
+    fetch?: RequestInit
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Get an exercise check definition
+ */
+
+export function useGetExerciseCheckDefinition<
+  TData = Awaited<ReturnType<typeof getExerciseCheckDefinition>>,
+  TError = globalThis.Error & { info?: ErrorModel; status?: number },
+>(
+  courseId: string,
+  moduleId: string,
+  exerciseId: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof getExerciseCheckDefinition>>, TError, TData>
+    >
+    fetch?: RequestInit
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getGetExerciseCheckDefinitionQueryOptions(
+    courseId,
+    moduleId,
+    exerciseId,
+    options,
+  )
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+export type getExerciseWorkspaceResponse200 = {
+  data: ExerciseWorkspaceResource
+  status: 200
+}
+
+export type getExerciseWorkspaceResponse404 = {
+  data: ErrorModel
+  status: 404
+}
+
+export type getExerciseWorkspaceResponse422 = {
+  data: ErrorModel
+  status: 422
+}
+
+export type getExerciseWorkspaceResponse500 = {
+  data: ErrorModel
+  status: 500
+}
+
+export type getExerciseWorkspaceResponseSuccess = getExerciseWorkspaceResponse200 & {
+  headers: Record<string, string>
+}
+export type getExerciseWorkspaceResponseError = (
+  | getExerciseWorkspaceResponse404
+  | getExerciseWorkspaceResponse422
+  | getExerciseWorkspaceResponse500
+) & {
+  headers: Record<string, string>
+}
+
+export const getGetExerciseWorkspaceUrl = (
+  courseId: string,
+  moduleId: string,
+  exerciseId: string,
+) => {
+  return `/api/courses/${courseId}/modules/${moduleId}/exercises/${exerciseId}/workspace`
+}
+
+/**
+ * @summary Get an exercise workspace
+ */
+export const getExerciseWorkspace = async (
+  courseId: string,
+  moduleId: string,
+  exerciseId: string,
+  options?: RequestInit,
+): Promise<getExerciseWorkspaceResponseSuccess> => {
+  const res = await fetch(getGetExerciseWorkspaceUrl(courseId, moduleId, exerciseId), {
+    ...options,
+    method: 'GET',
+  })
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text()
+  if (!res.ok) {
+    const err: globalThis.Error & {
+      info?: getExerciseWorkspaceResponseError['data']
+      status?: number
+    } = new globalThis.Error()
+    const data: getExerciseWorkspaceResponseError['data'] = body ? JSON.parse(body) : {}
+    err.info = data
+    err.status = res.status
+    throw err
+  }
+  const data = ExerciseWorkspaceResource.parse(body ? JSON.parse(body) : {})
+  return {
+    data,
+    status: res.status,
+    headers: Object.fromEntries(
+      [...res.headers.entries()].filter(([name]) => name !== 'set-cookie'),
+    ),
+  } as getExerciseWorkspaceResponseSuccess
+}
+
+export const getGetExerciseWorkspaceQueryKey = (
+  courseId: string,
+  moduleId: string,
+  exerciseId: string,
+) => {
+  return [`/api/courses/${courseId}/modules/${moduleId}/exercises/${exerciseId}/workspace`] as const
+}
+
+export const getGetExerciseWorkspaceQueryOptions = <
+  TData = Awaited<ReturnType<typeof getExerciseWorkspace>>,
+  TError = globalThis.Error & { info?: ErrorModel; status?: number },
+>(
+  courseId: string,
+  moduleId: string,
+  exerciseId: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof getExerciseWorkspace>>, TError, TData>
+    >
+    fetch?: RequestInit
+  },
+) => {
+  const { query: queryOptions, fetch: fetchOptions } = options ?? {}
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetExerciseWorkspaceQueryKey(courseId, moduleId, exerciseId)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getExerciseWorkspace>>> = ({ signal }) =>
+    getExerciseWorkspace(courseId, moduleId, exerciseId, { signal, ...fetchOptions })
+
+  return {
+    queryKey,
+    queryFn,
+    enabled:
+      courseId !== null &&
+      courseId !== undefined &&
+      moduleId !== null &&
+      moduleId !== undefined &&
+      exerciseId !== null &&
+      exerciseId !== undefined,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof getExerciseWorkspace>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+}
+
+export type GetExerciseWorkspaceQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getExerciseWorkspace>>
+>
+export type GetExerciseWorkspaceQueryError = globalThis.Error & {
+  info?: ErrorModel
+  status?: number
+}
+
+export function useGetExerciseWorkspace<
+  TData = Awaited<ReturnType<typeof getExerciseWorkspace>>,
+  TError = globalThis.Error & { info?: ErrorModel; status?: number },
+>(
+  courseId: string,
+  moduleId: string,
+  exerciseId: string,
+  options: {
+    query: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof getExerciseWorkspace>>, TError, TData>
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getExerciseWorkspace>>,
+          TError,
+          Awaited<ReturnType<typeof getExerciseWorkspace>>
+        >,
+        'initialData'
+      >
+    fetch?: RequestInit
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetExerciseWorkspace<
+  TData = Awaited<ReturnType<typeof getExerciseWorkspace>>,
+  TError = globalThis.Error & { info?: ErrorModel; status?: number },
+>(
+  courseId: string,
+  moduleId: string,
+  exerciseId: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof getExerciseWorkspace>>, TError, TData>
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getExerciseWorkspace>>,
+          TError,
+          Awaited<ReturnType<typeof getExerciseWorkspace>>
+        >,
+        'initialData'
+      >
+    fetch?: RequestInit
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetExerciseWorkspace<
+  TData = Awaited<ReturnType<typeof getExerciseWorkspace>>,
+  TError = globalThis.Error & { info?: ErrorModel; status?: number },
+>(
+  courseId: string,
+  moduleId: string,
+  exerciseId: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof getExerciseWorkspace>>, TError, TData>
+    >
+    fetch?: RequestInit
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Get an exercise workspace
+ */
+
+export function useGetExerciseWorkspace<
+  TData = Awaited<ReturnType<typeof getExerciseWorkspace>>,
+  TError = globalThis.Error & { info?: ErrorModel; status?: number },
+>(
+  courseId: string,
+  moduleId: string,
+  exerciseId: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof getExerciseWorkspace>>, TError, TData>
+    >
+    fetch?: RequestInit
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getGetExerciseWorkspaceQueryOptions(courseId, moduleId, exerciseId, options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+export type putExerciseWorkspaceResponse200 = {
+  data: ExerciseWorkspaceResource
+  status: 200
+}
+
+export type putExerciseWorkspaceResponse404 = {
+  data: ErrorModel
+  status: 404
+}
+
+export type putExerciseWorkspaceResponse422 = {
+  data: ErrorModel
+  status: 422
+}
+
+export type putExerciseWorkspaceResponse500 = {
+  data: ErrorModel
+  status: 500
+}
+
+export type putExerciseWorkspaceResponseSuccess = putExerciseWorkspaceResponse200 & {
+  headers: Record<string, string>
+}
+export type putExerciseWorkspaceResponseError = (
+  | putExerciseWorkspaceResponse404
+  | putExerciseWorkspaceResponse422
+  | putExerciseWorkspaceResponse500
+) & {
+  headers: Record<string, string>
+}
+
+export const getPutExerciseWorkspaceUrl = (
+  courseId: string,
+  moduleId: string,
+  exerciseId: string,
+) => {
+  return `/api/courses/${courseId}/modules/${moduleId}/exercises/${exerciseId}/workspace`
+}
+
+/**
+ * @summary Replace an exercise workspace
+ */
+export const putExerciseWorkspace = async (
+  courseId: string,
+  moduleId: string,
+  exerciseId: string,
+  putExerciseWorkspaceInputBody: NonReadonly<PutExerciseWorkspaceInputBody>,
+  options?: RequestInit,
+): Promise<putExerciseWorkspaceResponseSuccess> => {
+  const res = await fetch(getPutExerciseWorkspaceUrl(courseId, moduleId, exerciseId), {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(putExerciseWorkspaceInputBody),
+  })
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text()
+  if (!res.ok) {
+    const err: globalThis.Error & {
+      info?: putExerciseWorkspaceResponseError['data']
+      status?: number
+    } = new globalThis.Error()
+    const data: putExerciseWorkspaceResponseError['data'] = body ? JSON.parse(body) : {}
+    err.info = data
+    err.status = res.status
+    throw err
+  }
+  const data = ExerciseWorkspaceResource.parse(body ? JSON.parse(body) : {})
+  return {
+    data,
+    status: res.status,
+    headers: Object.fromEntries(
+      [...res.headers.entries()].filter(([name]) => name !== 'set-cookie'),
+    ),
+  } as putExerciseWorkspaceResponseSuccess
+}
+
+export const getPutExerciseWorkspaceMutationOptions = <
+  TError = globalThis.Error & { info?: ErrorModel; status?: number },
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof putExerciseWorkspace>>,
+    TError,
+    {
+      courseId: string
+      moduleId: string
+      exerciseId: string
+      data: NonReadonly<PutExerciseWorkspaceInputBody>
+    },
+    TContext
+  >
+  fetch?: RequestInit
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof putExerciseWorkspace>>,
+  TError,
+  {
+    courseId: string
+    moduleId: string
+    exerciseId: string
+    data: NonReadonly<PutExerciseWorkspaceInputBody>
+  },
+  TContext
+> => {
+  const mutationKey = ['putExerciseWorkspace']
+  const { mutation: mutationOptions, fetch: fetchOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, fetch: undefined }
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof putExerciseWorkspace>>,
+    {
+      courseId: string
+      moduleId: string
+      exerciseId: string
+      data: NonReadonly<PutExerciseWorkspaceInputBody>
+    }
+  > = (props) => {
+    const { courseId, moduleId, exerciseId, data } = props ?? {}
+
+    return putExerciseWorkspace(courseId, moduleId, exerciseId, data, fetchOptions)
+  }
+
+  return { mutationFn, ...mutationOptions }
+}
+
+export type PutExerciseWorkspaceMutationResult = NonNullable<
+  Awaited<ReturnType<typeof putExerciseWorkspace>>
+>
+export type PutExerciseWorkspaceMutationBody = NonReadonly<PutExerciseWorkspaceInputBody>
+export type PutExerciseWorkspaceMutationError = globalThis.Error & {
+  info?: ErrorModel
+  status?: number
+}
+
+/**
+ * @summary Replace an exercise workspace
+ */
+export const usePutExerciseWorkspace = <
+  TError = globalThis.Error & { info?: ErrorModel; status?: number },
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof putExerciseWorkspace>>,
+      TError,
+      {
+        courseId: string
+        moduleId: string
+        exerciseId: string
+        data: NonReadonly<PutExerciseWorkspaceInputBody>
+      },
+      TContext
+    >
+    fetch?: RequestInit
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof putExerciseWorkspace>>,
+  TError,
+  {
+    courseId: string
+    moduleId: string
+    exerciseId: string
+    data: NonReadonly<PutExerciseWorkspaceInputBody>
+  },
+  TContext
+> => {
+  return useMutation(getPutExerciseWorkspaceMutationOptions(options), queryClient)
 }
 
 export type getCourseLessonResponse200 = {
