@@ -274,6 +274,7 @@ func newAPI(tutorService *tutor.Service, catalog *curriculum.Catalog, learnerSer
 	registerTutorTurn(humaAPI, tutorService)
 	registerCurriculum(humaAPI, catalog, documentRenderer)
 	registerLearning(humaAPI, learnerService)
+	registerExercises(humaAPI, catalog, learnerService)
 
 	return &API{Handler: mux, Spec: humaAPI.OpenAPI()}
 }

@@ -117,3 +117,9 @@ and one `lesson_completed` activity per incomplete-to-complete transition.
 Completing a lesson marks its referenced objectives as introduced in the
 derived course progress view. Recall, application, and transfer remain
 explicitly not assessed until their evidence-producing workflows exist.
+
+Embedded exercise checks now persist a code snapshot, server-derived aggregate
+counts, normalized authored test results, and one `exercise_checked` activity.
+Exploratory runs remain intentionally ephemeral. This is application evidence;
+it does not manufacture a mastery percentage or silently change objective
+status.

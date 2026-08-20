@@ -10,6 +10,7 @@ export const ActivityResource = zod.strictObject({
   courseId: zod.string(),
   courseTitle: zod.string(),
   exerciseId: zod.string().optional(),
+  exerciseTitle: zod.string().optional(),
   id: zod.int(),
   kind: zod.string(),
   lessonId: zod.string().optional(),

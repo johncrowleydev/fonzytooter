@@ -203,7 +203,7 @@ tests:
 
 `lessonId` must name a lesson in the owning module. Exercise `order` is scoped to that lesson and must be non-negative and unique there. Every exercise names at least one known objective and includes at least one test. Test visibility is exactly `visible` or `hidden`.
 
-Test code is trusted Git-authored Python. The loader validates its authored structure but does not execute it. The ordinary student API includes visible tests and never includes hidden test code. Runtime execution, package loading, saved workspaces, and attempts are separate learner-workflow concerns.
+Test code is trusted Git-authored Python. The loader validates its authored structure but does not execute it. The ordinary student API includes visible tests and never includes hidden test code. The purpose-specific check-definition resource supplies all tests to the learner's own browser only when checking; the UI displays hidden test titles/results but never their source. Pyodide executes the code in a browser Web Worker, and SQLite stores workspaces plus normalized attempt/test-result rows.
 
 ## Review items
 

@@ -65,17 +65,18 @@ type NextLesson struct {
 }
 
 type Activity struct {
-	ID           int64
-	Kind         string
-	CourseID     string
-	CourseTitle  string
-	ModuleID     *string
-	ModuleTitle  *string
-	LessonID     *string
-	LessonTitle  *string
-	ExerciseID   *string
-	ReviewItemID *string
-	OccurredAt   time.Time
+	ID            int64
+	Kind          string
+	CourseID      string
+	CourseTitle   string
+	ModuleID      *string
+	ModuleTitle   *string
+	LessonID      *string
+	LessonTitle   *string
+	ExerciseID    *string
+	ExerciseTitle *string
+	ReviewItemID  *string
+	OccurredAt    time.Time
 }
 
 func NewService(db *sql.DB, catalog *curriculum.Catalog) *Service {
@@ -299,6 +300,11 @@ func (s *Service) Activities(ctx context.Context, courseID string, limit int) ([
 		if activity.ModuleID != nil && activity.LessonID != nil {
 			if lesson, ok := s.catalog.LessonByCourse(courseID, *activity.ModuleID, *activity.LessonID); ok {
 				activity.LessonTitle = stringPointer(lesson.Title)
+			}
+		}
+		if activity.ModuleID != nil && activity.ExerciseID != nil {
+			if exercise, ok := s.catalog.ExerciseByCourse(courseID, *activity.ModuleID, *activity.ExerciseID); ok {
+				activity.ExerciseTitle = stringPointer(exercise.Title)
 			}
 		}
 		activities = append(activities, activity)

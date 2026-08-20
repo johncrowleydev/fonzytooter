@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { useGetCourseProgress, useListActivities } from '../../api/generated/endpoints'
 import type { ActivityResource } from '../../api/generated/schemas/activityResource.zod'
 import type { CourseProgressResource } from '../../api/generated/schemas/courseProgressResource.zod'
-import { coursePath, DEFAULT_COURSE_ID, lessonPath } from '../../app/routes'
+import { coursePath, DEFAULT_COURSE_ID, exercisePath, lessonPath } from '../../app/routes'
 import { Badge, Card, PageIntro, SectionHeading } from '../../components/ui'
 import { useTutor } from '../tutor/TutorContext'
 import { formatDashboardDate, formatDashboardGreeting } from './time'
@@ -169,7 +169,7 @@ export function ActivityList({ activities }: { activities: ActivityResource[] })
       <div className="rounded-lg border border-dashed border-line p-5">
         <strong className="text-xs text-ink">No activity yet</strong>
         <p className="mt-2 text-2xs leading-relaxed text-muted">
-          Mark a lesson complete to start a learner activity history.
+          Complete a lesson or check an exercise to start a learner activity history.
         </p>
       </div>
     )
@@ -178,6 +178,7 @@ export function ActivityList({ activities }: { activities: ActivityResource[] })
   return (
     <div className="grid">
       {activities.map((activity) => {
+        const exerciseChecked = activity.kind === 'exercise_checked' && Boolean(activity.exerciseId)
         const content = (
           <>
             <span className="grid size-6 place-items-center rounded-lg bg-brand-gold/10 text-xs text-brand-gold">
@@ -185,7 +186,9 @@ export function ActivityList({ activities }: { activities: ActivityResource[] })
             </span>
             <div>
               <strong className="block text-xs font-semibold">
-                Completed {activity.lessonTitle ?? 'lesson'}
+                {exerciseChecked
+                  ? `Checked ${activity.exerciseTitle ?? activity.exerciseId}`
+                  : `Completed ${activity.lessonTitle ?? 'lesson'}`}
               </strong>
               <span className="mt-1 block text-2xs text-faint">
                 {activity.moduleTitle ?? activity.courseTitle}
@@ -198,7 +201,15 @@ export function ActivityList({ activities }: { activities: ActivityResource[] })
         )
         const className =
           'grid grid-cols-[24px_1fr_auto] items-center gap-2.5 border-t border-line py-2.5 text-ink no-underline'
-        return activity.moduleId && activity.lessonId ? (
+        return exerciseChecked && activity.moduleId && activity.exerciseId ? (
+          <Link
+            className={`${className} hover:text-brand-teal`}
+            key={activity.id}
+            to={exercisePath(activity.courseId, activity.moduleId, activity.exerciseId)}
+          >
+            {content}
+          </Link>
+        ) : activity.moduleId && activity.lessonId ? (
           <Link
             className={`${className} hover:text-brand-teal`}
             key={activity.id}

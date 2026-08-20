@@ -118,4 +118,30 @@ describe('dashboard learner state', () => {
     render(<ActivityList activities={[]} />)
     expect(screen.getByText('No activity yet')).toBeDefined()
   })
+
+  it('renders exercise checks truthfully with a course-aware link', () => {
+    render(
+      <MemoryRouter>
+        <ActivityList
+          activities={[
+            {
+              id: 9,
+              kind: 'exercise_checked',
+              courseId: 'ai-ml',
+              courseTitle: 'AI & Machine Learning',
+              moduleId: 'scientific-python',
+              moduleTitle: 'Scientific Python',
+              exerciseId: 'python.double',
+              occurredAt: '2026-08-20T12:00:00Z',
+            },
+          ]}
+        />
+      </MemoryRouter>,
+    )
+
+    const link = screen.getByRole('link', { name: /Checked python.double/ })
+    expect(link.getAttribute('href')).toBe(
+      '/courses/ai-ml/modules/scientific-python/exercises/python.double',
+    )
+  })
 })
