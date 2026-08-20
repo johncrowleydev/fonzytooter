@@ -1,0 +1,333 @@
+id: python-execution-model-practice
+title: Python Execution Model Practice
+lessonId: 01-python-for-a-programmer
+order: 1
+objectiveIds:
+  - python.execution-model
+instructions: |
+  Work through each problem without running the code first. For tracing problems,
+  write the output and briefly explain the Python rule that determines it.
+problems:
+  - id: aliasing-after-mutation
+    prompt: |
+      Consider:
+
+      ```python
+      samples = [10, 20, 30]
+      backup = samples
+      samples.append(40)
+      ```
+
+      What does `backup` contain after the append, and why?
+    objectiveIds:
+      - python.execution-model
+    expectedAnswer: |
+      `backup` is `[10, 20, 30, 40]` because `backup = samples` binds a second
+      name to the same list object. `append` mutates that shared object.
+    requiresWork: true
+    responseLines: 4
+    rubric:
+      - Identifies the final list as `[10, 20, 30, 40]`.
+      - Explains that assignment binds another name to the same object rather than copying the list.
+      - Connects the changed value to mutation of the shared list object.
+
+  - id: copy-versus-alias
+    prompt: |
+      Consider:
+
+      ```python
+      samples = [10, 20, 30]
+      backup = samples.copy()
+      samples[0] = 99
+      ```
+
+      What are `samples` and `backup` afterward? Explain the difference from
+      `backup = samples`.
+    objectiveIds:
+      - python.execution-model
+    expectedAnswer: |
+      `samples` is `[99, 20, 30]` and `backup` is `[10, 20, 30]`. `copy()`
+      creates a distinct list object, while plain assignment creates another
+      reference to the same object.
+    requiresWork: true
+    responseLines: 5
+    rubric:
+      - Gives both final list values correctly.
+      - Distinguishes a copied list object from a second reference to the same object.
+
+  - id: operators-and-division
+    prompt: |
+      Without running Python, evaluate each expression:
+
+      1. `7 / 2`
+      2. `7 // 2`
+      3. `2 ** 5`
+      4. `2 ^ 5`
+    objectiveIds:
+      - python.execution-model
+    expectedAnswer: |
+      1. `3.5`
+      2. `3`
+      3. `32`
+      4. `7`, because `^` is bitwise XOR in Python rather than exponentiation.
+    requiresWork: true
+    responseLines: 6
+    rubric:
+      - Distinguishes true division from floor division.
+      - Uses `**` for exponentiation.
+      - Recognizes `^` as bitwise XOR rather than exponentiation.
+
+  - id: type-hints-at-runtime
+    prompt: |
+      Predict what ordinary Python does here:
+
+      ```python
+      def double(value: int) -> int:
+          return value * 2
+
+      result = double(2.5)
+      ```
+
+      Does the call fail because `2.5` is not an `int`? What is `result`?
+    objectiveIds:
+      - python.execution-model
+    expectedAnswer: |
+      The call does not fail merely because of the annotation. Ordinary Python
+      does not automatically enforce the `int` type hint at runtime. `result`
+      is `5.0`.
+    requiresWork: true
+    responseLines: 4
+    rubric:
+      - States that the annotation is not automatically runtime-enforced.
+      - Gives `5.0` as the result.
+      - Distinguishes runtime object types from type annotations used by tools and humans.
+
+  - id: slicing-basics
+    prompt: |
+      Given:
+
+      ```python
+      values = [10, 20, 30, 40, 50]
+      ```
+
+      Write the value of each expression:
+
+      1. `values[1:4]`
+      2. `values[:3]`
+      3. `values[2:]`
+      4. `values[-2]`
+    objectiveIds:
+      - python.execution-model
+    expectedAnswer: |
+      1. `[20, 30, 40]`
+      2. `[10, 20, 30]`
+      3. `[30, 40, 50]`
+      4. `40`
+    requiresWork: true
+    responseLines: 6
+    rubric:
+      - Applies start-inclusive, stop-exclusive slicing correctly.
+      - Handles omitted slice endpoints correctly.
+      - Interprets a negative index from the end of the sequence.
+
+  - id: slicing-with-negative-stop
+    prompt: |
+      Predict the result:
+
+      ```python
+      values = [2, 4, 6, 8, 10]
+      result = values[1:-1]
+      ```
+
+      What is `result`? Explain which indices are included.
+    objectiveIds:
+      - python.execution-model
+    expectedAnswer: |
+      `result` is `[4, 6, 8]`. The slice starts at index `1` inclusive and
+      stops before index `-1`, which refers to the last element.
+    requiresWork: true
+    responseLines: 4
+    rubric:
+      - Gives `[4, 6, 8]`.
+      - Explains the inclusive start and exclusive stop.
+      - Correctly interprets `-1` as the last element.
+
+  - id: enumerate-trace
+    prompt: |
+      Write the exact lines printed:
+
+      ```python
+      values = [10, 20, 30]
+
+      for index, value in enumerate(values):
+          print(index, value)
+      ```
+    objectiveIds:
+      - python.execution-model
+    expectedAnswer: |
+      ```text
+      0 10
+      1 20
+      2 30
+      ```
+    requiresWork: true
+    responseLines: 5
+    rubric:
+      - Uses zero-based indices.
+      - Pairs each index with the corresponding value in order.
+
+  - id: zip-trace
+    prompt: |
+      Write the exact pairs visited by the loop:
+
+      ```python
+      names = ["Alice", "Bob", "Charlie"]
+      scores = [91, 84, 95]
+
+      for name, score in zip(names, scores):
+          ...
+      ```
+    objectiveIds:
+      - python.execution-model
+    expectedAnswer: |
+      The loop visits `("Alice", 91)`, then `("Bob", 84)`, then
+      `("Charlie", 95)`.
+    requiresWork: true
+    responseLines: 4
+    rubric:
+      - Pairs corresponding elements from the two sequences.
+      - Preserves sequence order.
+
+  - id: comprehension-trace
+    prompt: |
+      Evaluate both comprehensions:
+
+      ```python
+      values = [-3, -1, 0, 2, 5]
+
+      squares = [value ** 2 for value in values]
+      positive = [value for value in values if value > 0]
+      ```
+    objectiveIds:
+      - python.execution-model
+    expectedAnswer: |
+      `squares` is `[9, 1, 0, 4, 25]`.
+
+      `positive` is `[2, 5]`.
+    requiresWork: true
+    responseLines: 5
+    rubric:
+      - Applies the transformation to every value for `squares`.
+      - Applies the filter condition correctly for `positive`.
+
+  - id: equality-versus-identity
+    prompt: |
+      Predict each result and explain the difference:
+
+      ```python
+      a = [1, 2, 3]
+      b = [1, 2, 3]
+      c = a
+
+      a == b
+      a is b
+      a is c
+      ```
+    objectiveIds:
+      - python.execution-model
+    expectedAnswer: |
+      `a == b` is `True`, `a is b` is `False`, and `a is c` is `True`.
+
+      `==` asks about equality of value according to the objects' equality
+      semantics. `is` asks whether two references identify the same object.
+    requiresWork: true
+    responseLines: 6
+    rubric:
+      - Gives all three boolean results correctly.
+      - Distinguishes equality from object identity.
+
+  - id: mutable-default-trace
+    prompt: |
+      Predict the three lines printed:
+
+      ```python
+      def record(value, values=[]):
+          values.append(value)
+          return values
+
+      print(record(1))
+      print(record(2))
+      print(record(3))
+      ```
+
+      Why does Python behave this way?
+    objectiveIds:
+      - python.execution-model
+    expectedAnswer: |
+      ```text
+      [1]
+      [1, 2]
+      [1, 2, 3]
+      ```
+
+      The default list is created when the function definition is executed and
+      the same list object is reused for later calls that omit `values`.
+    requiresWork: true
+    responseLines: 7
+    rubric:
+      - Gives all three outputs correctly.
+      - Explains when the default list object is created.
+      - Explains that the same mutable object is reused across calls.
+
+  - id: mutable-default-rewrite
+    prompt: |
+      Rewrite this function so that a call that omits `values` gets a fresh
+      list each time:
+
+      ```python
+      def record(value, values=[]):
+          values.append(value)
+          return values
+      ```
+    objectiveIds:
+      - python.execution-model
+    expectedAnswer: |
+      One correct version is:
+
+      ```python
+      def record(value, values=None):
+          if values is None:
+              values = []
+
+          values.append(value)
+          return values
+      ```
+    requiresWork: true
+    responseLines: 8
+    rubric:
+      - Uses a non-mutable sentinel/default such as `None`.
+      - Creates a fresh list inside the function when the argument is omitted.
+      - Preserves explicitly supplied lists.
+
+  - id: centered-values
+    prompt: |
+      Given:
+
+      ```python
+      samples = [12.0, 15.0, 9.0, 18.0]
+      ```
+
+      1. Compute the mean.
+      2. Compute the list produced by subtracting the mean from each sample.
+    objectiveIds:
+      - python.execution-model
+    expectedAnswer: |
+      The mean is `13.5`.
+
+      The centered values are `[-1.5, 1.5, -4.5, 4.5]`.
+    requiresWork: true
+    responseLines: 7
+    rubric:
+      - Computes the mean as `13.5`.
+      - Subtracts the mean from each element correctly.
+      - Preserves the original element order.

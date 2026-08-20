@@ -1,0 +1,224 @@
+id: function-mappings-and-properties
+title: Function Mappings and Properties
+lessonId: 02-functions-code-and-mathematics
+order: 1
+objectiveIds:
+  - python.functions
+instructions: |
+  Use the mathematical definition of a function rather than programming intuition.
+  Show your reasoning when deciding whether a mapping is a function, injective,
+  or surjective.
+problems:
+  - id: valid-function-many-to-one
+    prompt: |
+      Let $f : \{1,2,3,4\} \to \{A,B,C,D,E\}$ be defined by:
+
+      ```text
+      1 → A
+      2 → C
+      3 → C
+      4 → E
+      ```
+
+      Is this a function? Explain why or why not.
+    objectiveIds:
+      - python.functions
+    expectedAnswer: |
+      Yes. Every input in the domain has exactly one assigned output. The fact
+      that `2` and `3` both map to `C` does not violate the definition of a
+      function.
+    requiresWork: true
+    responseLines: 5
+    rubric:
+      - Applies the rule that each domain input must have exactly one output.
+      - Explicitly allows different inputs to share an output.
+
+  - id: invalid-function-one-input-two-outputs
+    prompt: |
+      Does this define a function from $\{1,2,3\}$ to $\{A,B,C\}$?
+
+      ```text
+      1 → A
+      2 → B
+      2 → C
+      3 → A
+      ```
+
+      Explain the specific violation.
+    objectiveIds:
+      - python.functions
+    expectedAnswer: |
+      No. Input `2` is assigned two different outputs, `B` and `C`. A function
+      must assign exactly one output to every input in its domain.
+    requiresWork: true
+    responseLines: 5
+    rubric:
+      - Identifies input `2` as the problem.
+      - States the one-output-per-input requirement.
+
+  - id: domain-codomain-image
+    prompt: |
+      Given:
+
+      ```text
+      f : {1, 2, 3, 4} → {A, B, C, D, E}
+
+      1 → A
+      2 → C
+      3 → C
+      4 → E
+      ```
+
+      Identify the domain, codomain, and image.
+    objectiveIds:
+      - python.functions
+    expectedAnswer: |
+      Domain: `{1, 2, 3, 4}`
+
+      Codomain: `{A, B, C, D, E}`
+
+      Image: `{A, C, E}`
+    requiresWork: true
+    responseLines: 6
+    rubric:
+      - Identifies the declared input set as the domain.
+      - Identifies the declared destination set as the codomain.
+      - Includes only actually reached outputs in the image.
+
+  - id: square-not-injective
+    prompt: |
+      Consider $f : \mathbb{R} \to \mathbb{R}$ with $f(x)=x^2$.
+
+      Show with a concrete pair of inputs why $f$ is not injective.
+    objectiveIds:
+      - python.functions
+    expectedAnswer: |
+      For example, $f(2)=4$ and $f(-2)=4$ even though $2\ne -2$. Therefore two
+      distinct inputs collide at the same output, so the function is not
+      injective.
+    requiresWork: true
+    responseLines: 5
+    rubric:
+      - Supplies two distinct real inputs with the same squared value.
+      - Connects that collision to failure of injectivity.
+
+  - id: affine-injective
+    prompt: |
+      Consider $f : \mathbb{R} \to \mathbb{R}$ with $f(x)=2x+3$.
+
+      Is $f$ injective? Explain using the condition
+      $f(a)=f(b) \Rightarrow a=b$.
+    objectiveIds:
+      - python.functions
+    expectedAnswer: |
+      Yes. If $2a+3=2b+3$, subtracting `3` gives $2a=2b$, and dividing by `2`
+      gives $a=b$. Therefore equal outputs imply equal inputs.
+    requiresWork: true
+    responseLines: 7
+    rubric:
+      - Starts from equality of the two outputs.
+      - Uses valid algebra to derive `a = b`.
+      - Concludes that the function is injective.
+
+  - id: square-surjectivity-real-codomain
+    prompt: |
+      Consider $f : \mathbb{R} \to \mathbb{R}$ with $f(x)=x^2$.
+
+      Is $f$ surjective? Give a specific codomain value that proves your answer.
+    objectiveIds:
+      - python.functions
+    expectedAnswer: |
+      No. Any negative real number, such as `-1`, is in the codomain but is not
+      the square of any real input. Therefore the image does not equal the
+      codomain.
+    requiresWork: true
+    responseLines: 5
+    rubric:
+      - Gives a negative real number as an unattained codomain value.
+      - Relates the missing value to failure of surjectivity.
+
+  - id: square-surjectivity-nonnegative-codomain
+    prompt: |
+      Now define $g : \mathbb{R} \to [0,\infty)$ by $g(x)=x^2$.
+
+      Is $g$ surjective? Explain why changing only the codomain changes the answer.
+    objectiveIds:
+      - python.functions
+    expectedAnswer: |
+      Yes. Every nonnegative real number has at least one real square root, so
+      every value in the codomain `[0, ∞)` is reached. The formula and domain
+      are unchanged, but the declared codomain now matches the image.
+    requiresWork: true
+    responseLines: 6
+    rubric:
+      - States that every nonnegative real has a real square root.
+      - Concludes that every codomain value is hit.
+      - Explains that surjectivity depends on the declared codomain.
+
+  - id: classify-finite-mapping
+    prompt: |
+      Let $f : \{1,2,3\} \to \{A,B,C\}$ be:
+
+      ```text
+      1 → B
+      2 → C
+      3 → A
+      ```
+
+      Classify the function as injective, surjective, both, or neither. Explain.
+    objectiveIds:
+      - python.functions
+    expectedAnswer: |
+      The function is both injective and surjective, so it is bijective. Every
+      input maps to a distinct output, and every value in the codomain is hit.
+    requiresWork: true
+    responseLines: 6
+    rubric:
+      - Recognizes that no outputs are shared by different inputs.
+      - Recognizes that every codomain value is reached.
+      - Uses the term bijective for a function that is both injective and surjective.
+
+  - id: classify-colliding-mapping
+    prompt: |
+      Let $f : \{1,2,3,4\} \to \{A,B,C\}$ be:
+
+      ```text
+      1 → A
+      2 → B
+      3 → B
+      4 → C
+      ```
+
+      Is the function injective? Is it surjective? Explain both answers.
+    objectiveIds:
+      - python.functions
+    expectedAnswer: |
+      It is not injective because `2` and `3` both map to `B`. It is surjective
+      because `A`, `B`, and `C` are all reached by at least one input.
+    requiresWork: true
+    responseLines: 6
+    rubric:
+      - Identifies the collision at `B`.
+      - Identifies that every codomain value is reached.
+      - Keeps injectivity and surjectivity as separate properties.
+
+  - id: image-versus-codomain
+    prompt: |
+      A function has codomain $\{A,B,C,D,E\}$ and image $\{A,C,E\}$.
+
+      1. Must it be a valid function?
+      2. Can it be surjective onto the stated codomain?
+      3. Which codomain values are missed?
+    objectiveIds:
+      - python.functions
+    expectedAnswer: |
+      1. The codomain and image alone are not enough to determine whether the
+         mapping satisfies the one-output-per-input rule.
+      2. No, because the image is smaller than the codomain.
+      3. `B` and `D` are missed.
+    requiresWork: true
+    responseLines: 7
+    rubric:
+      - Does not infer function validity from codomain/image information alone.
+      - Uses `image = codomain` as the criterion for surjectivity.
+      - Identifies `B` and `D` as the missed values.

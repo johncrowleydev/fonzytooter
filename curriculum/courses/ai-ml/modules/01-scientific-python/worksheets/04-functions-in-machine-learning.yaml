@@ -1,0 +1,257 @@
+id: functions-in-machine-learning
+title: Functions in Code and Machine Learning
+lessonId: 02-functions-code-and-mathematics
+order: 3
+objectiveIds:
+  - python.functions
+instructions: |
+  Translate between code, mathematical notation, and transformation pipelines.
+  Focus on structure: inputs, outputs, parameters, composition, and side effects.
+problems:
+  - id: pure-versus-stateful
+    prompt: |
+      Compare:
+
+      ```python
+      def square(x):
+          return x * x
+      ```
+
+      with:
+
+      ```python
+      count = 0
+
+      def next_count():
+          global count
+          count += 1
+          return count
+      ```
+
+      Why is the first naturally modeled as a mathematical function of its
+      explicit input, while the second is not?
+    objectiveIds:
+      - python.functions
+    expectedAnswer: |
+      `square` returns a fixed output determined by its explicit input and has
+      no externally visible side effect. `next_count` depends on and mutates
+      external state, so the same explicit call can produce different outputs
+      over time. Its explicit arguments alone do not determine the result.
+    requiresWork: true
+    responseLines: 7
+    rubric:
+      - Describes deterministic input-to-output behavior for `square`.
+      - Identifies external mutable state in `next_count`.
+      - Explains why explicit arguments alone do not determine `next_count`'s output.
+
+  - id: typed-programming-analogy
+    prompt: |
+      A TypeScript function has the signature:
+
+      ```typescript
+      function square(x: number): number
+      ```
+
+      Explain how the parameter type is domain-like and the return type is
+      codomain-like, and give one reason the analogy is not mathematically exact.
+    objectiveIds:
+      - python.functions
+    expectedAnswer: |
+      The parameter type describes the kind of inputs the program intends to
+      accept, which is analogous to a domain. The return type describes the kind
+      of outputs it claims to produce, which is analogous to a codomain. The
+      analogy is not exact because machine numbers are finite floating-point
+      values rather than all real numbers, and programs can also fail, throw,
+      diverge, produce `NaN`, or have side effects.
+    requiresWork: true
+    responseLines: 7
+    rubric:
+      - Connects parameter type to allowed inputs.
+      - Connects return type to declared outputs.
+      - Gives at least one concrete reason programming semantics differ from a mathematical mapping.
+
+  - id: affine-parameters
+    prompt: |
+      Consider the parameterized function
+
+      $$
+      f(x; w,b)=wx+b.
+      $$
+
+      For each parameter choice, write the resulting function of `x`:
+
+      1. $w=2$, $b=1$
+      2. $w=-3$, $b=4$
+
+      Then explain which symbol is the ordinary input and which symbols are parameters.
+    objectiveIds:
+      - python.functions
+    expectedAnswer: |
+      1. $f(x)=2x+1$
+      2. $f(x)=-3x+4$
+
+      `x` is the ordinary data input. `w` and `b` are parameters that select one
+      member of the family of affine functions.
+    requiresWork: true
+    responseLines: 8
+    rubric:
+      - Substitutes both parameter pairs correctly.
+      - Identifies `x` as the input.
+      - Identifies `w` and `b` as parameters selecting a function from a family.
+
+  - id: translate-neuron-code
+    prompt: |
+      Translate the structure of this code into mathematical notation:
+
+      ```python
+      def affine(x, weight, bias):
+          return weight * x + bias
+
+      def relu(x):
+          return max(0.0, x)
+
+      def neuron(x, weight, bias):
+          return relu(affine(x, weight, bias))
+      ```
+
+      Use $a(x;w,b)$ for the affine function and $r(x)$ for ReLU.
+    objectiveIds:
+      - python.functions
+    expectedAnswer: |
+      $$
+      a(x;w,b)=wx+b
+      $$
+
+      $$
+      r(x)=\max(0,x)
+      $$
+
+      $$
+      \operatorname{neuron}(x;w,b)=r(a(x;w,b))
+      $$
+
+      Equivalently, with parameters fixed, the neuron is the composition
+      $r\circ a$.
+    requiresWork: true
+    responseLines: 10
+    rubric:
+      - Writes the affine transformation correctly.
+      - Writes ReLU correctly.
+      - Represents the neuron as ReLU applied to the affine output.
+      - Recognizes the composition structure.
+
+  - id: neuron-forward-value
+    prompt: |
+      Let
+
+      $$
+      a(x;w,b)=wx+b,\qquad r(z)=\max(0,z).
+      $$
+
+      Compute $r(a(x;w,b))$ for:
+
+      1. $x=3$, $w=2$, $b=-1$
+      2. $x=-2$, $w=3$, $b=1$
+
+      Show the affine result before applying ReLU.
+    objectiveIds:
+      - python.functions
+    expectedAnswer: |
+      1. $a(3;2,-1)=2(3)-1=5$, so $r(5)=5$.
+      2. $a(-2;3,1)=3(-2)+1=-5$, so $r(-5)=0$.
+    requiresWork: true
+    responseLines: 9
+    rubric:
+      - Computes each affine intermediate value correctly.
+      - Applies ReLU after the affine step.
+      - Gives final outputs `5` and `0`.
+
+  - id: nested-layer-order
+    prompt: |
+      A network is written as:
+
+      $$
+      f(x)=f_3(f_2(f_1(x))).
+      $$
+
+      If the input is `x`, list the transformations in the order they are
+      actually evaluated.
+    objectiveIds:
+      - python.functions
+    expectedAnswer: |
+      First evaluate $f_1(x)$, then feed that result to $f_2$, then feed the
+      result of $f_2$ to $f_3$. The evaluation order is $f_1 \to f_2 \to f_3$.
+    requiresWork: true
+    responseLines: 4
+    rubric:
+      - Evaluates nested functions from the inside out.
+      - Gives the order `f1`, then `f2`, then `f3`.
+
+  - id: read-loss-expression
+    prompt: |
+      Explain the structure of:
+
+      $$
+      L(f_\theta(x), y)
+      $$
+
+      Identify:
+
+      1. the model input,
+      2. the model parameters,
+      3. the model prediction,
+      4. the inputs to the loss function,
+      5. the kind of value the loss function returns.
+    objectiveIds:
+      - python.functions
+    expectedAnswer: |
+      1. `x` is the model input.
+      2. $\theta$ represents model parameters.
+      3. $f_\theta(x)$ is the model prediction.
+      4. The loss receives the prediction $f_\theta(x)$ and target `y`.
+      5. The loss returns a numerical value representing error or disagreement.
+    requiresWork: true
+    responseLines: 8
+    rubric:
+      - Correctly identifies all five roles.
+      - Treats the model prediction as an input to the loss.
+      - Recognizes the final loss as a numerical output.
+
+  - id: structured-input-output
+    prompt: |
+      Why does the notation $f(x)$ not imply that a function must accept one
+      scalar and return one scalar? Give two examples of richer input/output
+      mappings relevant to programming or machine learning.
+    objectiveIds:
+      - python.functions
+    expectedAnswer: |
+      `x` can stand for any element of the function's domain, including a
+      structured object. Examples include a vector mapped to another vector, an
+      image mapped to a class label, a matrix mapped to a vector, or a database
+      record mapped to a DTO.
+    requiresWork: true
+    responseLines: 6
+    rubric:
+      - States that the input variable may represent a structured mathematical or program object.
+      - Gives two valid richer mappings.
+
+  - id: learning-as-function-family
+    prompt: |
+      In the notation $f_\theta(x)$, explain what changes during a single
+      forward evaluation and what changes during training.
+
+      Why is training usefully viewed as moving through a family of functions?
+    objectiveIds:
+      - python.functions
+    expectedAnswer: |
+      During one forward evaluation, the parameters $\theta$ are treated as
+      fixed while the model maps an input `x` to an output. During training, the
+      parameters are adjusted. Different parameter values define different
+      mappings, so changing $\theta$ selects different members of a family of
+      functions.
+    requiresWork: true
+    responseLines: 7
+    rubric:
+      - Treats parameters as fixed during one forward evaluation.
+      - States that training changes the parameters.
+      - Connects different parameter values to different functions/mappings.
