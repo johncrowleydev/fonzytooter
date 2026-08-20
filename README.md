@@ -121,6 +121,7 @@ GET /api/courses
 GET /api/courses/{courseId}
 GET /api/courses/{courseId}/modules/{moduleId}
 GET /api/courses/{courseId}/modules/{moduleId}/lessons/{lessonId}
+GET /api/courses/{courseId}/modules/{moduleId}/exercises/{exerciseId}
 ```
 
 Go operations/types generate OpenAPI, which generates the frontend TanStack Query client and Zod schemas. Feature code should not create a parallel handwritten API contract.
@@ -189,10 +190,11 @@ The project now has the core curriculum delivery path rather than only an initia
 - React Router renders real course, module, and lesson pages from that generated API;
 - authored lesson MDX renders through the trusted lesson component registry, including the current Scientific Python interactives;
 - Git-authored worksheets render in the web UI and as on-demand Pandoc/Tectonic student, solutions, and module workbook PDFs;
+- optional Git-authored embedded exercise definitions are strictly validated and exposed through a student-safe course-qualified API that omits hidden test code;
 - `/curriculum` remains the simple navigation entry point and redirects to the default AI/ML course;
 - the global tutor receives explicit course/module/lesson semantic page context and consumes streamed tutor events;
 - the default tutor provider is still an explicit "not configured" provider;
-- the Pyodide exercise boundary is documented and typed, but the full editor/runtime workflow is not yet implemented;
+- the exercise curriculum model is implemented, while the Pyodide editor/runtime, saved workspaces, and attempts are not yet implemented;
 - lesson completion, objective introduction, and recent learner activity now persist through SQLite-backed generated APIs and drive the lesson, progress, and dashboard UI;
 - recall, application, transfer, FSRS, real tutor providers, worksheet uploads, tutor grading, and other evidence writes remain future implementation work.
 

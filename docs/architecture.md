@@ -44,7 +44,7 @@ EC2
                   SQLite
 ```
 
-Some boxes above describe intended subsystems that are not all implemented yet. The course-aware curriculum delivery path and generated API contract are implemented; persistence, FSRS, and real tutor providers remain future work.
+Some boxes above describe intended subsystems that are not all implemented yet. The course-aware curriculum delivery path, embedded exercise authoring model, generated API contract, and initial learner persistence are implemented; exercise execution, FSRS, and real tutor providers remain future work.
 
 ## Full-stack API contract
 
@@ -148,9 +148,12 @@ GET /api/courses
 GET /api/courses/{courseId}
 GET /api/courses/{courseId}/modules/{moduleId}
 GET /api/courses/{courseId}/modules/{moduleId}/lessons/{lessonId}
+GET /api/courses/{courseId}/modules/{moduleId}/exercises/{exerciseId}
 ```
 
 The course resource includes its ordered module summaries, so the frontend does not currently need a separate module-collection operation.
+
+Modules discover optional `exercises/*.yaml` definitions from Git. Module and lesson resources include ordered exercise summaries, while the individual student exercise resource exposes prompt, starter code, and visible tests without exposing hidden test code. Python is not executed by the loader or Go server.
 
 ## Python execution boundary
 

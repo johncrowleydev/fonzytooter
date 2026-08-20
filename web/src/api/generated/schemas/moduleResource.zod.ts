@@ -5,6 +5,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import * as zod from 'zod'
+import { ExerciseSummary } from './exerciseSummary.zod'
 import { LessonSummary } from './lessonSummary.zod'
 import { ObjectiveResource } from './objectiveResource.zod'
 import { VideoResource } from './videoResource.zod'
@@ -13,6 +14,7 @@ import { WorksheetSummary } from './worksheetSummary.zod'
 export const ModuleResource = zod.strictObject({
   $schema: zod.url().optional().describe('A URL to the JSON Schema for this object.'),
   courseId: zod.string(),
+  exercises: zod.array(ExerciseSummary),
   id: zod.string(),
   lessons: zod.array(LessonSummary),
   objectives: zod.array(ObjectiveResource),

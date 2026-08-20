@@ -70,6 +70,24 @@ type worksheetProblemAuthoring struct {
 	Rubric         []string `yaml:"rubric"`
 }
 
+type exerciseAuthoring struct {
+	ID           string                  `yaml:"id"`
+	Title        string                  `yaml:"title"`
+	LessonID     string                  `yaml:"lessonId"`
+	Order        *int                    `yaml:"order"`
+	ObjectiveIDs []string                `yaml:"objectiveIds"`
+	Prompt       string                  `yaml:"prompt"`
+	StarterCode  string                  `yaml:"starterCode"`
+	Tests        []exerciseTestAuthoring `yaml:"tests"`
+}
+
+type exerciseTestAuthoring struct {
+	ID         string `yaml:"id"`
+	Title      string `yaml:"title"`
+	Visibility string `yaml:"visibility"`
+	Code       string `yaml:"code"`
+}
+
 type sourceAuthoring struct {
 	Title string `yaml:"title"`
 	URL   string `yaml:"url"`
@@ -91,12 +109,19 @@ type moduleFile struct {
 	metadata   moduleAuthoring
 	lessons    []lessonFile
 	worksheets []worksheetFile
+	exercises  []exerciseFile
 	metadataOK bool
 }
 
 type worksheetFile struct {
 	path       string
 	metadata   worksheetAuthoring
+	metadataOK bool
+}
+
+type exerciseFile struct {
+	path       string
+	metadata   exerciseAuthoring
 	metadataOK bool
 }
 
@@ -149,6 +174,7 @@ func Load(fsys fs.FS) (*Catalog, error) {
 				Videos:     make([]Video, 0, len(module.metadata.Videos)),
 				Lessons:    make([]Lesson, 0, len(module.metadata.Lessons)),
 				Worksheets: make([]Worksheet, 0, len(module.worksheets)),
+				Exercises:  make([]Exercise, 0, len(module.exercises)),
 			}
 			for _, objective := range module.metadata.Objectives {
 				loadedModule.Objectives = append(loadedModule.Objectives, Objective{
@@ -214,6 +240,22 @@ func Load(fsys fs.FS) (*Catalog, error) {
 					})
 				}
 				loadedModule.Worksheets = append(loadedModule.Worksheets, loadedWorksheet)
+			}
+			for _, exercise := range module.exercises {
+				loadedExercise := Exercise{
+					CourseID: course.metadata.ID, ModuleID: module.metadata.ID,
+					ID: exercise.metadata.ID, Title: exercise.metadata.Title,
+					LessonID: exercise.metadata.LessonID, Order: *exercise.metadata.Order,
+					ObjectiveIDs: cloneStrings(exercise.metadata.ObjectiveIDs),
+					Prompt:       exercise.metadata.Prompt, StarterCode: exercise.metadata.StarterCode,
+					Tests: make([]ExerciseTest, 0, len(exercise.metadata.Tests)),
+				}
+				for _, test := range exercise.metadata.Tests {
+					loadedExercise.Tests = append(loadedExercise.Tests, ExerciseTest{
+						ID: test.ID, Title: test.Title, Visibility: test.Visibility, Code: test.Code,
+					})
+				}
+				loadedModule.Exercises = append(loadedModule.Exercises, loadedExercise)
 			}
 			loadedCourse.Modules = append(loadedCourse.Modules, loadedModule)
 		}
@@ -356,9 +398,41 @@ func loadModules(fsys fs.FS, modulesPath string, collector *errorCollector) []mo
 
 		module.lessons = loadLessons(fsys, modulePath, collector)
 		module.worksheets = loadWorksheets(fsys, modulePath, collector)
+		module.exercises = loadExercises(fsys, modulePath, collector)
 		modules = append(modules, module)
 	}
 	return modules
+}
+
+func loadExercises(fsys fs.FS, modulePath string, collector *errorCollector) []exerciseFile {
+	exercisesPath := path.Join(modulePath, "exercises")
+	entries, err := fs.ReadDir(fsys, exercisesPath)
+	if errors.Is(err, fs.ErrNotExist) {
+		return []exerciseFile{}
+	}
+	if err != nil {
+		collector.add(exercisesPath, err)
+		return []exerciseFile{}
+	}
+
+	exercises := make([]exerciseFile, 0, len(entries))
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".yaml") {
+			continue
+		}
+		exercise := exerciseFile{path: path.Join(exercisesPath, entry.Name())}
+		data, readErr := fs.ReadFile(fsys, exercise.path)
+		if readErr != nil {
+			collector.add(exercise.path, readErr)
+		} else if decodeErr := decodeYAML(data, &exercise.metadata); decodeErr != nil {
+			collector.add(exercise.path, decodeErr)
+		} else {
+			exercise.metadataOK = true
+		}
+		exercises = append(exercises, exercise)
+	}
+	sort.Slice(exercises, func(i, j int) bool { return exercises[i].path < exercises[j].path })
+	return exercises
 }
 
 func loadWorksheets(fsys fs.FS, modulePath string, collector *errorCollector) []worksheetFile {

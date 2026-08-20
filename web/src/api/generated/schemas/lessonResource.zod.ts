@@ -5,6 +5,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import * as zod from 'zod'
+import { ExerciseSummary } from './exerciseSummary.zod'
 import { SourceResource } from './sourceResource.zod'
 import { WorksheetSummary } from './worksheetSummary.zod'
 
@@ -12,6 +13,7 @@ export const LessonResource = zod.strictObject({
   $schema: zod.url().optional().describe('A URL to the JSON Schema for this object.'),
   content: zod.string().describe('Raw MDX source body with YAML frontmatter removed.'),
   courseId: zod.string(),
+  exercises: zod.array(ExerciseSummary),
   id: zod.string(),
   moduleId: zod.string(),
   objectiveIds: zod.array(zod.string()),

@@ -309,6 +309,102 @@
         ],
         "type": "object"
       },
+      "ExerciseResource": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/ExerciseResource.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "courseId": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "lessonId": {
+            "type": "string"
+          },
+          "moduleId": {
+            "type": "string"
+          },
+          "objectiveIds": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "order": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "prompt": {
+            "type": "string"
+          },
+          "starterCode": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "visibleTests": {
+            "items": {
+              "$ref": "#/components/schemas/VisibleExerciseTestResource"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "courseId",
+          "moduleId",
+          "id",
+          "title",
+          "lessonId",
+          "order",
+          "objectiveIds",
+          "prompt",
+          "starterCode",
+          "visibleTests"
+        ],
+        "type": "object"
+      },
+      "ExerciseSummary": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "lessonId": {
+            "type": "string"
+          },
+          "objectiveIds": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "order": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "lessonId",
+          "order",
+          "objectiveIds"
+        ],
+        "type": "object"
+      },
       "Health": {
         "additionalProperties": false,
         "properties": {
@@ -410,6 +506,12 @@
           "courseId": {
             "type": "string"
           },
+          "exercises": {
+            "items": {
+              "$ref": "#/components/schemas/ExerciseSummary"
+            },
+            "type": "array"
+          },
           "id": {
             "type": "string"
           },
@@ -446,7 +548,8 @@
           "objectiveIds",
           "sources",
           "content",
-          "worksheets"
+          "worksheets",
+          "exercises"
         ],
         "type": "object"
       },
@@ -487,6 +590,12 @@
           },
           "courseId": {
             "type": "string"
+          },
+          "exercises": {
+            "items": {
+              "$ref": "#/components/schemas/ExerciseSummary"
+            },
+            "type": "array"
           },
           "id": {
             "type": "string"
@@ -531,7 +640,8 @@
           "objectives",
           "videos",
           "lessons",
-          "worksheets"
+          "worksheets",
+          "exercises"
         ],
         "type": "object"
       },
@@ -869,6 +979,26 @@
           "title",
           "url",
           "objectiveIds"
+        ],
+        "type": "object"
+      },
+      "VisibleExerciseTestResource": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "code"
         ],
         "type": "object"
       },
@@ -1239,6 +1369,83 @@
           }
         },
         "summary": "Get a course module",
+        "tags": [
+          "curriculum"
+        ]
+      }
+    },
+    "/api/courses/{courseId}/modules/{moduleId}/exercises/{exerciseId}": {
+      "get": {
+        "operationId": "getCourseModuleExercise",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "courseId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "moduleId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "exerciseId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExerciseResource"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Get an embedded course exercise",
         "tags": [
           "curriculum"
         ]

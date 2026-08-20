@@ -100,10 +100,109 @@ func validateCourses(courses []courseFile, sources map[string]sourceAuthoring, e
 	for _, module := range modules {
 		validateLessonFiles(module, objectiveIDs, sources, errors)
 		validateWorksheetFiles(module, objectiveIDs, errors)
+		validateExerciseFiles(module, objectiveIDs, errors)
 	}
 	validateObjectiveReferences(modules, objectiveIDs, errors)
 	validatePrerequisiteCycles(modules, objectiveIDs, objectivePaths, errors)
 	validateVideoObjectiveReferences(modules, objectiveIDs, errors)
+}
+
+func validateExerciseFiles(module moduleFile, objectiveIDs map[string]string, errors *errorCollector) {
+	lessonIDs := make(map[string]struct{}, len(module.lessons))
+	for _, lesson := range module.lessons {
+		if lesson.metadataOK {
+			lessonIDs[lesson.metadata.ID] = struct{}{}
+		}
+	}
+
+	exerciseIDs := map[string]string{}
+	ordersByLesson := map[string]map[int]string{}
+	for _, exercise := range module.exercises {
+		if !exercise.metadataOK {
+			continue
+		}
+		metadata := exercise.metadata
+		if !stableIDPattern.MatchString(metadata.ID) {
+			errors.addf(exercise.path, "invalid exercise id %q", metadata.ID)
+		}
+		if previous, ok := exerciseIDs[metadata.ID]; ok {
+			errors.addf(exercise.path, "duplicate exercise id %q (already declared in %s)", metadata.ID, previous)
+		} else {
+			exerciseIDs[metadata.ID] = exercise.path
+		}
+		if strings.TrimSpace(metadata.Title) == "" {
+			errors.addf(exercise.path, "exercise %q has empty title", metadata.ID)
+		}
+		if strings.TrimSpace(metadata.LessonID) == "" {
+			errors.addf(exercise.path, "exercise %q has empty lessonId", metadata.ID)
+		} else if _, ok := lessonIDs[metadata.LessonID]; !ok {
+			errors.addf(exercise.path, "exercise %q references unknown lesson id %q in this module", metadata.ID, metadata.LessonID)
+		}
+		if metadata.Order == nil {
+			errors.addf(exercise.path, "exercise %q is missing required order", metadata.ID)
+		} else {
+			if *metadata.Order < 0 {
+				errors.addf(exercise.path, "exercise %q order must be non-negative", metadata.ID)
+			}
+			lessonOrders := ordersByLesson[metadata.LessonID]
+			if lessonOrders == nil {
+				lessonOrders = map[int]string{}
+				ordersByLesson[metadata.LessonID] = lessonOrders
+			}
+			if previous, ok := lessonOrders[*metadata.Order]; ok {
+				errors.addf(exercise.path, "duplicate exercise order %d for lesson %q (already declared in %s)", *metadata.Order, metadata.LessonID, previous)
+			} else {
+				lessonOrders[*metadata.Order] = exercise.path
+			}
+		}
+		validateExerciseObjectiveIDs(exercise.path, fmt.Sprintf("exercise %q", metadata.ID), metadata.ObjectiveIDs, objectiveIDs, errors)
+		if strings.TrimSpace(metadata.Prompt) == "" {
+			errors.addf(exercise.path, "exercise %q has empty prompt", metadata.ID)
+		}
+		if strings.TrimSpace(metadata.StarterCode) == "" {
+			errors.addf(exercise.path, "exercise %q has empty starterCode", metadata.ID)
+		}
+		if len(metadata.Tests) == 0 {
+			errors.addf(exercise.path, "exercise %q has no tests", metadata.ID)
+		}
+		validateExerciseTests(exercise, errors)
+	}
+}
+
+func validateExerciseObjectiveIDs(pathName, owner string, ids []string, objectiveIDs map[string]string, errors *errorCollector) {
+	if len(ids) == 0 {
+		errors.addf(pathName, "%s has no objectiveIds", owner)
+		return
+	}
+	for _, objectiveID := range ids {
+		if _, ok := objectiveIDs[objectiveID]; !ok {
+			errors.addf(pathName, "%s has unknown objective id %q", owner, objectiveID)
+		}
+	}
+}
+
+func validateExerciseTests(exercise exerciseFile, errors *errorCollector) {
+	testIDs := map[string]struct{}{}
+	for _, test := range exercise.metadata.Tests {
+		if !stableIDPattern.MatchString(test.ID) {
+			errors.addf(exercise.path, "exercise %q has invalid test id %q", exercise.metadata.ID, test.ID)
+		}
+		if _, ok := testIDs[test.ID]; ok {
+			errors.addf(exercise.path, "exercise %q has duplicate test id %q", exercise.metadata.ID, test.ID)
+		} else {
+			testIDs[test.ID] = struct{}{}
+		}
+		testLabel := fmt.Sprintf("exercise %q test %q", exercise.metadata.ID, test.ID)
+		if strings.TrimSpace(test.Title) == "" {
+			errors.addf(exercise.path, "%s has empty title", testLabel)
+		}
+		if test.Visibility != ExerciseTestVisible && test.Visibility != ExerciseTestHidden {
+			errors.addf(exercise.path, "%s has invalid visibility %q", testLabel, test.Visibility)
+		}
+		if strings.TrimSpace(test.Code) == "" {
+			errors.addf(exercise.path, "%s has empty code", testLabel)
+		}
+	}
 }
 
 func validateWorksheetFiles(module moduleFile, objectiveIDs map[string]string, errors *errorCollector) {
