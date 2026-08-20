@@ -1,11 +1,17 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { useGetCourse, useGetCourseModule } from '../../api/generated/endpoints'
+import {
+  getCourseModuleWorkbook,
+  useGetCourse,
+  useGetCourseModule,
+} from '../../api/generated/endpoints'
 import type { CourseResource } from '../../api/generated/schemas/courseResource.zod'
 import type { ModuleResource } from '../../api/generated/schemas/moduleResource.zod'
 import { coursePath, lessonPath, worksheetPath } from '../../app/routes'
-import { Badge, Card, PageIntro, SectionHeading } from '../../components/ui'
+import { Badge, Button, Card, PageIntro, SectionHeading } from '../../components/ui'
 import { useTutor } from '../tutor/TutorContext'
+import { downloadPdf, pdfDownloadErrorMessage } from '../worksheets/downloadPdf'
+import { hasWorkbook } from '../worksheets/workbookAvailability'
 import { safeExternalUrl } from './externalLinks'
 
 export function ModuleDetail() {
@@ -90,9 +96,30 @@ export function ModuleDetail() {
 }
 
 function ModuleContent({ course, module }: { course: CourseResource; module: ModuleResource }) {
+  const [downloadingWorkbook, setDownloadingWorkbook] = useState<'student' | 'solutions' | null>(
+    null,
+  )
+  const [workbookError, setWorkbookError] = useState<string | null>(null)
   const objectiveTitles = new Map(
     module.objectives.map((objective) => [objective.id, objective.title]),
   )
+
+  async function downloadWorkbook(workbookId: 'student' | 'solutions') {
+    setDownloadingWorkbook(workbookId)
+    setWorkbookError(null)
+    try {
+      const response = await getCourseModuleWorkbook(course.id, module.id, workbookId)
+      const fallbackFilename =
+        workbookId === 'student'
+          ? `${module.id}-workbook.pdf`
+          : `${module.id}-workbook-solutions.pdf`
+      downloadPdf(response.data, response.headers['content-disposition'], fallbackFilename)
+    } catch (error) {
+      setWorkbookError(pdfDownloadErrorMessage(error))
+    } finally {
+      setDownloadingWorkbook(null)
+    }
+  }
 
   return (
     <div className="grid max-w-6xl gap-7 max-sm:gap-5">
@@ -181,13 +208,43 @@ function ModuleContent({ course, module }: { course: CourseResource; module: Mod
         )}
       </section>
 
-      {module.worksheets.length > 0 ? (
+      {hasWorkbook(module.worksheets.length) ? (
         <section>
           <SectionHeading
             eyebrow="Practice"
             title="Worksheets"
             detail="Written practice grouped in lesson order."
           />
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-line bg-panel px-5 py-4 shadow-lg">
+            <div>
+              <strong className="block text-sm text-ink">Module workbook</strong>
+              <span className="mt-1 block text-2xs leading-relaxed text-muted">
+                Download every worksheet in this module as one printable PDF.
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                disabled={downloadingWorkbook !== null}
+                onClick={() => void downloadWorkbook('student')}
+              >
+                {downloadingWorkbook === 'student' ? 'Preparing workbook…' : 'Download workbook'}
+              </Button>
+              <Button
+                disabled={downloadingWorkbook !== null}
+                onClick={() => void downloadWorkbook('solutions')}
+                variant="outline"
+              >
+                {downloadingWorkbook === 'solutions'
+                  ? 'Preparing solutions…'
+                  : 'Download solutions'}
+              </Button>
+            </div>
+            {workbookError ? (
+              <p className="w-full text-xs text-brand-coral" role="alert">
+                {workbookError}
+              </p>
+            ) : null}
+          </div>
           <div className="grid gap-2">
             {module.worksheets.map((worksheet) => {
               const lesson = module.lessons.find((item) => item.id === worksheet.lessonId)

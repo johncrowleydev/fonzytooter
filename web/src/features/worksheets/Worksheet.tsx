@@ -10,6 +10,7 @@ import type { WorksheetResource } from '../../api/generated/schemas/worksheetRes
 import { coursePath, lessonPath, modulePath } from '../../app/routes'
 import { Badge, Button, Card, PageIntro } from '../../components/ui'
 import { useTutor } from '../tutor/TutorContext'
+import { downloadPdf, pdfDownloadErrorMessage } from './downloadPdf'
 import { WorksheetMarkup } from './WorksheetMarkup'
 
 export function Worksheet() {
@@ -165,7 +166,6 @@ function WorksheetContent({
   async function download(documentId: 'student' | 'solutions') {
     setDownloading(documentId)
     setDownloadError(null)
-    let objectURL: string | undefined
     try {
       const response = await getCourseModuleWorksheetDocument(
         courseId,
@@ -175,18 +175,10 @@ function WorksheetContent({
       )
       const fallbackFilename =
         documentId === 'student' ? `${worksheet.id}.pdf` : `${worksheet.id}-solutions.pdf`
-      const filename =
-        filenameFromContentDisposition(response.headers['content-disposition']) ?? fallbackFilename
-      objectURL = URL.createObjectURL(response.data)
-      const link = document.createElement('a')
-      link.href = objectURL
-      link.download = filename
-      link.click()
+      downloadPdf(response.data, response.headers['content-disposition'], fallbackFilename)
     } catch (error) {
-      setDownloadError(getDownloadErrorMessage(error))
+      setDownloadError(pdfDownloadErrorMessage(error))
     } finally {
-      const urlToRevoke = objectURL
-      if (urlToRevoke) window.setTimeout(() => URL.revokeObjectURL(urlToRevoke), 0)
       setDownloading(null)
     }
   }
@@ -296,18 +288,6 @@ function WorksheetContent({
       </Link>
     </div>
   )
-}
-
-function filenameFromContentDisposition(disposition: string | undefined) {
-  const match = disposition?.match(/filename="([^"]+)"/i)
-  return match?.[1]
-}
-
-function getDownloadErrorMessage(error: unknown) {
-  if (error instanceof Error && 'status' in error && error.status === 503) {
-    return 'PDF downloads are temporarily unavailable because the rendering tools are not installed.'
-  }
-  return 'The PDF could not be downloaded. Please try again.'
 }
 
 function WorksheetState({

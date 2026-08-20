@@ -6,7 +6,7 @@
   "scripts": {
     "api:check": "node scripts/check-api-boundaries.mjs",
     "api:generate": "orval --config orval.config.ts && node scripts/enforce-generated-json-validation.mjs",
-    "api:test": "node --test scripts/check-api-boundaries.test.mjs scripts/runtime-validation.test.mjs",
+    "api:test": "node --test scripts/check-api-boundaries.test.mjs scripts/runtime-validation.test.mjs scripts/worksheet-workbooks.test.mjs",
     "curriculum:mdx": "node scripts/validate-curriculum-mdx.mjs",
     "dev": "vite",
     "build": "tsc -b && vite build",
