@@ -36,7 +36,7 @@ func (renderer *fakeWorksheetDocumentRenderer) Render(_ context.Context, _ curri
 
 func TestWorksheetDocumentEndpoint(t *testing.T) {
 	renderer := &fakeWorksheetDocumentRenderer{}
-	app := newAPI(tutor.NewService(tutor.NewUnavailableProvider()), testCatalog(t), nil, renderer)
+	app := newAPI(tutor.NewService(tutor.NewUnavailableProvider()), testCatalog(t), nil, nil, renderer)
 
 	for _, test := range []struct {
 		documentID string
@@ -71,7 +71,7 @@ func TestWorksheetDocumentEndpoint(t *testing.T) {
 
 func TestWorksheetDocumentEndpointMissingResources(t *testing.T) {
 	renderer := &fakeWorksheetDocumentRenderer{}
-	app := newAPI(tutor.NewService(tutor.NewUnavailableProvider()), testCatalog(t), nil, renderer)
+	app := newAPI(tutor.NewService(tutor.NewUnavailableProvider()), testCatalog(t), nil, nil, renderer)
 	for _, path := range []string{
 		"/api/courses/ai-ml/modules/python/worksheets/worksheet/documents/answer-key",
 		"/api/courses/ai-ml/modules/python/worksheets/missing/documents/student",
@@ -91,7 +91,7 @@ func TestWorksheetDocumentEndpointMissingResources(t *testing.T) {
 
 func TestWorksheetDocumentEndpointUnavailableTooling(t *testing.T) {
 	renderer := &fakeWorksheetDocumentRenderer{err: errors.Join(worksheetpdf.ErrToolUnavailable, errors.New("pandoc not found"))}
-	app := newAPI(tutor.NewService(tutor.NewUnavailableProvider()), testCatalog(t), nil, renderer)
+	app := newAPI(tutor.NewService(tutor.NewUnavailableProvider()), testCatalog(t), nil, nil, renderer)
 	response := serve(t, app.Handler, http.MethodGet, "/api/courses/ai-ml/modules/python/worksheets/worksheet/documents/student")
 	if response.Code != http.StatusServiceUnavailable {
 		t.Fatalf("status = %d: %s", response.Code, response.Body.String())
@@ -102,7 +102,7 @@ func TestWorksheetDocumentEndpointUnavailableTooling(t *testing.T) {
 }
 
 func TestWorksheetDocumentOpenAPIContract(t *testing.T) {
-	app := NewAPI(tutor.NewService(tutor.NewUnavailableProvider()), curriculum.NewEmptyCatalog(), nil)
+	app := NewAPI(tutor.NewService(tutor.NewUnavailableProvider()), curriculum.NewEmptyCatalog(), nil, nil)
 	path := app.Spec.Paths["/api/courses/{courseId}/modules/{moduleId}/worksheets/{worksheetId}/documents/{documentId}"]
 	if path == nil || path.Get == nil || path.Get.OperationID != "getCourseModuleWorksheetDocument" {
 		t.Fatalf("missing worksheet document operation: %#v", path)

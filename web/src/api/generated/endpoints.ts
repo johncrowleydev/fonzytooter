@@ -33,6 +33,8 @@ import {
   LessonProgressResource,
   LessonResource,
   ModuleResource,
+  ReviewCardList,
+  ReviewCardResource,
   ReviewItemResource,
   WorksheetResource,
 } from './schemas'
@@ -41,7 +43,9 @@ import type {
   ErrorModel,
   LessonProgressUpdate,
   ListActivitiesParams,
+  ListReviewCardsParams,
   PutExerciseWorkspaceInputBody,
+  ReviewSubmission,
 } from './schemas'
 
 // https://stackoverflow.com/questions/49579094/typescript-conditional-types-filter-out-readonly-properties-pick-only-requir/49579497#49579497
@@ -3463,6 +3467,340 @@ export function useGetCourseProgress<
   }
 
   return withQueryKey(query, queryOptions.queryKey)
+}
+
+export type listReviewCardsResponse200 = {
+  data: ReviewCardList
+  status: 200
+}
+
+export type listReviewCardsResponse404 = {
+  data: ErrorModel
+  status: 404
+}
+
+export type listReviewCardsResponse422 = {
+  data: ErrorModel
+  status: 422
+}
+
+export type listReviewCardsResponse500 = {
+  data: ErrorModel
+  status: 500
+}
+
+export type listReviewCardsResponseSuccess = listReviewCardsResponse200 & {
+  headers: Record<string, string>
+}
+export type listReviewCardsResponseError = (
+  listReviewCardsResponse404 | listReviewCardsResponse422 | listReviewCardsResponse500
+) & {
+  headers: Record<string, string>
+}
+
+export const getListReviewCardsUrl = (courseId: string, params?: ListReviewCardsParams) => {
+  const normalizedParams = new URLSearchParams()
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  })
+
+  const stringifiedParams = normalizedParams.toString()
+
+  return stringifiedParams.length > 0
+    ? `/api/courses/${courseId}/review-cards?${stringifiedParams}`
+    : `/api/courses/${courseId}/review-cards`
+}
+
+/**
+ * Combines authored review items with persistent or virtual FSRS scheduling state.
+ * @summary List learner review cards
+ */
+export const listReviewCards = async (
+  courseId: string,
+  params?: ListReviewCardsParams,
+  options?: RequestInit,
+): Promise<listReviewCardsResponseSuccess> => {
+  const res = await fetch(getListReviewCardsUrl(courseId, params), {
+    ...options,
+    method: 'GET',
+  })
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text()
+  if (!res.ok) {
+    const err: globalThis.Error & { info?: listReviewCardsResponseError['data']; status?: number } =
+      new globalThis.Error()
+    const data: listReviewCardsResponseError['data'] = body ? JSON.parse(body) : {}
+    err.info = data
+    err.status = res.status
+    throw err
+  }
+  const data = ReviewCardList.parse(body ? JSON.parse(body) : {})
+  return {
+    data,
+    status: res.status,
+    headers: Object.fromEntries(
+      [...res.headers.entries()].filter(([name]) => name !== 'set-cookie'),
+    ),
+  } as listReviewCardsResponseSuccess
+}
+
+export const getListReviewCardsQueryKey = (courseId: string, params?: ListReviewCardsParams) => {
+  return [`/api/courses/${courseId}/review-cards`, ...(params ? [params] : [])] as const
+}
+
+export const getListReviewCardsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listReviewCards>>,
+  TError = globalThis.Error & { info?: ErrorModel; status?: number },
+>(
+  courseId: string,
+  params?: ListReviewCardsParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listReviewCards>>, TError, TData>>
+    fetch?: RequestInit
+  },
+) => {
+  const { query: queryOptions, fetch: fetchOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getListReviewCardsQueryKey(courseId, params)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listReviewCards>>> = ({ signal }) =>
+    listReviewCards(courseId, params, { signal, ...fetchOptions })
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: courseId !== null && courseId !== undefined,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof listReviewCards>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+}
+
+export type ListReviewCardsQueryResult = NonNullable<Awaited<ReturnType<typeof listReviewCards>>>
+export type ListReviewCardsQueryError = globalThis.Error & { info?: ErrorModel; status?: number }
+
+export function useListReviewCards<
+  TData = Awaited<ReturnType<typeof listReviewCards>>,
+  TError = globalThis.Error & { info?: ErrorModel; status?: number },
+>(
+  courseId: string,
+  params: undefined | ListReviewCardsParams,
+  options: {
+    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof listReviewCards>>, TError, TData>> &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listReviewCards>>,
+          TError,
+          Awaited<ReturnType<typeof listReviewCards>>
+        >,
+        'initialData'
+      >
+    fetch?: RequestInit
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListReviewCards<
+  TData = Awaited<ReturnType<typeof listReviewCards>>,
+  TError = globalThis.Error & { info?: ErrorModel; status?: number },
+>(
+  courseId: string,
+  params?: ListReviewCardsParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listReviewCards>>, TError, TData>> &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listReviewCards>>,
+          TError,
+          Awaited<ReturnType<typeof listReviewCards>>
+        >,
+        'initialData'
+      >
+    fetch?: RequestInit
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListReviewCards<
+  TData = Awaited<ReturnType<typeof listReviewCards>>,
+  TError = globalThis.Error & { info?: ErrorModel; status?: number },
+>(
+  courseId: string,
+  params?: ListReviewCardsParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listReviewCards>>, TError, TData>>
+    fetch?: RequestInit
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary List learner review cards
+ */
+
+export function useListReviewCards<
+  TData = Awaited<ReturnType<typeof listReviewCards>>,
+  TError = globalThis.Error & { info?: ErrorModel; status?: number },
+>(
+  courseId: string,
+  params?: ListReviewCardsParams,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof listReviewCards>>, TError, TData>>
+    fetch?: RequestInit
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getListReviewCardsQueryOptions(courseId, params, options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+export type createReviewCardReviewResponse201 = {
+  data: ReviewCardResource
+  status: 201
+}
+
+export type createReviewCardReviewResponse404 = {
+  data: ErrorModel
+  status: 404
+}
+
+export type createReviewCardReviewResponse422 = {
+  data: ErrorModel
+  status: 422
+}
+
+export type createReviewCardReviewResponse500 = {
+  data: ErrorModel
+  status: 500
+}
+
+export type createReviewCardReviewResponseSuccess = createReviewCardReviewResponse201 & {
+  headers: Record<string, string>
+}
+export type createReviewCardReviewResponseError = (
+  | createReviewCardReviewResponse404
+  | createReviewCardReviewResponse422
+  | createReviewCardReviewResponse500
+) & {
+  headers: Record<string, string>
+}
+
+export const getCreateReviewCardReviewUrl = (courseId: string, reviewItemId: string) => {
+  return `/api/courses/${courseId}/review-cards/${reviewItemId}/reviews`
+}
+
+/**
+ * Applies one rating and atomically records the updated FSRS card, immutable log, and learner activity.
+ * @summary Create a review-card rating
+ */
+export const createReviewCardReview = async (
+  courseId: string,
+  reviewItemId: string,
+  reviewSubmission: NonReadonly<ReviewSubmission>,
+  options?: RequestInit,
+): Promise<createReviewCardReviewResponseSuccess> => {
+  const res = await fetch(getCreateReviewCardReviewUrl(courseId, reviewItemId), {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(reviewSubmission),
+  })
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text()
+  if (!res.ok) {
+    const err: globalThis.Error & {
+      info?: createReviewCardReviewResponseError['data']
+      status?: number
+    } = new globalThis.Error()
+    const data: createReviewCardReviewResponseError['data'] = body ? JSON.parse(body) : {}
+    err.info = data
+    err.status = res.status
+    throw err
+  }
+  const data = ReviewCardResource.parse(body ? JSON.parse(body) : {})
+  return {
+    data,
+    status: res.status,
+    headers: Object.fromEntries(
+      [...res.headers.entries()].filter(([name]) => name !== 'set-cookie'),
+    ),
+  } as createReviewCardReviewResponseSuccess
+}
+
+export const getCreateReviewCardReviewMutationOptions = <
+  TError = globalThis.Error & { info?: ErrorModel; status?: number },
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createReviewCardReview>>,
+    TError,
+    { courseId: string; reviewItemId: string; data: NonReadonly<ReviewSubmission> },
+    TContext
+  >
+  fetch?: RequestInit
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createReviewCardReview>>,
+  TError,
+  { courseId: string; reviewItemId: string; data: NonReadonly<ReviewSubmission> },
+  TContext
+> => {
+  const mutationKey = ['createReviewCardReview']
+  const { mutation: mutationOptions, fetch: fetchOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, fetch: undefined }
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createReviewCardReview>>,
+    { courseId: string; reviewItemId: string; data: NonReadonly<ReviewSubmission> }
+  > = (props) => {
+    const { courseId, reviewItemId, data } = props ?? {}
+
+    return createReviewCardReview(courseId, reviewItemId, data, fetchOptions)
+  }
+
+  return { mutationFn, ...mutationOptions }
+}
+
+export type CreateReviewCardReviewMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createReviewCardReview>>
+>
+export type CreateReviewCardReviewMutationBody = NonReadonly<ReviewSubmission>
+export type CreateReviewCardReviewMutationError = globalThis.Error & {
+  info?: ErrorModel
+  status?: number
+}
+
+/**
+ * @summary Create a review-card rating
+ */
+export const useCreateReviewCardReview = <
+  TError = globalThis.Error & { info?: ErrorModel; status?: number },
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof createReviewCardReview>>,
+      TError,
+      { courseId: string; reviewItemId: string; data: NonReadonly<ReviewSubmission> },
+      TContext
+    >
+    fetch?: RequestInit
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof createReviewCardReview>>,
+  TError,
+  { courseId: string; reviewItemId: string; data: NonReadonly<ReviewSubmission> },
+  TContext
+> => {
+  return useMutation(getCreateReviewCardReviewMutationOptions(options), queryClient)
 }
 
 export type getHealthResponse200 = {

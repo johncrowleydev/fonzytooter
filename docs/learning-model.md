@@ -68,7 +68,16 @@ See `docs/worksheets.md` for the printable-practice and worksheet-review model.
 
 ## Spaced repetition
 
-The planned scheduler is FSRS rather than a custom algorithm.
+The review scheduler is FSRS-6 through the pinned `go-fsrs/v4` library with its
+default parameters. The server owns all scheduling calculations: it supplies
+the real Again, Hard, Good, and Easy previews and applies the selected rating at
+the same injected time. The browser only formats those results for display.
+
+Authored items without learner state are treated as virtual New cards. A safe
+queue read does not populate SQLite; the first submitted rating creates the
+card row, an immutable before/after review log, and a `review_completed`
+activity in one transaction. This recall evidence does not become a mastery
+percentage or an AI-authored judgment.
 
 Important distinction: FSRS uses elapsed time internally, but that does not make the curriculum calendar-paced.
 
