@@ -769,6 +769,241 @@ export function useGetCourseLesson<
   return withQueryKey(query, queryOptions.queryKey)
 }
 
+export type getCourseModuleWorkbookResponse200 = {
+  data: Blob
+  status: 200
+}
+
+export type getCourseModuleWorkbookResponse404 = {
+  data: ErrorModel
+  status: 404
+}
+
+export type getCourseModuleWorkbookResponse422 = {
+  data: ErrorModel
+  status: 422
+}
+
+export type getCourseModuleWorkbookResponse500 = {
+  data: ErrorModel
+  status: 500
+}
+
+export type getCourseModuleWorkbookResponse503 = {
+  data: ErrorModel
+  status: 503
+}
+
+export type getCourseModuleWorkbookResponseSuccess = getCourseModuleWorkbookResponse200 & {
+  headers: Record<string, string>
+}
+export type getCourseModuleWorkbookResponseError = (
+  | getCourseModuleWorkbookResponse404
+  | getCourseModuleWorkbookResponse422
+  | getCourseModuleWorkbookResponse500
+  | getCourseModuleWorkbookResponse503
+) & {
+  headers: Record<string, string>
+}
+
+export const getGetCourseModuleWorkbookUrl = (
+  courseId: string,
+  moduleId: string,
+  workbookId: string,
+) => {
+  return `/api/courses/${courseId}/modules/${moduleId}/workbooks/${workbookId}`
+}
+
+/**
+ * Returns the module's student workbook or solutions workbook as one generated PDF.
+ * @summary Get a printable module worksheet workbook
+ */
+export const getCourseModuleWorkbook = async (
+  courseId: string,
+  moduleId: string,
+  workbookId: string,
+  options?: RequestInit,
+): Promise<getCourseModuleWorkbookResponseSuccess> => {
+  const res = await fetch(getGetCourseModuleWorkbookUrl(courseId, moduleId, workbookId), {
+    ...options,
+    method: 'GET',
+  })
+
+  if (!res.ok) {
+    const errorBody = [204, 205, 304].includes(res.status) ? null : await res.text()
+
+    const err: globalThis.Error & {
+      info?: getCourseModuleWorkbookResponseError['data']
+      status?: number
+    } = new globalThis.Error()
+    const data: getCourseModuleWorkbookResponseError['data'] = errorBody
+      ? JSON.parse(errorBody)
+      : {}
+    err.info = data
+    err.status = res.status
+    throw err
+  }
+  const body = [204, 205, 304].includes(res.status) ? null : await res.blob()
+  const data: getCourseModuleWorkbookResponseSuccess['data'] =
+    body as getCourseModuleWorkbookResponseSuccess['data']
+  return {
+    data,
+    status: res.status,
+    headers: Object.fromEntries(
+      [...res.headers.entries()].filter(([name]) => name !== 'set-cookie'),
+    ),
+  } as getCourseModuleWorkbookResponseSuccess
+}
+
+export const getGetCourseModuleWorkbookQueryKey = (
+  courseId: string,
+  moduleId: string,
+  workbookId: string,
+) => {
+  return [`/api/courses/${courseId}/modules/${moduleId}/workbooks/${workbookId}`] as const
+}
+
+export const getGetCourseModuleWorkbookQueryOptions = <
+  TData = Awaited<ReturnType<typeof getCourseModuleWorkbook>>,
+  TError = globalThis.Error & { info?: ErrorModel; status?: number },
+>(
+  courseId: string,
+  moduleId: string,
+  workbookId: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof getCourseModuleWorkbook>>, TError, TData>
+    >
+    fetch?: RequestInit
+  },
+) => {
+  const { query: queryOptions, fetch: fetchOptions } = options ?? {}
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetCourseModuleWorkbookQueryKey(courseId, moduleId, workbookId)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getCourseModuleWorkbook>>> = ({
+    signal,
+  }) => getCourseModuleWorkbook(courseId, moduleId, workbookId, { signal, ...fetchOptions })
+
+  return {
+    queryKey,
+    queryFn,
+    enabled:
+      courseId !== null &&
+      courseId !== undefined &&
+      moduleId !== null &&
+      moduleId !== undefined &&
+      workbookId !== null &&
+      workbookId !== undefined,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof getCourseModuleWorkbook>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+}
+
+export type GetCourseModuleWorkbookQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getCourseModuleWorkbook>>
+>
+export type GetCourseModuleWorkbookQueryError = globalThis.Error & {
+  info?: ErrorModel
+  status?: number
+}
+
+export function useGetCourseModuleWorkbook<
+  TData = Awaited<ReturnType<typeof getCourseModuleWorkbook>>,
+  TError = globalThis.Error & { info?: ErrorModel; status?: number },
+>(
+  courseId: string,
+  moduleId: string,
+  workbookId: string,
+  options: {
+    query: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof getCourseModuleWorkbook>>, TError, TData>
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getCourseModuleWorkbook>>,
+          TError,
+          Awaited<ReturnType<typeof getCourseModuleWorkbook>>
+        >,
+        'initialData'
+      >
+    fetch?: RequestInit
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetCourseModuleWorkbook<
+  TData = Awaited<ReturnType<typeof getCourseModuleWorkbook>>,
+  TError = globalThis.Error & { info?: ErrorModel; status?: number },
+>(
+  courseId: string,
+  moduleId: string,
+  workbookId: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof getCourseModuleWorkbook>>, TError, TData>
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getCourseModuleWorkbook>>,
+          TError,
+          Awaited<ReturnType<typeof getCourseModuleWorkbook>>
+        >,
+        'initialData'
+      >
+    fetch?: RequestInit
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetCourseModuleWorkbook<
+  TData = Awaited<ReturnType<typeof getCourseModuleWorkbook>>,
+  TError = globalThis.Error & { info?: ErrorModel; status?: number },
+>(
+  courseId: string,
+  moduleId: string,
+  workbookId: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof getCourseModuleWorkbook>>, TError, TData>
+    >
+    fetch?: RequestInit
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Get a printable module worksheet workbook
+ */
+
+export function useGetCourseModuleWorkbook<
+  TData = Awaited<ReturnType<typeof getCourseModuleWorkbook>>,
+  TError = globalThis.Error & { info?: ErrorModel; status?: number },
+>(
+  courseId: string,
+  moduleId: string,
+  workbookId: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof getCourseModuleWorkbook>>, TError, TData>
+    >
+    fetch?: RequestInit
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getGetCourseModuleWorkbookQueryOptions(
+    courseId,
+    moduleId,
+    workbookId,
+    options,
+  )
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
 export type getCourseModuleWorksheetResponse200 = {
   data: WorksheetResource
   status: 200

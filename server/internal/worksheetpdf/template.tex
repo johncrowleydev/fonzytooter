@@ -11,5 +11,21 @@
   \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
 \newcommand{\passthrough}[1]{#1}
 \begin{document}
+$if(title)$
+\begin{titlepage}
+\centering
+\vspace*{\fill}
+{\Huge\bfseries $title$\par}
+$if(subtitle)$
+\vspace{1.25em}
+{\Large $subtitle$\par}
+$endif$
+\vspace*{\fill}
+\end{titlepage}
+$endif$
+$if(toc)$
+\tableofcontents
+\clearpage
+$endif$
 $body$
 \end{document}
