@@ -14,97 +14,97 @@ import (
 )
 
 type courseAuthoring struct {
-	ID          string `yaml:"id"`
-	Title       string `yaml:"title"`
-	Description string `yaml:"description"`
-	Order       *int   `yaml:"order"`
+	ID          string `yaml:"id" json:"id" doc:"Stable course ID."`
+	Title       string `yaml:"title" json:"title" doc:"Course title shown to the learner."`
+	Description string `yaml:"description" json:"description" doc:"Short description of the course."`
+	Order       *int   `yaml:"order" json:"order" nullable:"false" minimum:"0" doc:"Non-negative course display order."`
 }
 
 type moduleAuthoring struct {
-	ID         string               `yaml:"id"`
-	Title      string               `yaml:"title"`
-	Order      *int                 `yaml:"order"`
-	Objectives []objectiveAuthoring `yaml:"objectives"`
-	Videos     []videoAuthoring     `yaml:"videos"`
-	Lessons    []string             `yaml:"lessons"`
+	ID         string               `yaml:"id" json:"id" doc:"Stable module ID within the owning course."`
+	Title      string               `yaml:"title" json:"title" doc:"Module title shown to the learner."`
+	Order      *int                 `yaml:"order" json:"order" nullable:"false" minimum:"0" doc:"Non-negative module display order within the course."`
+	Objectives []objectiveAuthoring `yaml:"objectives" json:"objectives,omitempty" required:"false" nullable:"false" doc:"Learning objectives introduced by this module."`
+	Videos     []videoAuthoring     `yaml:"videos" json:"videos,omitempty" required:"false" nullable:"false" doc:"Curated videos associated with this module."`
+	Lessons    []string             `yaml:"lessons" json:"lessons,omitempty" required:"false" nullable:"false" uniqueItems:"true" doc:"Canonical ordered list of lesson IDs in this module."`
 }
 
 type objectiveAuthoring struct {
-	ID            string   `yaml:"id"`
-	Title         string   `yaml:"title"`
-	Description   string   `yaml:"description"`
-	Prerequisites []string `yaml:"prerequisites"`
+	ID            string   `yaml:"id" json:"id" doc:"Stable globally unique learning-objective ID."`
+	Title         string   `yaml:"title" json:"title" doc:"Short learner-facing objective title."`
+	Description   string   `yaml:"description" json:"description" doc:"Description of the capability represented by this objective."`
+	Prerequisites []string `yaml:"prerequisites" json:"prerequisites,omitempty" required:"false" nullable:"false" uniqueItems:"true" doc:"Objective IDs that should be learned first."`
 }
 
 type videoAuthoring struct {
-	ID           string   `yaml:"id"`
-	Title        string   `yaml:"title"`
-	URL          string   `yaml:"url"`
-	ObjectiveIDs []string `yaml:"objectiveIds"`
+	ID           string   `yaml:"id" json:"id" doc:"Stable video ID within this module."`
+	Title        string   `yaml:"title" json:"title" doc:"Video title shown to the learner."`
+	URL          string   `yaml:"url" json:"url" format:"uri" doc:"HTTP or HTTPS URL for the video."`
+	ObjectiveIDs []string `yaml:"objectiveIds" json:"objectiveIds,omitempty" required:"false" nullable:"false" uniqueItems:"true" doc:"Objective IDs supported by this video."`
 }
 
 type lessonFrontmatter struct {
-	ID           string   `yaml:"id"`
-	Title        string   `yaml:"title"`
-	ObjectiveIDs []string `yaml:"objectiveIds"`
-	SourceIDs    []string `yaml:"sourceIds"`
+	ID           string   `yaml:"id" json:"id" doc:"Stable lesson ID within the owning module."`
+	Title        string   `yaml:"title" json:"title" doc:"Lesson title shown to the learner."`
+	ObjectiveIDs []string `yaml:"objectiveIds" json:"objectiveIds,omitempty" required:"false" nullable:"false" uniqueItems:"true" doc:"Objective IDs addressed by this lesson."`
+	SourceIDs    []string `yaml:"sourceIds" json:"sourceIds,omitempty" required:"false" nullable:"false" uniqueItems:"true" doc:"Shared source-registry IDs supporting this lesson."`
 }
 
 type worksheetAuthoring struct {
-	ID           string                      `yaml:"id"`
-	Title        string                      `yaml:"title"`
-	LessonID     string                      `yaml:"lessonId"`
-	Order        *int                        `yaml:"order"`
-	ObjectiveIDs []string                    `yaml:"objectiveIds"`
-	Instructions string                      `yaml:"instructions"`
-	Problems     []worksheetProblemAuthoring `yaml:"problems"`
+	ID           string                      `yaml:"id" json:"id" doc:"Stable worksheet ID within the owning module."`
+	Title        string                      `yaml:"title" json:"title" doc:"Worksheet title shown to the learner."`
+	LessonID     string                      `yaml:"lessonId" json:"lessonId" doc:"ID of the lesson that owns this worksheet."`
+	Order        *int                        `yaml:"order" json:"order" nullable:"false" minimum:"0" doc:"Non-negative worksheet order within its lesson."`
+	ObjectiveIDs []string                    `yaml:"objectiveIds" json:"objectiveIds" nullable:"false" minItems:"1" uniqueItems:"true" doc:"Objective IDs assessed by this worksheet."`
+	Instructions string                      `yaml:"instructions" json:"instructions" doc:"Learner-facing worksheet instructions."`
+	Problems     []worksheetProblemAuthoring `yaml:"problems" json:"problems" nullable:"false" minItems:"1" doc:"Problems included in this worksheet."`
 }
 
 type worksheetProblemAuthoring struct {
-	ID             string   `yaml:"id"`
-	Prompt         string   `yaml:"prompt"`
-	ObjectiveIDs   []string `yaml:"objectiveIds"`
-	ExpectedAnswer string   `yaml:"expectedAnswer"`
-	RequiresWork   *bool    `yaml:"requiresWork"`
-	ResponseLines  *int     `yaml:"responseLines"`
-	Rubric         []string `yaml:"rubric"`
+	ID             string   `yaml:"id" json:"id" doc:"Stable problem ID within this worksheet."`
+	Prompt         string   `yaml:"prompt" json:"prompt" doc:"Learner-facing problem prompt."`
+	ObjectiveIDs   []string `yaml:"objectiveIds" json:"objectiveIds" nullable:"false" minItems:"1" uniqueItems:"true" doc:"Objective IDs assessed by this problem."`
+	ExpectedAnswer string   `yaml:"expectedAnswer" json:"expectedAnswer" doc:"Authored expected answer used by solution material."`
+	RequiresWork   *bool    `yaml:"requiresWork" json:"requiresWork" nullable:"false" doc:"Whether the learner should show intermediate work."`
+	ResponseLines  *int     `yaml:"responseLines" json:"responseLines" nullable:"false" minimum:"1" doc:"Positive number of response lines to render."`
+	Rubric         []string `yaml:"rubric" json:"rubric" nullable:"false" minItems:"1" doc:"Criteria used to evaluate the response."`
 }
 
 type exerciseAuthoring struct {
-	ID           string                  `yaml:"id"`
-	Title        string                  `yaml:"title"`
-	LessonID     string                  `yaml:"lessonId"`
-	Order        *int                    `yaml:"order"`
-	ObjectiveIDs []string                `yaml:"objectiveIds"`
-	Prompt       string                  `yaml:"prompt"`
-	StarterCode  string                  `yaml:"starterCode"`
-	Tests        []exerciseTestAuthoring `yaml:"tests"`
+	ID           string                  `yaml:"id" json:"id" doc:"Stable exercise ID within the owning module."`
+	Title        string                  `yaml:"title" json:"title" doc:"Exercise title shown to the learner."`
+	LessonID     string                  `yaml:"lessonId" json:"lessonId" doc:"ID of the lesson that owns this exercise."`
+	Order        *int                    `yaml:"order" json:"order" nullable:"false" minimum:"0" doc:"Non-negative exercise order within its lesson."`
+	ObjectiveIDs []string                `yaml:"objectiveIds" json:"objectiveIds" nullable:"false" minItems:"1" uniqueItems:"true" doc:"Objective IDs assessed by this exercise."`
+	Prompt       string                  `yaml:"prompt" json:"prompt" doc:"Learner-facing exercise prompt."`
+	StarterCode  string                  `yaml:"starterCode" json:"starterCode" doc:"Initial Python code loaded into the editor."`
+	Tests        []exerciseTestAuthoring `yaml:"tests" json:"tests" nullable:"false" minItems:"1" doc:"Deterministic tests used to check the exercise."`
 }
 
 type exerciseTestAuthoring struct {
-	ID         string `yaml:"id"`
-	Title      string `yaml:"title"`
-	Visibility string `yaml:"visibility"`
-	Code       string `yaml:"code"`
+	ID         string `yaml:"id" json:"id" doc:"Stable test ID within this exercise."`
+	Title      string `yaml:"title" json:"title" doc:"Test title shown in results when appropriate."`
+	Visibility string `yaml:"visibility" json:"visibility" enum:"visible,hidden" doc:"Whether test details are visible or hidden from the learner."`
+	Code       string `yaml:"code" json:"code" doc:"Python test code executed by the browser exercise runner."`
 }
 
 type reviewItemAuthoring struct {
-	ID             string   `yaml:"id"`
-	Order          *int     `yaml:"order"`
-	ObjectiveIDs   []string `yaml:"objectiveIds"`
-	SourceLessonID string   `yaml:"sourceLessonId"`
-	Prompt         string   `yaml:"prompt"`
-	Answer         string   `yaml:"answer"`
-	Hint           string   `yaml:"hint"`
+	ID             string   `yaml:"id" json:"id" doc:"Stable review-item ID within the owning module."`
+	Order          *int     `yaml:"order" json:"order" nullable:"false" minimum:"0" doc:"Non-negative review-item order within the module."`
+	ObjectiveIDs   []string `yaml:"objectiveIds" json:"objectiveIds" nullable:"false" minItems:"1" uniqueItems:"true" doc:"Objective IDs practiced by this review item."`
+	SourceLessonID string   `yaml:"sourceLessonId" json:"sourceLessonId" doc:"ID of the lesson from which this item is derived."`
+	Prompt         string   `yaml:"prompt" json:"prompt" doc:"Question or retrieval prompt shown to the learner."`
+	Answer         string   `yaml:"answer" json:"answer" doc:"Authored answer shown after recall."`
+	Hint           string   `yaml:"hint" json:"hint,omitempty" required:"false" doc:"Optional hint available before revealing the answer."`
 }
 
 type sourceAuthoring struct {
-	Title string `yaml:"title"`
-	URL   string `yaml:"url"`
+	Title string `yaml:"title" json:"title" doc:"Bibliographic title for this source."`
+	URL   string `yaml:"url" json:"url" format:"uri" doc:"HTTP or HTTPS URL for this source."`
 }
 
 type sourceRegistry struct {
-	Sources map[string]sourceAuthoring `yaml:"sources"`
+	Sources map[string]sourceAuthoring `yaml:"sources" json:"sources" nullable:"false" doc:"Shared registry keyed by stable source ID."`
 }
 
 type courseFile struct {

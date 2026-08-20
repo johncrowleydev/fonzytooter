@@ -346,6 +346,46 @@ This does not mean mechanically adding a footnote to every sentence. It means a 
 
 AI-generated content follows the same rule: draft, verify sources, review, then commit.
 
+## Editor schemas
+
+Generated JSON Schemas under `schemas/curriculum/` provide editor autocomplete, field descriptions, type checking, required-field feedback, and unknown-field diagnostics for authored curriculum files. They are derived directly from the Go structs used by the curriculum loader and must not be edited by hand.
+
+Regenerate them from the repository's `server/` directory:
+
+```bash
+go run ./cmd/curriculum-schema ../schemas/curriculum
+```
+
+Schema-aware YAML tooling can associate the generated files with these paths:
+
+| Schema | Authored files |
+| --- | --- |
+| `sources.schema.json` | `curriculum/sources.yaml` |
+| `course.schema.json` | `curriculum/courses/*/course.yaml` |
+| `module.schema.json` | `curriculum/courses/*/modules/*/module.yaml` |
+| `worksheet.schema.json` | `curriculum/courses/*/modules/*/worksheets/*.yaml` |
+| `exercise.schema.json` | `curriculum/courses/*/modules/*/exercises/*.yaml` |
+| `review-item.schema.json` | `curriculum/courses/*/modules/*/reviews/*.yaml` |
+
+For example, VS Code with the YAML Language Server can use workspace or user `yaml.schemas` associations like these; other schema-aware editors accept equivalent schema-to-file mappings:
+
+```json
+{
+  "yaml.schemas": {
+    "./schemas/curriculum/sources.schema.json": "curriculum/sources.yaml",
+    "./schemas/curriculum/course.schema.json": "curriculum/courses/*/course.yaml",
+    "./schemas/curriculum/module.schema.json": "curriculum/courses/*/modules/*/module.yaml",
+    "./schemas/curriculum/worksheet.schema.json": "curriculum/courses/*/modules/*/worksheets/*.yaml",
+    "./schemas/curriculum/exercise.schema.json": "curriculum/courses/*/modules/*/exercises/*.yaml",
+    "./schemas/curriculum/review-item.schema.json": "curriculum/courses/*/modules/*/reviews/*.yaml"
+  }
+}
+```
+
+`lesson-frontmatter.schema.json` describes only the YAML mapping between a lesson's `---` delimiters. Point an editor or extension that supports schemas for embedded YAML frontmatter at that file. Do not associate the ordinary YAML Language Server directly with whole `*.mdx` files: the MDX body is not YAML, and JSON Schema cannot validate its prose, imports, or component usage.
+
+These schemas deliberately cover local document structure only. `cmd/curriculum-check` remains authoritative for semantic and cross-file rules such as stable IDs, ownership, references, uniqueness across records, prerequisite cycles, and lesson body presence. The frontend `curriculum:mdx` check remains responsible for compiling MDX bodies.
+
 ## Validation
 
 The Go curriculum loader validates authored structure before the application starts. The standalone check uses the same loader:

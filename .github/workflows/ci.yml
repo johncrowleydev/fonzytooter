@@ -109,6 +109,12 @@ jobs:
           --base-ref "${{ github.event.pull_request.base.sha }}"
           --curriculum ../curriculum
           --migrations ../curriculum/identity-migrations.yaml
+      - name: Check curriculum editor schema drift
+        shell: bash
+        run: |
+          generated_schemas="$(mktemp -d)"
+          go run ./cmd/curriculum-schema "${generated_schemas}"
+          diff --recursive --unified ../schemas/curriculum "${generated_schemas}"
       - name: Render worksheet curriculum
         run: go run ./cmd/worksheet-render-check ../curriculum
       - name: Build
