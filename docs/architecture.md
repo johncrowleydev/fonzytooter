@@ -44,7 +44,7 @@ EC2
                   SQLite
 ```
 
-Some boxes above describe intended subsystems that are not all implemented yet. The course-aware curriculum delivery path, embedded exercise authoring model, generated API contract, initial learner persistence, and FSRS review workflow are implemented; exercise execution and real tutor providers remain future work.
+Some boxes above describe intended subsystems that are not all implemented yet. The course-aware curriculum path, embedded Pyodide exercise workflow, generated API contract, SQLite learner evidence, FSRS review workflow, and evidence-backed dashboard/progress views are implemented. Real tutor providers remain future work.
 
 ## Full-stack API contract
 

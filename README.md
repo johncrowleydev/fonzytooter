@@ -194,8 +194,8 @@ The project now has the core curriculum delivery path rather than only an initia
 - `/curriculum` remains the simple navigation entry point and redirects to the default AI/ML course;
 - the global tutor receives explicit course/module/lesson semantic page context and consumes streamed tutor events;
 - the default tutor provider is still an explicit "not configured" provider;
-- the exercise curriculum model is implemented, while the Pyodide editor/runtime, saved workspaces, and attempts are not yet implemented;
+- embedded exercises run in a Pyodide worker with CodeMirror, saved SQLite workspaces, checked attempts, and authored visible/hidden tests;
 - lesson completion, objective introduction, and recent learner activity now persist through SQLite-backed generated APIs and drive the lesson, progress, and dashboard UI;
-- recall, application, transfer, FSRS, real tutor providers, worksheet uploads, tutor grading, and other evidence writes remain future implementation work.
+- FSRS reviews and checked exercises now provide factual recall/application evidence on the dashboard and progress views; transfer, real tutor providers, worksheet uploads, and tutor grading remain future implementation work.
 
 Add capabilities when the learning workflow needs them rather than pre-building an LMS platform.

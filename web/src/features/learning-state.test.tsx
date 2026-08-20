@@ -14,6 +14,14 @@ const progress: CourseProgressResource = {
   courseId: 'ai-ml',
   completedLessonCount: 1,
   totalLessonCount: 2,
+  dueReviewCount: 1,
+  practiceExercise: {
+    courseId: 'ai-ml',
+    moduleId: 'foundations',
+    moduleTitle: 'Foundations',
+    exerciseId: 'exercise.one',
+    exerciseTitle: 'First exercise',
+  },
   objectives: [
     {
       courseId: 'ai-ml',
@@ -22,9 +30,11 @@ const progress: CourseProgressResource = {
       title: 'First objective',
       description: 'The first objective.',
       introduced: true,
-      recall: 'not_assessed',
-      application: 'not_assessed',
-      transfer: 'not_assessed',
+      linkedLessonCount: 1,
+      completedLessonCount: 1,
+      recall: { reviewItemCount: 1, reviewsCompleted: 2, dueReviewCount: 1 },
+      application: { exerciseCount: 1, attempts: 1, fullyPassedAttempts: 0 },
+      transferAssessed: false,
     },
     {
       courseId: 'ai-ml',
@@ -33,9 +43,11 @@ const progress: CourseProgressResource = {
       title: 'Second objective',
       description: 'The second objective.',
       introduced: false,
-      recall: 'not_assessed',
-      application: 'not_assessed',
-      transfer: 'not_assessed',
+      linkedLessonCount: 1,
+      completedLessonCount: 0,
+      recall: { reviewItemCount: 0, reviewsCompleted: 0, dueReviewCount: 0 },
+      application: { exerciseCount: 0, attempts: 0, fullyPassedAttempts: 0 },
+      transferAssessed: false,
     },
   ],
   nextLesson: {
@@ -67,14 +79,16 @@ describe('lesson completion UI', () => {
 })
 
 describe('truthful progress UI', () => {
-  it('shows only introduction and not-assessed evidence states', async () => {
+  it('shows factual recall and application evidence without mastery claims', async () => {
     function Harness() {
       const [selectedId, setSelectedId] = useState('objective.one')
       return <ProgressView progress={progress} selectedId={selectedId} onSelect={setSelectedId} />
     }
 
     render(<Harness />)
-    expect(screen.getAllByText('Not assessed').length).toBeGreaterThanOrEqual(3)
+    expect(screen.getByText('2 reviews · 1 due')).toBeDefined()
+    expect(screen.getByText('1 attempts · 0 passed')).toBeDefined()
+    expect(screen.getAllByText('Not assessed').length).toBeGreaterThanOrEqual(1)
     expect(screen.queryByText('Mastered')).toBeNull()
     expect(screen.queryByText('Strong')).toBeNull()
 
@@ -93,6 +107,7 @@ describe('dashboard learner state', () => {
 
     const link = screen.getByRole('link', { name: /Continue lesson/ })
     expect(link.getAttribute('href')).toBe('/courses/ai-ml/modules/foundations/lessons/lesson-two')
+    expect(screen.getAllByRole('link', { name: /Open/ })[0].getAttribute('href')).toBe('/review')
     expect(screen.getByText('No activity yet')).toBeDefined()
   })
 
@@ -111,7 +126,7 @@ describe('dashboard learner state', () => {
     )
 
     expect(screen.getByText('All current lessons complete')).toBeDefined()
-    expect(screen.queryByText(/reviews ready/i)).toBeNull()
+    expect(screen.getByText('1 due now')).toBeDefined()
   })
 
   it('renders an explicit empty activity state', () => {

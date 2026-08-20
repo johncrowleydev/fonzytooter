@@ -57,7 +57,7 @@ func TestLearningAPICompletionProgressAndActivity(t *testing.T) {
 		t.Fatalf("expected introduced objective, got %#v", courseProgress.Objectives)
 	}
 	objective := courseProgress.Objectives[0]
-	if objective.Recall != learner.EvidenceNotAssessed || objective.Application != learner.EvidenceNotAssessed || objective.Transfer != learner.EvidenceNotAssessed {
+	if objective.TransferAssessed || objective.Recall.ReviewsCompleted != 0 || objective.Application.Attempts != 0 {
 		t.Fatalf("expected unassessed evidence dimensions, got %#v", objective)
 	}
 

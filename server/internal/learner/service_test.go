@@ -112,7 +112,7 @@ func TestCourseProgressDerivesIntroducedObjectivesAndNextLesson(t *testing.T) {
 	introduced := make(map[string]bool, len(progress.Objectives))
 	for _, objective := range progress.Objectives {
 		introduced[objective.ID] = objective.Introduced
-		if objective.Recall != EvidenceNotAssessed || objective.Application != EvidenceNotAssessed || objective.Transfer != EvidenceNotAssessed {
+		if objective.TransferAssessed || objective.Recall.ReviewsCompleted != 0 || objective.Application.Attempts != 0 {
 			t.Fatalf("fabricated evidence dimensions for %s: %#v", objective.ID, objective)
 		}
 	}

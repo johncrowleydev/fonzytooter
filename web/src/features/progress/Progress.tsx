@@ -16,8 +16,11 @@ const summaryToneStyles = {
 const dimensionToneStyles = {
   introduced: 'bg-brand-teal',
   pending: 'bg-brand-gold',
+  evidence: 'bg-brand-coral',
   'not-assessed': 'bg-brand-slate/20',
 } as const
+
+type EvidenceFilter = 'all' | 'needs-review' | 'application' | 'not-introduced'
 
 export function Progress() {
   const { setPageContext } = useTutor()
@@ -62,8 +65,21 @@ export function ProgressView({
   onSelect: (objectiveId: string) => void
 }) {
   const introducedCount = progress.objectives.filter((objective) => objective.introduced).length
+  const [filter, setFilter] = useState<EvidenceFilter>('all')
+  const filteredObjectives = progress.objectives.filter((objective) => {
+    if (filter === 'needs-review') return objective.recall.dueReviewCount > 0
+    if (filter === 'application') return objective.application.attempts > 0
+    if (filter === 'not-introduced') return !objective.introduced
+    return true
+  })
   const selected =
-    progress.objectives.find((objective) => objective.id === selectedId) ?? progress.objectives[0]
+    filteredObjectives.find((objective) => objective.id === selectedId) ?? filteredObjectives[0]
+  const reviewedCount = progress.objectives.filter(
+    (objective) => objective.recall.reviewsCompleted > 0,
+  ).length
+  const applicationCount = progress.objectives.filter(
+    (objective) => objective.application.attempts > 0,
+  ).length
 
   return (
     <div className="grid max-w-6xl gap-7 max-sm:gap-5">
@@ -85,18 +101,47 @@ export function ProgressView({
           note="still ahead"
           tone="gold"
         />
-        <SummaryStat value="—" label="Recall" note="not assessed" tone="coral" />
-        <SummaryStat value="—" label="Application / transfer" note="not assessed" tone="violet" />
+        <SummaryStat
+          value={String(reviewedCount)}
+          label="Reviewed"
+          note="objectives with recall evidence"
+          tone="coral"
+        />
+        <SummaryStat
+          value={String(applicationCount)}
+          label="Practiced"
+          note="objectives with checked attempts"
+          tone="violet"
+        />
       </section>
+      <div className="flex flex-wrap gap-2" aria-label="Objective evidence filters">
+        {(
+          [
+            ['all', 'All'],
+            ['needs-review', 'Needs review'],
+            ['application', 'Has application evidence'],
+            ['not-introduced', 'Not introduced'],
+          ] as const
+        ).map(([value, label]) => (
+          <button
+            type="button"
+            key={value}
+            onClick={() => setFilter(value)}
+            className={`rounded-full border px-3 py-2 text-2xs font-semibold ${filter === value ? 'border-brand-teal bg-brand-teal/10 text-ink' : 'border-line bg-panel text-muted'}`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
       {selected ? (
         <div className="grid grid-cols-[1.15fr_0.85fr] gap-3.5 max-lg:grid-cols-1 max-sm:gap-2.5">
           <Card className="min-h-128">
             <SectionHeading
               title="Objectives"
-              detail="Lesson completion introduces objectives; other evidence arrives from later practice."
+              detail={`${filteredObjectives.length} objectives match this evidence filter.`}
             />
             <div className="grid">
-              {progress.objectives.map((objective) => (
+              {filteredObjectives.map((objective) => (
                 <ObjectiveBrowserRow
                   key={objective.id}
                   objective={objective}
@@ -134,13 +179,44 @@ function ObjectiveDetail({ objective }: { objective: ObjectiveProgressResource }
           value={objective.introduced ? 'Yes' : 'Not yet'}
           state={objective.introduced ? 'introduced' : 'pending'}
         />
-        <Dimension label="Recall" value="Not assessed" state="not-assessed" />
-        <Dimension label="Application" value="Not assessed" state="not-assessed" />
+        <Dimension
+          label="Recall"
+          value={
+            objective.recall.reviewItemCount === 0
+              ? 'No authored items'
+              : `${objective.recall.reviewsCompleted} reviews · ${objective.recall.dueReviewCount} due`
+          }
+          state={objective.recall.reviewsCompleted > 0 ? 'evidence' : 'not-assessed'}
+        />
+        <Dimension
+          label="Application"
+          value={
+            objective.application.exerciseCount === 0
+              ? 'No authored exercises'
+              : `${objective.application.attempts} attempts · ${objective.application.fullyPassedAttempts} passed`
+          }
+          state={objective.application.attempts > 0 ? 'evidence' : 'not-assessed'}
+        />
         <Dimension label="Transfer" value="Not assessed" state="not-assessed" />
       </div>
+      <div className="mt-6 grid gap-2 text-2xs text-muted">
+        <p>
+          {objective.completedLessonCount} of {objective.linkedLessonCount} linked lessons
+          completed.
+        </p>
+        {objective.recall.lastReviewedAt ? (
+          <p>Last reviewed {formatEvidenceTime(objective.recall.lastReviewedAt)}.</p>
+        ) : null}
+        {objective.recall.nextDueAt ? (
+          <p>Next due {formatEvidenceTime(objective.recall.nextDueAt)}.</p>
+        ) : null}
+        {objective.application.lastCheckedAt ? (
+          <p>Last exercise check {formatEvidenceTime(objective.application.lastCheckedAt)}.</p>
+        ) : null}
+      </div>
       <p className="mt-8 rounded-lg border border-line bg-brand-slate/10 p-4 text-2xs leading-relaxed text-muted">
-        Completing a lesson records that you encountered this objective. It does not claim recall,
-        application, transfer, or mastery.
+        These are counts and timestamps from real learner actions. They are evidence, not a mastery
+        score. Transfer remains {objective.transferAssessed ? 'assessed' : 'not assessed'}.
       </p>
     </Card>
   )
@@ -225,5 +301,11 @@ function ProgressState({ title, detail }: { title: string; detail: string }) {
         <p className="mt-2 text-xs leading-relaxed text-muted">{detail}</p>
       </Card>
     </div>
+  )
+}
+
+function formatEvidenceTime(value: string) {
+  return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(
+    new Date(value),
   )
 }

@@ -35,15 +35,32 @@ type LessonProgressResponse struct {
 }
 
 type ObjectiveProgressResource struct {
-	CourseID    string `json:"courseId"`
-	ModuleID    string `json:"moduleId"`
-	ID          string `json:"id"`
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	Introduced  bool   `json:"introduced"`
-	Recall      string `json:"recall" enum:"not_assessed"`
-	Application string `json:"application" enum:"not_assessed"`
-	Transfer    string `json:"transfer" enum:"not_assessed"`
+	CourseID             string                      `json:"courseId"`
+	ModuleID             string                      `json:"moduleId"`
+	ID                   string                      `json:"id"`
+	Title                string                      `json:"title"`
+	Description          string                      `json:"description"`
+	Introduced           bool                        `json:"introduced"`
+	LinkedLessonCount    int                         `json:"linkedLessonCount"`
+	CompletedLessonCount int                         `json:"completedLessonCount"`
+	Recall               RecallEvidenceResource      `json:"recall"`
+	Application          ApplicationEvidenceResource `json:"application"`
+	TransferAssessed     bool                        `json:"transferAssessed"`
+}
+
+type RecallEvidenceResource struct {
+	ReviewItemCount  int        `json:"reviewItemCount"`
+	ReviewsCompleted int        `json:"reviewsCompleted"`
+	DueReviewCount   int        `json:"dueReviewCount"`
+	LastReviewedAt   *time.Time `json:"lastReviewedAt,omitempty"`
+	NextDueAt        *time.Time `json:"nextDueAt,omitempty"`
+}
+
+type ApplicationEvidenceResource struct {
+	ExerciseCount       int        `json:"exerciseCount"`
+	Attempts            int        `json:"attempts"`
+	FullyPassedAttempts int        `json:"fullyPassedAttempts"`
+	LastCheckedAt       *time.Time `json:"lastCheckedAt,omitempty"`
 }
 
 type NextLessonResource struct {
@@ -54,12 +71,22 @@ type NextLessonResource struct {
 	LessonTitle string `json:"lessonTitle"`
 }
 
+type PracticeExerciseResource struct {
+	CourseID      string `json:"courseId"`
+	ModuleID      string `json:"moduleId"`
+	ModuleTitle   string `json:"moduleTitle"`
+	ExerciseID    string `json:"exerciseId"`
+	ExerciseTitle string `json:"exerciseTitle"`
+}
+
 type CourseProgressResource struct {
 	CourseID             string                      `json:"courseId"`
 	CompletedLessonCount int                         `json:"completedLessonCount"`
 	TotalLessonCount     int                         `json:"totalLessonCount"`
+	DueReviewCount       int                         `json:"dueReviewCount"`
 	Objectives           []ObjectiveProgressResource `json:"objectives" nullable:"false"`
 	NextLesson           *NextLessonResource         `json:"nextLesson,omitempty"`
+	PracticeExercise     *PracticeExerciseResource   `json:"practiceExercise,omitempty"`
 }
 
 type CourseProgressResponse struct {
@@ -147,8 +174,17 @@ func registerLearning(api huma.API, service *learner.Service) {
 			objectives = append(objectives, ObjectiveProgressResource{
 				CourseID: objective.CourseID, ModuleID: objective.ModuleID, ID: objective.ID,
 				Title: objective.Title, Description: objective.Description,
-				Introduced: objective.Introduced, Recall: objective.Recall,
-				Application: objective.Application, Transfer: objective.Transfer,
+				Introduced: objective.Introduced, LinkedLessonCount: objective.LinkedLessonCount,
+				CompletedLessonCount: objective.CompletedLessonCount, TransferAssessed: objective.TransferAssessed,
+				Recall: RecallEvidenceResource{
+					ReviewItemCount: objective.Recall.ReviewItemCount, ReviewsCompleted: objective.Recall.ReviewsCompleted,
+					DueReviewCount: objective.Recall.DueReviewCount, LastReviewedAt: objective.Recall.LastReviewedAt,
+					NextDueAt: objective.Recall.NextDueAt,
+				},
+				Application: ApplicationEvidenceResource{
+					ExerciseCount: objective.Application.ExerciseCount, Attempts: objective.Application.Attempts,
+					FullyPassedAttempts: objective.Application.FullyPassedAttempts, LastCheckedAt: objective.Application.LastCheckedAt,
+				},
 			})
 		}
 		var nextLesson *NextLessonResource
@@ -159,10 +195,19 @@ func registerLearning(api huma.API, service *learner.Service) {
 				LessonTitle: progress.NextLesson.LessonTitle,
 			}
 		}
+		var practiceExercise *PracticeExerciseResource
+		if progress.PracticeExercise != nil {
+			practiceExercise = &PracticeExerciseResource{
+				CourseID: progress.PracticeExercise.CourseID, ModuleID: progress.PracticeExercise.ModuleID,
+				ModuleTitle: progress.PracticeExercise.ModuleTitle, ExerciseID: progress.PracticeExercise.ExerciseID,
+				ExerciseTitle: progress.PracticeExercise.ExerciseTitle,
+			}
+		}
 		return &CourseProgressResponse{Body: CourseProgressResource{
 			CourseID:             progress.CourseID,
 			CompletedLessonCount: progress.CompletedLessonCount, TotalLessonCount: progress.TotalLessonCount,
-			Objectives: objectives, NextLesson: nextLesson,
+			DueReviewCount: progress.DueReviewCount, Objectives: objectives,
+			NextLesson: nextLesson, PracticeExercise: practiceExercise,
 		}}, nil
 	})
 

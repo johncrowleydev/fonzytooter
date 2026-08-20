@@ -58,6 +58,33 @@
         ],
         "type": "object"
       },
+      "ApplicationEvidenceResource": {
+        "additionalProperties": false,
+        "properties": {
+          "attempts": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "exerciseCount": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "fullyPassedAttempts": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "lastCheckedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "exerciseCount",
+          "attempts",
+          "fullyPassedAttempts"
+        ],
+        "type": "object"
+      },
       "CourseProgressResource": {
         "additionalProperties": false,
         "properties": {
@@ -77,6 +104,10 @@
           "courseId": {
             "type": "string"
           },
+          "dueReviewCount": {
+            "format": "int64",
+            "type": "integer"
+          },
           "nextLesson": {
             "$ref": "#/components/schemas/NextLessonResource"
           },
@@ -85,6 +116,9 @@
               "$ref": "#/components/schemas/ObjectiveProgressResource"
             },
             "type": "array"
+          },
+          "practiceExercise": {
+            "$ref": "#/components/schemas/PracticeExerciseResource"
           },
           "totalLessonCount": {
             "format": "int64",
@@ -95,6 +129,7 @@
           "courseId",
           "completedLessonCount",
           "totalLessonCount",
+          "dueReviewCount",
           "objectives"
         ],
         "type": "object"
@@ -937,10 +972,11 @@
         "additionalProperties": false,
         "properties": {
           "application": {
-            "enum": [
-              "not_assessed"
-            ],
-            "type": "string"
+            "$ref": "#/components/schemas/ApplicationEvidenceResource"
+          },
+          "completedLessonCount": {
+            "format": "int64",
+            "type": "integer"
           },
           "courseId": {
             "type": "string"
@@ -954,23 +990,21 @@
           "introduced": {
             "type": "boolean"
           },
+          "linkedLessonCount": {
+            "format": "int64",
+            "type": "integer"
+          },
           "moduleId": {
             "type": "string"
           },
           "recall": {
-            "enum": [
-              "not_assessed"
-            ],
-            "type": "string"
+            "$ref": "#/components/schemas/RecallEvidenceResource"
           },
           "title": {
             "type": "string"
           },
-          "transfer": {
-            "enum": [
-              "not_assessed"
-            ],
-            "type": "string"
+          "transferAssessed": {
+            "type": "boolean"
           }
         },
         "required": [
@@ -980,9 +1014,11 @@
           "title",
           "description",
           "introduced",
+          "linkedLessonCount",
+          "completedLessonCount",
           "recall",
           "application",
-          "transfer"
+          "transferAssessed"
         ],
         "type": "object"
       },
@@ -1111,6 +1147,34 @@
         ],
         "type": "object"
       },
+      "PracticeExerciseResource": {
+        "additionalProperties": false,
+        "properties": {
+          "courseId": {
+            "type": "string"
+          },
+          "exerciseId": {
+            "type": "string"
+          },
+          "exerciseTitle": {
+            "type": "string"
+          },
+          "moduleId": {
+            "type": "string"
+          },
+          "moduleTitle": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "courseId",
+          "moduleId",
+          "moduleTitle",
+          "exerciseId",
+          "exerciseTitle"
+        ],
+        "type": "object"
+      },
       "PutExerciseWorkspaceInputBody": {
         "additionalProperties": false,
         "properties": {
@@ -1164,6 +1228,37 @@
           "dueAt",
           "intervalSeconds",
           "intervalDays"
+        ],
+        "type": "object"
+      },
+      "RecallEvidenceResource": {
+        "additionalProperties": false,
+        "properties": {
+          "dueReviewCount": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "lastReviewedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "nextDueAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "reviewItemCount": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "reviewsCompleted": {
+            "format": "int64",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "reviewItemCount",
+          "reviewsCompleted",
+          "dueReviewCount"
         ],
         "type": "object"
       },

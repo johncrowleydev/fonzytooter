@@ -108,18 +108,33 @@ export function DashboardView({
         </Card>
 
         <div className="grid gap-3.5 max-sm:gap-2">
-          <AvailabilityCard
+          <ActionCard
             icon="↺"
             eyebrow="Reviews"
-            title="Not available yet"
-            detail="Recall remains not assessed until the review workflow is implemented."
+            title={`${progress.dueReviewCount} due now`}
+            detail="Review authored recall prompts with server-computed FSRS scheduling."
+            to="/review"
           />
-          <AvailabilityCard
-            icon="◎"
-            eyebrow="Mastery checks"
-            title="No checks available"
-            detail="Lesson completion does not create mastery claims."
-          />
+          {progress.practiceExercise ? (
+            <ActionCard
+              icon="◎"
+              eyebrow="Practice"
+              title={progress.practiceExercise.exerciseTitle}
+              detail={`Exercise in ${progress.practiceExercise.moduleTitle}`}
+              to={exercisePath(
+                progress.practiceExercise.courseId,
+                progress.practiceExercise.moduleId,
+                progress.practiceExercise.exerciseId,
+              )}
+            />
+          ) : (
+            <ActionCard
+              icon="◎"
+              eyebrow="Practice"
+              title="No exercise cue"
+              detail="No introduced objective currently needs an authored exercise attempt."
+            />
+          )}
         </div>
       </section>
 
@@ -129,17 +144,16 @@ export function DashboardView({
           <ActivityList activities={activities} />
         </Card>
         <Card className="min-h-72">
-          <SectionHeading eyebrow="Projects" title="Tracking not available yet" />
-          <p className="text-xs leading-relaxed text-muted">
-            Projects remain Git-based learning work. This dashboard does not claim project progress
-            before project state is implemented.
-          </p>
-          <Link
-            className="mt-6 inline-flex text-xs font-bold text-brand-teal no-underline hover:text-ink"
-            to="/projects"
-          >
-            Browse project plans →
-          </Link>
+          <SectionHeading eyebrow="Evidence" title="What has been recorded" />
+          <div className="grid gap-4 text-xs text-muted">
+            <p>
+              {progress.completedLessonCount} completed lessons introduce their linked objectives.
+            </p>
+            <p>{progress.dueReviewCount} authored recall prompts are currently due.</p>
+            <Link className="font-bold text-brand-teal no-underline hover:text-ink" to="/progress">
+              Inspect objective evidence →
+            </Link>
+          </div>
         </Card>
       </section>
 
@@ -149,8 +163,8 @@ export function DashboardView({
           <div>
             <strong className="text-xs">What this progress means</strong>
             <p className="mt-1.5 text-xs leading-normal text-muted">
-              Completed lessons introduce objectives. Recall, application, and transfer are still
-              not assessed.
+              Lesson completion, review history, and checked exercise attempts are shown as separate
+              evidence. Transfer stays unassessed until a real transfer workflow exists.
             </p>
           </div>
         </div>
@@ -179,6 +193,7 @@ export function ActivityList({ activities }: { activities: ActivityResource[] })
     <div className="grid">
       {activities.map((activity) => {
         const exerciseChecked = activity.kind === 'exercise_checked' && Boolean(activity.exerciseId)
+        const reviewCompleted = activity.kind === 'review_completed'
         const content = (
           <>
             <span className="grid size-6 place-items-center rounded-lg bg-brand-gold/10 text-xs text-brand-gold">
@@ -186,9 +201,11 @@ export function ActivityList({ activities }: { activities: ActivityResource[] })
             </span>
             <div>
               <strong className="block text-xs font-semibold">
-                {exerciseChecked
-                  ? `Checked ${activity.exerciseTitle ?? activity.exerciseId}`
-                  : `Completed ${activity.lessonTitle ?? 'lesson'}`}
+                {reviewCompleted
+                  ? `Reviewed ${activity.reviewItemId ?? 'recall prompt'}`
+                  : exerciseChecked
+                    ? `Checked ${activity.exerciseTitle ?? activity.exerciseId}`
+                    : `Completed ${activity.lessonTitle ?? 'lesson'}`}
               </strong>
               <span className="mt-1 block text-2xs text-faint">
                 {activity.moduleTitle ?? activity.courseTitle}
@@ -201,7 +218,11 @@ export function ActivityList({ activities }: { activities: ActivityResource[] })
         )
         const className =
           'grid grid-cols-[24px_1fr_auto] items-center gap-2.5 border-t border-line py-2.5 text-ink no-underline'
-        return exerciseChecked && activity.moduleId && activity.exerciseId ? (
+        return reviewCompleted ? (
+          <Link className={`${className} hover:text-brand-teal`} key={activity.id} to="/review">
+            {content}
+          </Link>
+        ) : exerciseChecked && activity.moduleId && activity.exerciseId ? (
           <Link
             className={`${className} hover:text-brand-teal`}
             key={activity.id}
@@ -227,16 +248,18 @@ export function ActivityList({ activities }: { activities: ActivityResource[] })
   )
 }
 
-function AvailabilityCard({
+function ActionCard({
   icon,
   eyebrow,
   title,
   detail,
+  to,
 }: {
   icon: string
   eyebrow: string
   title: string
   detail: string
+  to?: string
 }) {
   return (
     <Card className="flex min-h-32 items-start gap-4 p-5 max-sm:min-h-28">
@@ -247,6 +270,14 @@ function AvailabilityCard({
         <p className="mt-px text-2xs font-bold uppercase tracking-widest text-faint">{eyebrow}</p>
         <h3 className="my-2 text-lg tracking-tight">{title}</h3>
         <p className="text-2xs leading-relaxed text-faint">{detail}</p>
+        {to ? (
+          <Link
+            className="mt-3 inline-flex text-2xs font-bold text-brand-teal no-underline"
+            to={to}
+          >
+            Open →
+          </Link>
+        ) : null}
       </div>
     </Card>
   )
