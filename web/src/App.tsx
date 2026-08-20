@@ -11,6 +11,7 @@ import { ProjectDetail } from './features/projects/ProjectDetail'
 import { Projects } from './features/projects/Projects'
 import { Review } from './features/reviews/Review'
 import { TutorProvider } from './features/tutor/TutorContext'
+import { Worksheet } from './features/worksheets/Worksheet'
 
 export function App() {
   return (
@@ -27,6 +28,10 @@ export function App() {
           <Route
             path="/courses/:courseId/modules/:moduleId/lessons/:lessonId"
             element={<Lesson />}
+          />
+          <Route
+            path="/courses/:courseId/modules/:moduleId/worksheets/:worksheetId"
+            element={<Worksheet />}
           />
           <Route path="/review" element={<Review />} />
           <Route path="/exercise/:exerciseId" element={<Exercise />} />

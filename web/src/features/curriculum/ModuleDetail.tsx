@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { useGetCourse, useGetCourseModule } from '../../api/generated/endpoints'
 import type { CourseResource } from '../../api/generated/schemas/courseResource.zod'
 import type { ModuleResource } from '../../api/generated/schemas/moduleResource.zod'
-import { coursePath, lessonPath } from '../../app/routes'
+import { coursePath, lessonPath, worksheetPath } from '../../app/routes'
 import { Badge, Card, PageIntro, SectionHeading } from '../../components/ui'
 import { useTutor } from '../tutor/TutorContext'
 import { safeExternalUrl } from './externalLinks'
@@ -180,6 +180,40 @@ function ModuleContent({ course, module }: { course: CourseResource; module: Mod
           </Card>
         )}
       </section>
+
+      {module.worksheets.length > 0 ? (
+        <section>
+          <SectionHeading
+            eyebrow="Practice"
+            title="Worksheets"
+            detail="Written practice grouped in lesson order."
+          />
+          <div className="grid gap-2">
+            {module.worksheets.map((worksheet) => {
+              const lesson = module.lessons.find((item) => item.id === worksheet.lessonId)
+              return (
+                <Link
+                  key={worksheet.id}
+                  className="flex items-center gap-3 rounded-lg border border-line bg-panel px-4 py-4 text-ink no-underline transition hover:border-line-strong hover:text-brand-teal"
+                  to={worksheetPath(course.id, module.id, worksheet.id)}
+                >
+                  <Badge tone="teal">Worksheet</Badge>
+                  <span className="min-w-0 flex-1">
+                    <strong className="block text-xs">{worksheet.title}</strong>
+                    <small className="mt-1 block text-2xs text-faint">
+                      {lesson?.title ?? worksheet.lessonId} · {worksheet.problemCount}{' '}
+                      {worksheet.problemCount === 1 ? 'problem' : 'problems'}
+                    </small>
+                  </span>
+                  <span className="text-base text-faint" aria-hidden="true">
+                    →
+                  </span>
+                </Link>
+              )
+            })}
+          </div>
+        </section>
+      ) : null}
 
       {module.videos.length > 0 ? (
         <section>
