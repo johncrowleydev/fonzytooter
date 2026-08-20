@@ -134,6 +134,8 @@ export function Exercise() {
   const course = courseQuery.data?.data
   const module = moduleQuery.data?.data
   const lesson = lessonQuery.data?.data
+  const objectives =
+    module?.objectives.filter((objective) => exercise?.objectiveIds.includes(objective.id)) ?? []
   const execution = useMemo(
     () =>
       checkResult
@@ -290,7 +292,7 @@ export function Exercise() {
             </div>
           </Card>
           <Card className="overflow-hidden p-0">
-            <div className="flex items-center justify-between gap-3 border-b border-line px-5 py-3.5">
+            <div className="border-b border-line px-5 py-3.5">
               <div>
                 <p className="mb-1 font-mono text-xs text-ink">workspace.py</p>
                 <span
@@ -301,7 +303,6 @@ export function Exercise() {
                   {saveLabels[saveState]}
                 </span>
               </div>
-              <span className="font-mono text-2xs text-faint">Python · Pyodide</span>
             </div>
             <CodeEditor disabled={executing} onChange={setCode} value={code} />
             <div className="flex items-center justify-between gap-4 border-t border-line px-4 py-3 max-sm:flex-col max-sm:items-start">
@@ -405,19 +406,10 @@ export function Exercise() {
               Learning objectives
             </p>
             <ul className="mt-3 grid gap-2 text-xs text-muted">
-              {exercise.objectiveIds.map((objectiveId) => (
-                <li key={objectiveId}>{objectiveId}</li>
+              {objectives.map((objective) => (
+                <li key={objective.id}>{objective.title}</li>
               ))}
             </ul>
-          </Card>
-          <Card>
-            <p className="text-2xs font-bold uppercase tracking-widest text-faint">
-              Runtime boundary
-            </p>
-            <p className="mt-2 text-xs leading-relaxed text-muted">
-              Python runs in a warm browser worker. Check results are saved as learner evidence;
-              exploratory runs are not.
-            </p>
           </Card>
         </aside>
       </div>
