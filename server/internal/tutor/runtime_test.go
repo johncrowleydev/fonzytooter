@@ -94,6 +94,56 @@ func TestRuntimeDirectResponsePersistsConversationAndEmitsNormalizedEvents(t *te
 	}
 }
 
+func TestRuntimePersistsContinuationStateAcrossUserTurns(t *testing.T) {
+	continuation := &ProviderContinuation{
+		Provider: "test-provider", Model: "test-model", State: json.RawMessage(`[{"type":"reasoning.encrypted","data":"opaque-turn-state"}]`),
+	}
+	provider := &scriptedProvider{scripts: []providerScript{
+		{events: []ProviderEvent{
+			{Type: ProviderEventState, Continuation: continuation},
+			{Type: ProviderEventTextDelta, Text: "First answer."},
+			{Type: ProviderEventCompleted},
+		}},
+		{events: []ProviderEvent{
+			{Type: ProviderEventTextDelta, Text: "Second answer."},
+			{Type: ProviderEventCompleted},
+		}},
+	}}
+	service, store := newRuntimeForTest(t, provider, nil, DefaultMaxModelRounds)
+	conversation := createConversationWithMessages(t, store)
+	first, err := service.StreamTurn(context.Background(), TurnRequest{ConversationID: conversation.ID, Message: "First question."})
+	if err != nil {
+		t.Fatalf("start first turn: %v", err)
+	}
+	collectTutorEvents(t, first)
+
+	persisted, err := store.Messages(context.Background(), conversation.ID)
+	if err != nil {
+		t.Fatalf("load persisted first turn: %v", err)
+	}
+	if len(persisted) != 2 || persisted[1].Continuation == nil || persisted[1].Continuation.Provider != continuation.Provider || persisted[1].Continuation.Model != continuation.Model || string(persisted[1].Continuation.State) != string(continuation.State) {
+		t.Fatalf("continuation state was not persisted: %#v", persisted)
+	}
+
+	second, err := service.StreamTurn(context.Background(), TurnRequest{ConversationID: conversation.ID, Message: "Second question."})
+	if err != nil {
+		t.Fatalf("start second turn: %v", err)
+	}
+	collectTutorEvents(t, second)
+	if len(provider.requests) != 2 {
+		t.Fatalf("expected two provider requests, got %d", len(provider.requests))
+	}
+	var replayed *ProviderContinuation
+	for _, message := range provider.requests[1].Messages {
+		if message.Role == ModelRoleAssistant && modelMessageText(message) == "First answer." {
+			replayed = message.Continuation
+		}
+	}
+	if replayed == nil || replayed.Provider != continuation.Provider || replayed.Model != continuation.Model || string(replayed.State) != string(continuation.State) {
+		t.Fatalf("persisted continuation state was not replayed: %#v", provider.requests[1])
+	}
+}
+
 func TestRuntimeCreatesApplicationOwnedConversation(t *testing.T) {
 	provider := &scriptedProvider{scripts: []providerScript{{events: []ProviderEvent{
 		{Type: ProviderEventTextDelta, Text: "hello"},
@@ -122,6 +172,9 @@ func TestRuntimeSingleToolRoundTripPersistsCorrelationAndResult(t *testing.T) {
 	tool := mustEchoTool(t, nil)
 	provider := &scriptedProvider{scripts: []providerScript{
 		{events: []ProviderEvent{
+			{Type: ProviderEventState, Continuation: &ProviderContinuation{
+				Provider: "test-provider", Model: "test-model", State: json.RawMessage(`[{"type":"reasoning.encrypted","data":"opaque"}]`),
+			}},
 			{Type: ProviderEventToolCall, ToolCall: &ToolCallRequest{ID: "call-1", Name: "echo", Arguments: json.RawMessage(`{"text":"evidence"}`)}},
 			{Type: ProviderEventCompleted},
 		}},
@@ -153,7 +206,7 @@ func TestRuntimeSingleToolRoundTripPersistsCorrelationAndResult(t *testing.T) {
 		t.Fatalf("expected two provider requests, got %d", len(provider.requests))
 	}
 	continuation := provider.requests[1].Messages
-	if len(continuation) < 2 || continuation[len(continuation)-2].ToolCalls[0].ID != "call-1" || continuation[len(continuation)-1].ToolCallID != "call-1" || modelMessageText(continuation[len(continuation)-1]) != `{"echo":"evidence"}` {
+	if len(continuation) < 2 || continuation[len(continuation)-2].ToolCalls[0].ID != "call-1" || continuation[len(continuation)-2].Continuation == nil || string(continuation[len(continuation)-2].Continuation.State) != `[{"type":"reasoning.encrypted","data":"opaque"}]` || continuation[len(continuation)-1].ToolCallID != "call-1" || modelMessageText(continuation[len(continuation)-1]) != `{"echo":"evidence"}` {
 		t.Fatalf("tool correlation was not preserved: %#v", continuation)
 	}
 }

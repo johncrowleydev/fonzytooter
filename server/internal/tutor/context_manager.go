@@ -202,6 +202,9 @@ func (m *ContextManager) estimateRequest(messages []ModelMessage, tools []ToolDe
 		for _, call := range message.ToolCalls {
 			total += 4 + m.estimator.EstimateText(call.ID) + m.estimator.EstimateText(call.Name) + m.estimator.EstimateText(string(call.Arguments))
 		}
+		if message.Continuation != nil {
+			total += m.estimator.EstimateText(string(message.Continuation.State))
+		}
 		total += m.estimator.EstimateText(message.ToolCallID) + m.estimator.EstimateText(message.ToolName)
 	}
 	for _, tool := range tools {
@@ -274,7 +277,9 @@ func messagesAfter(messages []Message, sequence int) []Message {
 func persistedModelMessages(messages []Message, calls []ToolCall) []ModelMessage {
 	result := make([]ModelMessage, 0, len(messages))
 	for _, message := range messages {
-		modelMessage := ModelMessage{Role: ModelRole(message.Role), Parts: persistedParts(message.Parts)}
+		modelMessage := ModelMessage{
+			Role: ModelRole(message.Role), Parts: persistedParts(message.Parts), Continuation: cloneProviderContinuation(message.Continuation),
+		}
 		if message.Role == MessageRoleAssistant {
 			for _, call := range calls {
 				if call.MessageID != message.ID {
@@ -382,6 +387,7 @@ func cloneModelMessages(messages []ModelMessage) []ModelMessage {
 		result[index] = message
 		result[index].Parts = append([]ModelContentPart(nil), message.Parts...)
 		result[index].ToolCalls = append([]ToolCallRequest(nil), message.ToolCalls...)
+		result[index].Continuation = cloneProviderContinuation(message.Continuation)
 		for callIndex := range result[index].ToolCalls {
 			result[index].ToolCalls[callIndex].Arguments = cloneJSON(result[index].ToolCalls[callIndex].Arguments)
 		}

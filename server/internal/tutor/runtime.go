@@ -233,7 +233,7 @@ func (s *Service) streamUnpersisted(ctx context.Context, request TurnRequest) (<
 	events := make(chan Event, 8)
 	go func() {
 		defer close(events)
-		_, _, err := consumeProviderEvents(ctx, events, request.ConversationID, providerEvents)
+		_, _, _, err := consumeProviderEvents(ctx, events, request.ConversationID, providerEvents)
 		if err != nil {
 			sendTutorEvent(ctx, events, Event{Type: EventError, ConversationID: request.ConversationID, Error: err.Error()})
 			return
@@ -277,7 +277,7 @@ func (s *Service) run(
 	defer close(events)
 	defer unlock()
 	for round := 1; round <= s.maxModelRounds; round++ {
-		text, toolCalls, err := consumeProviderEvents(ctx, events, conversationID, providerEvents)
+		text, toolCalls, continuation, err := consumeProviderEvents(ctx, events, conversationID, providerEvents)
 		if err != nil {
 			if ctx.Err() == nil {
 				sendTutorEvent(ctx, events, Event{Type: EventError, ConversationID: conversationID, Error: err.Error()})
@@ -289,7 +289,9 @@ func (s *Service) run(
 				sendTutorEvent(ctx, events, Event{Type: EventError, ConversationID: conversationID, Error: "tutor provider completed without a response"})
 				return
 			}
-			if _, err := s.conversations.AppendTextMessage(ctx, conversationID, MessageRoleAssistant, text); err != nil {
+			if _, err := s.conversations.AppendAssistantResponseWithContinuation(
+				ctx, conversationID, []ContentPart{{Kind: ContentKindText, Text: text}}, nil, continuation,
+			); err != nil {
 				sendTutorEvent(ctx, events, Event{Type: EventError, ConversationID: conversationID, Error: err.Error()})
 				return
 			}
@@ -309,12 +311,14 @@ func (s *Service) run(
 		for index, call := range toolCalls {
 			callInputs[index] = ToolCallInput{RequestID: call.ID, Name: call.Name, Arguments: call.Arguments}
 		}
-		assistant, err := s.conversations.AppendAssistantResponse(ctx, conversationID, parts, callInputs)
+		assistant, err := s.conversations.AppendAssistantResponseWithContinuation(ctx, conversationID, parts, callInputs, continuation)
 		if err != nil {
 			sendTutorEvent(ctx, events, Event{Type: EventError, ConversationID: conversationID, Error: err.Error()})
 			return
 		}
-		assistantModel := ModelMessage{Role: ModelRoleAssistant, ToolCalls: cloneToolCallRequests(toolCalls)}
+		assistantModel := ModelMessage{
+			Role: ModelRoleAssistant, ToolCalls: cloneToolCallRequests(toolCalls), Continuation: cloneProviderContinuation(continuation),
+		}
 		if text != "" {
 			assistantModel.Parts = []ModelContentPart{{Kind: ModelContentText, Text: text}}
 		}
@@ -358,45 +362,51 @@ func (s *Service) run(
 	}
 }
 
-func consumeProviderEvents(ctx context.Context, output chan<- Event, conversationID string, input <-chan ProviderEvent) (string, []ToolCallRequest, error) {
+func consumeProviderEvents(ctx context.Context, output chan<- Event, conversationID string, input <-chan ProviderEvent) (string, []ToolCallRequest, *ProviderContinuation, error) {
 	var text strings.Builder
 	toolCalls := make([]ToolCallRequest, 0)
+	var continuation *ProviderContinuation
 	completed := false
 	for {
 		select {
 		case <-ctx.Done():
-			return "", nil, ctx.Err()
+			return "", nil, nil, ctx.Err()
 		case event, ok := <-input:
 			if !ok {
 				if !completed {
-					return "", nil, errors.New("tutor provider stream ended before completion")
+					return "", nil, nil, errors.New("tutor provider stream ended before completion")
 				}
-				return text.String(), toolCalls, nil
+				return text.String(), toolCalls, continuation, nil
 			}
 			if completed {
-				return "", nil, errors.New("tutor provider emitted an event after completion")
+				return "", nil, nil, errors.New("tutor provider emitted an event after completion")
 			}
 			switch event.Type {
 			case ProviderEventTextDelta:
 				text.WriteString(event.Text)
 				if !sendTutorEvent(ctx, output, Event{Type: EventTextDelta, ConversationID: conversationID, Text: event.Text}) {
-					return "", nil, ctx.Err()
+					return "", nil, nil, ctx.Err()
 				}
 			case ProviderEventToolCall:
 				if event.ToolCall == nil || strings.TrimSpace(event.ToolCall.ID) == "" || strings.TrimSpace(event.ToolCall.Name) == "" || !json.Valid(event.ToolCall.Arguments) {
-					return "", nil, errors.New("tutor provider returned an invalid tool call")
+					return "", nil, nil, errors.New("tutor provider returned an invalid tool call")
 				}
 				toolCalls = append(toolCalls, ToolCallRequest{ID: event.ToolCall.ID, Name: event.ToolCall.Name, Arguments: cloneJSON(event.ToolCall.Arguments)})
+			case ProviderEventState:
+				if continuation != nil || event.Continuation == nil || strings.TrimSpace(event.Continuation.Provider) == "" || strings.TrimSpace(event.Continuation.Model) == "" || !json.Valid(event.Continuation.State) {
+					return "", nil, nil, errors.New("tutor provider returned invalid continuation state")
+				}
+				continuation = cloneProviderContinuation(event.Continuation)
 			case ProviderEventUsage:
 				if event.Usage != nil && !sendTutorEvent(ctx, output, Event{Type: EventUsage, ConversationID: conversationID, Usage: cloneUsage(event.Usage)}) {
-					return "", nil, ctx.Err()
+					return "", nil, nil, ctx.Err()
 				}
 			case ProviderEventCompleted:
 				completed = true
 			case ProviderEventError:
-				return "", nil, errors.New(event.Error)
+				return "", nil, nil, errors.New(event.Error)
 			default:
-				return "", nil, fmt.Errorf("unknown tutor provider event %q", event.Type)
+				return "", nil, nil, fmt.Errorf("unknown tutor provider event %q", event.Type)
 			}
 		}
 	}

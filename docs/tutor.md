@@ -74,6 +74,12 @@ The provider boundary is responsible for:
 - reporting usage, latency-relevant metadata, and errors;
 - mapping a provider's reasoning controls onto Fonzytooter's internal reasoning policy.
 
+### OpenRouter configuration
+
+The server enables the OpenRouter adapter only when both `OPENROUTER_API_KEY` and an exact `FONZYTOOTER_TUTOR_MODEL` ID are set. There is deliberately no production model default: if either value is absent, the existing not-configured tutor response remains active. `OPENROUTER_BASE_URL` may override the default `https://openrouter.ai/api/v1` endpoint for deterministic local testing, and `OPENROUTER_HTTP_TIMEOUT` accepts a positive Go duration such as `90s`.
+
+The adapter owns OpenRouter's Chat Completions request, SSE, tool-call, reasoning, usage, and error shapes. It reconstructs fragmented tool arguments by call index, preserves call IDs through tool-result continuation, maps the canonical reasoning levels to OpenRouter effort values, and retries a rejected unsupported reasoning setting once without that optional setting. Streamed `reasoning_details` objects are concatenated in their original order and persisted with recent assistant messages as opaque provider/model-scoped state; a compatible adapter replays them through tool results and later conversational turns without inspecting their contents. State attached to an incompatible provider/model is omitted, and compacted messages no longer contribute it to inference requests. Text and image URL/data-URL parts are supported at the request boundary; document and audio inputs are intentionally outside this adapter slice.
+
 The tutor service is responsible for:
 
 - conversation persistence;
