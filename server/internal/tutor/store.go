@@ -93,6 +93,7 @@ type Message struct {
 	Sequence       int
 	Role           MessageRole
 	Parts          []ContentPart
+	Continuation   *ProviderContinuation
 	CreatedAt      time.Time
 }
 
@@ -215,17 +216,21 @@ func (s *ConversationStore) AppendTextMessage(ctx context.Context, conversationI
 }
 
 func (s *ConversationStore) AppendMessage(ctx context.Context, conversationID string, role MessageRole, parts []ContentPart) (Message, error) {
-	response, err := s.appendMessage(ctx, conversationID, role, parts, nil)
+	response, err := s.appendMessage(ctx, conversationID, role, parts, nil, nil)
 	return response.Message, err
 }
 
 // AppendAssistantResponse atomically persists one canonical assistant message
 // and the complete ordered set of tool calls requested by that model response.
 func (s *ConversationStore) AppendAssistantResponse(ctx context.Context, conversationID string, parts []ContentPart, calls []ToolCallInput) (AssistantResponse, error) {
-	return s.appendMessage(ctx, conversationID, MessageRoleAssistant, parts, calls)
+	return s.AppendAssistantResponseWithContinuation(ctx, conversationID, parts, calls, nil)
 }
 
-func (s *ConversationStore) appendMessage(ctx context.Context, conversationID string, role MessageRole, parts []ContentPart, calls []ToolCallInput) (AssistantResponse, error) {
+func (s *ConversationStore) AppendAssistantResponseWithContinuation(ctx context.Context, conversationID string, parts []ContentPart, calls []ToolCallInput, continuation *ProviderContinuation) (AssistantResponse, error) {
+	return s.appendMessage(ctx, conversationID, MessageRoleAssistant, parts, calls, continuation)
+}
+
+func (s *ConversationStore) appendMessage(ctx context.Context, conversationID string, role MessageRole, parts []ContentPart, calls []ToolCallInput, continuation *ProviderContinuation) (AssistantResponse, error) {
 	if !validMessageRole(role) {
 		return AssistantResponse{}, ErrInvalidMessageRole
 	}
@@ -239,6 +244,11 @@ func (s *ConversationStore) appendMessage(ctx context.Context, conversationID st
 	}
 	if role != MessageRoleAssistant && len(calls) > 0 {
 		return AssistantResponse{}, errors.New("only assistant messages can contain tutor tool calls")
+	}
+	if continuation != nil {
+		if role != MessageRoleAssistant || strings.TrimSpace(continuation.Provider) == "" || strings.TrimSpace(continuation.Model) == "" || !json.Valid(continuation.State) {
+			return AssistantResponse{}, errors.New("invalid tutor provider continuation state")
+		}
 	}
 	validatedCalls := make([]ToolCallInput, len(calls))
 	seenRequestIDs := make(map[string]struct{}, len(calls))
@@ -280,10 +290,19 @@ func (s *ConversationStore) appendMessage(ctx context.Context, conversationID st
 	`, conversationID).Scan(&sequence); err != nil {
 		return AssistantResponse{}, fmt.Errorf("choose tutor message sequence: %w", err)
 	}
+	var continuationProvider, continuationModel, continuationState any
+	if continuation != nil {
+		continuationProvider = continuation.Provider
+		continuationModel = continuation.Model
+		continuationState = string(continuation.State)
+	}
 	result, err := tx.ExecContext(ctx, `
-		INSERT INTO tutor_messages (id, conversation_id, sequence, role, created_at)
-		SELECT ?, id, ?, ?, ? FROM tutor_conversations WHERE id = ?
-	`, id, sequence, role, formatTime(now), conversationID)
+		INSERT INTO tutor_messages (
+			id, conversation_id, sequence, role, created_at,
+			continuation_provider, continuation_model, continuation_state_json
+		)
+		SELECT ?, id, ?, ?, ?, ?, ?, ? FROM tutor_conversations WHERE id = ?
+	`, id, sequence, role, formatTime(now), continuationProvider, continuationModel, continuationState, conversationID)
 	if err != nil {
 		return AssistantResponse{}, fmt.Errorf("append tutor message: %w", err)
 	}
@@ -324,7 +343,10 @@ func (s *ConversationStore) appendMessage(ctx context.Context, conversationID st
 	}
 
 	return AssistantResponse{
-		Message:   Message{ID: id, ConversationID: conversationID, Sequence: sequence, Role: role, Parts: cloneParts(parts), CreatedAt: now},
+		Message: Message{
+			ID: id, ConversationID: conversationID, Sequence: sequence, Role: role, Parts: cloneParts(parts),
+			Continuation: cloneProviderContinuation(continuation), CreatedAt: now,
+		},
 		ToolCalls: storedCalls,
 	}, nil
 }
@@ -651,6 +673,7 @@ func (s *ConversationStore) messages(ctx context.Context, conversationID string,
 	}
 	query := `
 		SELECT m.id, m.conversation_id, m.sequence, m.role, m.created_at,
+		       m.continuation_provider, m.continuation_model, m.continuation_state_json,
 		       p.kind, p.text_content
 		FROM tutor_messages m
 		LEFT JOIN tutor_message_parts p ON p.message_id = m.id
@@ -660,13 +683,15 @@ func (s *ConversationStore) messages(ctx context.Context, conversationID string,
 	if limit > 0 {
 		query = `
 			WITH recent_messages AS (
-				SELECT id, conversation_id, sequence, role, created_at
+				SELECT id, conversation_id, sequence, role, created_at,
+				       continuation_provider, continuation_model, continuation_state_json
 				FROM tutor_messages
 				WHERE conversation_id = ?
 				ORDER BY sequence DESC
 				LIMIT ?
 			)
 			SELECT m.id, m.conversation_id, m.sequence, m.role, m.created_at,
+			       m.continuation_provider, m.continuation_model, m.continuation_state_json,
 			       p.kind, p.text_content
 			FROM recent_messages m
 			LEFT JOIN tutor_message_parts p ON p.message_id = m.id
@@ -683,8 +708,12 @@ func (s *ConversationStore) messages(ctx context.Context, conversationID string,
 	for rows.Next() {
 		var message Message
 		var role, createdAt string
+		var continuationProvider, continuationModel, continuationState sql.NullString
 		var partKind, partText sql.NullString
-		if err := rows.Scan(&message.ID, &message.ConversationID, &message.Sequence, &role, &createdAt, &partKind, &partText); err != nil {
+		if err := rows.Scan(
+			&message.ID, &message.ConversationID, &message.Sequence, &role, &createdAt,
+			&continuationProvider, &continuationModel, &continuationState, &partKind, &partText,
+		); err != nil {
 			return nil, fmt.Errorf("scan tutor message: %w", err)
 		}
 		if len(messages) > 0 && messages[len(messages)-1].ID == message.ID {
@@ -694,6 +723,14 @@ func (s *ConversationStore) messages(ctx context.Context, conversationID string,
 			continue
 		}
 		message.Role = MessageRole(role)
+		if continuationProvider.Valid || continuationModel.Valid || continuationState.Valid {
+			if !continuationProvider.Valid || !continuationModel.Valid || !continuationState.Valid || !json.Valid([]byte(continuationState.String)) {
+				return nil, errors.New("scan tutor message: invalid provider continuation state")
+			}
+			message.Continuation = &ProviderContinuation{
+				Provider: continuationProvider.String, Model: continuationModel.String, State: json.RawMessage(continuationState.String),
+			}
+		}
 		message.CreatedAt, err = parseTime(createdAt)
 		if err != nil {
 			return nil, fmt.Errorf("scan tutor message: %w", err)
@@ -835,4 +872,11 @@ func cloneParts(parts []ContentPart) []ContentPart {
 
 func cloneJSON(value json.RawMessage) json.RawMessage {
 	return append(json.RawMessage(nil), value...)
+}
+
+func cloneProviderContinuation(value *ProviderContinuation) *ProviderContinuation {
+	if value == nil {
+		return nil
+	}
+	return &ProviderContinuation{Provider: value.Provider, Model: value.Model, State: cloneJSON(value.State)}
 }

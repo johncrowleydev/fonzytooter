@@ -122,6 +122,7 @@ func collectCompactionResponse(ctx context.Context, stream <-chan ProviderEvent)
 			case ProviderEventTextDelta:
 				text.WriteString(event.Text)
 			case ProviderEventUsage:
+			case ProviderEventState:
 			case ProviderEventCompleted:
 				completed = true
 			case ProviderEventError:

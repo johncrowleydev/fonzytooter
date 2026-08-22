@@ -30,11 +30,18 @@ type ModelContentPart struct {
 }
 
 type ModelMessage struct {
-	Role       ModelRole
-	Parts      []ModelContentPart
-	ToolCalls  []ToolCallRequest
-	ToolCallID string
-	ToolName   string
+	Role         ModelRole
+	Parts        []ModelContentPart
+	ToolCalls    []ToolCallRequest
+	ToolCallID   string
+	ToolName     string
+	Continuation *ProviderContinuation
+}
+
+type ProviderContinuation struct {
+	Provider string
+	Model    string
+	State    json.RawMessage
 }
 
 type ToolCallRequest struct {
@@ -70,17 +77,19 @@ type ProviderEventType string
 const (
 	ProviderEventTextDelta ProviderEventType = "text_delta"
 	ProviderEventToolCall  ProviderEventType = "tool_call"
+	ProviderEventState     ProviderEventType = "continuation_state"
 	ProviderEventUsage     ProviderEventType = "usage"
 	ProviderEventCompleted ProviderEventType = "completed"
 	ProviderEventError     ProviderEventType = "error"
 )
 
 type ProviderEvent struct {
-	Type     ProviderEventType
-	Text     string
-	ToolCall *ToolCallRequest
-	Usage    *Usage
-	Error    string
+	Type         ProviderEventType
+	Text         string
+	ToolCall     *ToolCallRequest
+	Continuation *ProviderContinuation
+	Usage        *Usage
+	Error        string
 }
 
 type Provider interface {

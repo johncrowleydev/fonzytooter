@@ -19,6 +19,7 @@ import (
 	"github.com/johncrowleydev/fonzytooter/server/internal/learner"
 	"github.com/johncrowleydev/fonzytooter/server/internal/review"
 	"github.com/johncrowleydev/fonzytooter/server/internal/tutor"
+	openrouterprovider "github.com/johncrowleydev/fonzytooter/server/internal/tutor/openrouter"
 )
 
 func main() {
@@ -88,9 +89,30 @@ func prepareServer(ctx context.Context, cfg config.Config, openDatabase database
 	}
 
 	conversationStore := tutor.NewConversationStore(db)
-	tutorService := tutor.NewPersistentService(tutor.NewUnavailableProvider(), conversationStore)
+	tutorProvider, err := configuredTutorProvider(cfg)
+	if err != nil {
+		_ = db.Close()
+		return nil, nil, err
+	}
+	tutorService := tutor.NewPersistentService(tutorProvider, conversationStore)
 	learnerService := learner.NewService(db, catalog)
 	reviewService := review.NewService(db, catalog, review.SystemClock{})
 	server := httpapi.NewServer(cfg.Address, tutorService, catalog, learnerService, reviewService)
 	return server, db, nil
+}
+
+func configuredTutorProvider(cfg config.Config) (tutor.Provider, error) {
+	if !cfg.OpenRouter.Configured() {
+		return tutor.NewUnavailableProvider(), nil
+	}
+	provider, err := openrouterprovider.New(openrouterprovider.Config{
+		APIKey:  cfg.OpenRouter.APIKey,
+		Model:   cfg.OpenRouter.Model,
+		BaseURL: cfg.OpenRouter.BaseURL,
+		Client:  &http.Client{Timeout: cfg.OpenRouter.Timeout},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("configure OpenRouter tutor provider: %w", err)
+	}
+	return provider, nil
 }

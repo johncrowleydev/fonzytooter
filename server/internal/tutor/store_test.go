@@ -366,6 +366,76 @@ func TestConversationStoreEnforcesForeignKeysAndCascades(t *testing.T) {
 	}
 }
 
+func TestConversationStoreDatabaseRejectsPartialProviderContinuationState(t *testing.T) {
+	store, db := newTestConversationStore(t)
+	store.newID = nextID(t, "conversation", "assistant-message")
+	conversation, err := store.CreateConversation(context.Background(), CreateConversationParams{})
+	if err != nil {
+		t.Fatalf("create conversation: %v", err)
+	}
+	message, err := store.AppendTextMessage(context.Background(), conversation.ID, MessageRoleAssistant, "answer")
+	if err != nil {
+		t.Fatalf("append assistant message: %v", err)
+	}
+
+	tests := []struct {
+		name     string
+		role     string
+		provider any
+		model    any
+		state    any
+	}{
+		{name: "provider only", role: "assistant", provider: "openrouter"},
+		{name: "model only", role: "assistant", model: "model"},
+		{name: "state only", role: "assistant", state: `[]`},
+		{name: "provider and model", role: "assistant", provider: "openrouter", model: "model"},
+		{name: "provider and state", role: "assistant", provider: "openrouter", state: `[]`},
+		{name: "model and state", role: "assistant", model: "model", state: `[]`},
+		{name: "empty provider", role: "assistant", provider: "", model: "model", state: `[]`},
+		{name: "blank model", role: "assistant", provider: "openrouter", model: "   ", state: `[]`},
+		{name: "non-assistant", role: "user", provider: "openrouter", model: "model", state: `[]`},
+	}
+	for index, test := range tests {
+		t.Run("insert/"+test.name, func(t *testing.T) {
+			_, err := db.Exec(`
+				INSERT INTO tutor_messages (
+					id, conversation_id, sequence, role, created_at,
+					continuation_provider, continuation_model, continuation_state_json
+				) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+			`, fmt.Sprintf("invalid-message-%d", index), conversation.ID, index+2, test.role,
+				"2026-08-21T12:00:00.000000000Z", test.provider, test.model, test.state)
+			if err == nil {
+				t.Fatal("expected continuation insert trigger to reject malformed state")
+			}
+		})
+		t.Run("update/"+test.name, func(t *testing.T) {
+			_, err := db.Exec(`
+				UPDATE tutor_messages
+				SET role = ?, continuation_provider = ?, continuation_model = ?, continuation_state_json = ?
+				WHERE id = ?
+			`, test.role, test.provider, test.model, test.state, message.ID)
+			if err == nil {
+				t.Fatal("expected continuation update trigger to reject malformed state")
+			}
+		})
+	}
+
+	if _, err := db.Exec(`
+		UPDATE tutor_messages
+		SET continuation_provider = 'openrouter', continuation_model = 'model', continuation_state_json = '[]'
+		WHERE id = ?
+	`, message.ID); err != nil {
+		t.Fatalf("write complete continuation state: %v", err)
+	}
+	if _, err := db.Exec(`
+		UPDATE tutor_messages
+		SET continuation_provider = NULL, continuation_model = NULL, continuation_state_json = NULL
+		WHERE id = ?
+	`, message.ID); err != nil {
+		t.Fatalf("clear complete continuation state: %v", err)
+	}
+}
+
 func TestConversationStoreAppendIsAtomic(t *testing.T) {
 	store, db := newTestConversationStore(t)
 	store.newID = nextID(t, "conversation", "message")
