@@ -1,0 +1,1060 @@
+---
+id: 04-vectorized-thinking
+title: "Vectorized Thinking"
+objectiveIds:
+  - numpy.vectorization
+---
+
+# Vectorized Thinking
+
+In ordinary application code, when you have a collection of values and want to transform them, a loop is often the natural first move.
+
+```python
+import numpy as np
+
+temperatures_c = np.array([20.0, 22.5, 18.0, 25.0])
+
+temperatures_f = []
+
+for c in temperatures_c:
+    temperatures_f.append(c * 9 / 5 + 32)
+```
+
+That code is correct. But NumPy gives us another way to express the same idea:
+
+```python
+temperatures_f = temperatures_c * 9 / 5 + 32
+```
+
+The second version is shorter, but brevity is not the important difference.
+
+The important difference is that the second expression describes the operation at the same level as the data. We are not telling Python how to visit each element one by one. We are saying:
+
+> **Apply this numerical transformation to the array.**
+
+That shift in viewpoint is called **vectorized thinking**.
+
+It is one of the most important habits in scientific Python. The same style of reasoning will later appear in linear algebra, statistics, machine learning, PyTorch, and neural-network code.
+
+By the end of this lesson, you should be able to recognize element-wise array operations, rewrite common loops as vectorized expressions, distinguish transformations from reductions, reason about reductions over axes, and compose NumPy operations into small numerical pipelines.
+
+---
+
+## From scalar functions to array operations
+
+Earlier, we connected programming functions to mathematical functions. Consider the Celsius-to-Fahrenheit transformation:
+
+```text
+f(x) = 9x / 5 + 32
+```
+
+For a single number, the Python version is straightforward:
+
+```python
+def fahrenheit(celsius: float) -> float:
+    return celsius * 9 / 5 + 32
+```
+
+If the input is a NumPy array, the same arithmetic expression applies element by element:
+
+```python
+import numpy as np
+
+celsius = np.array([0.0, 10.0, 20.0, 30.0])
+fahrenheit = celsius * 9 / 5 + 32
+
+print(fahrenheit)
+```
+
+The result is:
+
+```text
+[32. 50. 68. 86.]
+```
+
+Conceptually, NumPy evaluates the transformation for every element:
+
+```text
+0.0   -> 32.0
+10.0  -> 50.0
+20.0  -> 68.0
+30.0  -> 86.0
+```
+
+But your code does not have to spell out those individual steps.
+
+That is the first useful mental model for vectorization:
+
+> **Write the mathematical operation once; let the array supply all the inputs.**
+
+---
+
+## Element-wise arithmetic
+
+Ordinary arithmetic operators work element by element on NumPy arrays.
+
+```python
+x = np.array([1, 2, 3, 4])
+
+print(x + 10)
+print(x * 2)
+print(x ** 2)
+```
+
+These produce:
+
+```text
+[11 12 13 14]
+[2 4 6 8]
+[1 4 9 16]
+```
+
+The operations preserve the structure of the array. If `x` has shape `(4,)`, then `x * 2` also has shape `(4,)`.
+
+The same idea works with multidimensional arrays:
+
+```python
+x = np.array([
+    [1, 2, 3],
+    [4, 5, 6],
+])
+
+print(x * 10)
+```
+
+The shape remains `(2, 3)` while every element is transformed.
+
+### Array with array
+
+Arrays of the same shape can also interact element by element:
+
+```python
+a = np.array([1, 2, 3])
+b = np.array([10, 20, 30])
+
+print(a + b)
+print(a * b)
+```
+
+The multiplication gives:
+
+```text
+[10 40 90]
+```
+
+because NumPy pairs corresponding positions:
+
+```text
+1 * 10 = 10
+2 * 20 = 40
+3 * 30 = 90
+```
+
+For now, assume arrays must have the same shape when they interact. NumPy has rules that allow certain different shapes to work together, but those rules are important enough to deserve their own lesson: **broadcasting**.
+
+Also note that `a * b` here means **element-wise multiplication**. It is not matrix multiplication. Matrix multiplication belongs to the linear-algebra module later in the course.
+
+---
+
+## Predict before running
+
+Suppose:
+
+```python
+x = np.array([2, 4, 6, 8])
+```
+
+Before executing anything, predict the result of each expression:
+
+```python
+x + 3
+x / 2
+x ** 2
+(x - 1) * 5
+```
+
+Then run the code and compare.
+
+This prediction habit matters more than it may seem. Array programming becomes difficult when every expression is treated as something that must be executed before it can be understood. The goal is to make array operations predictable from their structure.
+
+---
+
+## NumPy functions over arrays
+
+Many NumPy functions also operate element by element.
+
+```python
+x = np.array([1.0, 4.0, 9.0, 16.0])
+
+print(np.sqrt(x))
+```
+
+Result:
+
+```text
+[1. 2. 3. 4.]
+```
+
+The square-root function is applied independently to every element.
+
+Other common examples include:
+
+```python
+np.abs(x)
+np.exp(x)
+np.log(x)
+```
+
+You do not need to memorize a catalog of NumPy functions. The important pattern is that many familiar mathematical operations naturally accept an array and return an array of corresponding results.
+
+If we think of a mathematical function as a mapping,
+
+```text
+f(x) = sqrt(x)
+```
+
+then NumPy lets us feed many values through that mapping at once:
+
+```python
+inputs = np.array([1.0, 4.0, 9.0, 16.0])
+outputs = np.sqrt(inputs)
+```
+
+This is one reason scientific Python can read unusually close to the mathematics being expressed.
+
+---
+
+## Universal functions
+
+NumPy uses the term **universal function**, usually shortened to **ufunc**, for many operations that work element by element over arrays.
+
+You may see the word in documentation or error messages. Functions such as `np.sqrt`, `np.exp`, and `np.add` are ufuncs.
+
+For this course, the implementation details are less important than the behavior:
+
+- they accept array-like numerical inputs;
+- they apply an operation element by element;
+- they usually preserve the input shape;
+- their implementation runs in NumPy's compiled numerical machinery rather than in a Python loop you wrote yourself.
+
+That final point helps explain both the style and the performance advantages of vectorized code.
+
+---
+
+## Vectorization is not `np.vectorize`
+
+NumPy also contains a function named `np.vectorize`.
+
+Despite the name, wrapping a Python function with `np.vectorize` is **not** what we mean by vectorized numerical code in this lesson. `np.vectorize` is primarily a convenience for applying Python functions with array-like calling syntax; it does not magically turn arbitrary Python code into fast compiled numerical code.
+
+When scientific programmers say they are trying to "vectorize" an operation, they usually mean:
+
+> Replace element-by-element Python logic with NumPy's native array operations where that makes the computation clearer and appropriate.
+
+So prefer:
+
+```python
+result = x * 2 + 1
+```
+
+over wrapping an equivalent scalar Python function merely to make it accept an array.
+
+---
+
+## Why vectorization matters: clearer numerical intent
+
+Consider this loop:
+
+```python
+result = []
+
+for value in x:
+    result.append((value - 5) ** 2)
+```
+
+Now compare it with:
+
+```python
+result = (x - 5) ** 2
+```
+
+Both can compute the same values. But the second form exposes the transformation directly:
+
+```text
+x
+↓ subtract 5
+x - 5
+↓ square
+(x - 5)²
+```
+
+The loop mixes two kinds of information:
+
+1. the numerical transformation we care about;
+2. the mechanics of visiting elements and constructing a result.
+
+Vectorized code often removes the second category from your immediate reasoning.
+
+That becomes increasingly valuable as expressions grow more mathematical.
+
+For example:
+
+```python
+adjusted = np.sqrt(np.abs(readings - baseline))
+```
+
+can be read as a pipeline of transformations:
+
+```text
+readings
+   ↓ subtract baseline
+centered values
+   ↓ absolute value
+nonnegative differences
+   ↓ square root
+adjusted values
+```
+
+This connects directly back to function composition from the previous lesson on functions.
+
+---
+
+## Why vectorization matters: execution efficiency
+
+Vectorized NumPy code is also often much faster than an equivalent Python loop over many numeric elements.
+
+The reason is not that loops disappear from reality. Some implementation still has to process the values.
+
+The difference is **where the loop runs**.
+
+A simplified picture looks like this:
+
+```text
+Python loop
+    ↓
+Python interpreter handles one iteration
+    ↓
+Python interpreter handles the next iteration
+    ↓
+... repeated many times
+```
+
+With a NumPy array operation:
+
+```text
+Python asks NumPy to perform an array operation
+    ↓
+NumPy runs optimized compiled numerical code
+    ↓
+compiled code processes the array elements
+```
+
+The repeated numerical work happens below the Python interpreter in code specialized for numerical arrays.
+
+That is one major reason NumPy became foundational to scientific Python.
+
+### A small timing experiment
+
+You can see the difference with a deliberately simple example:
+
+```python
+import numpy as np
+import time
+
+values = np.arange(1_000_000, dtype=np.float64)
+
+start = time.perf_counter()
+loop_result = []
+for value in values:
+    loop_result.append(value * 2 + 1)
+loop_time = time.perf_counter() - start
+
+start = time.perf_counter()
+array_result = values * 2 + 1
+array_time = time.perf_counter() - start
+
+print(loop_time)
+print(array_time)
+```
+
+Your exact numbers will vary by machine and run. This is not a rigorous benchmark. The point is simply to verify that the array-level expression is not merely prettier syntax over the exact same Python-level execution pattern.
+
+Later, when we discuss PyTorch and GPUs, this idea becomes even more important: high-level tensor operations let optimized lower-level systems perform large amounts of numerical work efficiently.
+
+---
+
+## Not every array operation is a transformation
+
+So far, most examples have taken an array and produced another array of the same shape:
+
+```python
+x * 2
+np.sqrt(x)
+(x - 5) ** 2
+```
+
+These are **element-wise transformations**.
+
+But numerical work also frequently asks questions such as:
+
+- What is the sum of these values?
+- What is their average?
+- What is the largest value?
+- What is the smallest value?
+
+NumPy provides operations such as:
+
+```python
+x.sum()
+x.mean()
+x.min()
+x.max()
+```
+
+These are examples of **reductions**.
+
+A reduction combines many values into fewer values.
+
+```text
+element-wise transformation
+
+many values
+    ↓
+same number of transformed values
+```
+
+```text
+reduction
+
+many values
+    ↓
+fewer summary values
+```
+
+For a one-dimensional array, the simplest reductions often produce a single scalar:
+
+```python
+x = np.array([2, 4, 6, 8])
+
+print(x.sum())   # 20
+print(x.mean())  # 5.0
+print(x.min())   # 2
+print(x.max())   # 8
+```
+
+This transformation-versus-reduction distinction is a useful way to classify many operations you will encounter later.
+
+---
+
+## Reductions over multidimensional arrays
+
+Consider a two-dimensional array of scores:
+
+```python
+scores = np.array([
+    [80, 90, 100],
+    [70, 85,  95],
+])
+
+print(scores.shape)
+```
+
+Its shape is:
+
+```text
+(2, 3)
+```
+
+Calling:
+
+```python
+scores.mean()
+```
+
+computes the mean across all six values and produces one scalar.
+
+But NumPy can also reduce along a particular **axis**.
+
+```python
+scores.mean(axis=0)
+```
+
+and:
+
+```python
+scores.mean(axis=1)
+```
+
+produce different results.
+
+The most reliable way to understand this is not to memorize phrases such as "axis 0 means columns." Those shortcuts become confusing as soon as arrays have more than two dimensions.
+
+Use this rule instead:
+
+> **The axis named in a reduction is the axis being collapsed.**
+
+---
+
+## Collapsing an axis
+
+Start with shape:
+
+```text
+(2, 3)
+```
+
+If we reduce over `axis=0`, axis 0 disappears:
+
+```text
+(2, 3)
+ ↑
+collapse this axis
+
+result shape: (3,)
+```
+
+So:
+
+```python
+scores.mean(axis=0)
+```
+
+produces three results.
+
+For the score array:
+
+```text
+[80, 90, 100]
+[70, 85,  95]
+```
+
+the axis-0 mean pairs values that occupy the same position along the remaining axis:
+
+```text
+(80 + 70) / 2 = 75.0
+(90 + 85) / 2 = 87.5
+(100 + 95) / 2 = 97.5
+```
+
+Result:
+
+```text
+[75.  87.5 97.5]
+```
+
+If instead we reduce over `axis=1`, axis 1 disappears:
+
+```text
+(2, 3)
+    ↑
+collapse this axis
+
+result shape: (2,)
+```
+
+Now each group along axis 0 is summarized:
+
+```text
+(80 + 90 + 100) / 3 = 90.0
+(70 + 85 + 95) / 3  ≈ 83.33
+```
+
+Result shape:
+
+```text
+(2,)
+```
+
+The shape rule is more important than the row/column vocabulary because it works for arrays of any dimensionality.
+
+---
+
+## Predict reduction shapes first
+
+Suppose:
+
+```python
+x = np.zeros((2, 3, 4))
+```
+
+Before executing anything, predict the shape of each result:
+
+```python
+x.sum(axis=0).shape
+x.sum(axis=1).shape
+x.sum(axis=2).shape
+```
+
+Reason from the original shape:
+
+```text
+(2, 3, 4)
+```
+
+Reduce axis 0:
+
+```text
+(3, 4)
+```
+
+Reduce axis 1:
+
+```text
+(2, 4)
+```
+
+Reduce axis 2:
+
+```text
+(2, 3)
+```
+
+This is exactly the shape-and-axis reasoning from the previous lesson, now applied to computation rather than indexing.
+
+Whenever an axis-based operation feels mysterious, return to the shape and ask what happens to that axis.
+
+---
+
+## Comparisons are vectorized too
+
+Arithmetic is not the only operation NumPy applies element by element.
+
+Comparisons also work across arrays:
+
+```python
+temperatures = np.array([18.0, 22.5, 19.5, 27.0])
+
+print(temperatures > 20)
+```
+
+Result:
+
+```text
+[False  True False  True]
+```
+
+The output is another array, this time with boolean dtype.
+
+Each position answers the same question for the corresponding input value:
+
+```text
+18.0 > 20  -> False
+22.5 > 20  -> True
+19.5 > 20  -> False
+27.0 > 20  -> True
+```
+
+This matters because the boolean result can itself participate in more array operations.
+
+For example:
+
+```python
+above_20 = temperatures > 20
+print(above_20.sum())
+```
+
+In numerical contexts, `True` behaves like `1` and `False` like `0` for this reduction, so the sum counts the number of values above 20.
+
+You can also ask whether **any** or **all** values satisfy a condition:
+
+```python
+print((temperatures > 20).any())
+print((temperatures > 20).all())
+```
+
+This gives us another example of composition:
+
+```text
+temperatures
+    ↓ compare each value with 20
+boolean array
+    ↓ reduce
+single answer or count
+```
+
+---
+
+## Array expressions compose
+
+One of the biggest advantages of vectorized thinking is that array operations naturally compose into numerical pipelines.
+
+Suppose we have measurements and want their squared distance from a baseline value of 10:
+
+```python
+measurements = np.array([8.0, 9.5, 10.0, 12.0, 14.0])
+
+squared_distance = (measurements - 10) ** 2
+```
+
+Read the expression from the inside out:
+
+```text
+measurements
+    ↓ subtract 10
+signed differences
+    ↓ square
+squared distances
+```
+
+Or consider:
+
+```python
+adjusted = np.sqrt(np.abs(measurements - 10))
+```
+
+The operations form a composition:
+
+```text
+measurements
+    ↓
+subtract baseline
+    ↓
+absolute value
+    ↓
+square root
+    ↓
+adjusted measurements
+```
+
+The syntax is compact because every stage accepts an array and returns another array that the next stage can consume.
+
+This is the same structural idea as composing ordinary functions:
+
+```text
+f(g(h(x)))
+```
+
+The difference is that `x` can now be a whole numerical array.
+
+---
+
+## A useful example: centering data
+
+Suppose we have several measurements:
+
+```python
+measurements = np.array([12.0, 15.0, 18.0, 21.0, 24.0])
+```
+
+We can compute their mean:
+
+```python
+mean = measurements.mean()
+```
+
+Then subtract that mean from every value:
+
+```python
+centered = measurements - mean
+```
+
+The result is:
+
+```text
+[-6. -3.  0.  3.  6.]
+```
+
+Notice what happened structurally:
+
+1. a reduction turned the whole array into one summary value;
+2. an element-wise operation used that summary value to transform the original array.
+
+This pattern is common in numerical work: summarize something about the data, then use the summary in a transformation.
+
+You do not need the statistical reasons for centering yet. The point here is the computational pattern.
+
+---
+
+## When a loop is still fine
+
+Vectorization is a powerful numerical style, not a commandment that Python loops are bad.
+
+A loop may still be appropriate when:
+
+- each iteration performs complex Python-specific logic;
+- the operation cannot naturally be expressed with array primitives;
+- you are working with heterogeneous objects rather than homogeneous numerical data;
+- a loop is clearer than an obscure attempt to force vectorization;
+- the amount of data is tiny and performance does not matter.
+
+The goal is not to eliminate every `for` statement.
+
+The goal is to recognize when the problem is fundamentally an **array computation** and express it accordingly.
+
+Later in machine learning, this distinction becomes especially important because array and tensor operations are the units that optimized numerical libraries and GPUs know how to execute efficiently.
+
+---
+
+## Practice: translate loops into array expressions
+
+For each example, first describe the numerical transformation in words. Then rewrite it without an explicit Python loop.
+
+### 1. Scale every value
+
+```python
+x = np.array([1.0, 2.0, 3.0, 4.0])
+result = []
+
+for value in x:
+    result.append(value * 3)
+```
+
+A vectorized version is:
+
+```python
+result = x * 3
+```
+
+### 2. Distance from five, squared
+
+```python
+x = np.array([1.0, 2.0, 3.0, 4.0])
+result = []
+
+for value in x:
+    result.append((value - 5) ** 2)
+```
+
+Rewrite this yourself before continuing.
+
+### 3. Absolute value after shifting
+
+```python
+x = np.array([-4.0, -1.0, 3.0, 8.0])
+result = []
+
+for value in x:
+    result.append(abs(value - 2))
+```
+
+Use NumPy's array operations rather than looping.
+
+### 4. Count values above a threshold
+
+```python
+x = np.array([3, 8, 2, 10, 6, 1])
+count = 0
+
+for value in x:
+    if value > 5:
+        count += 1
+```
+
+Try to express this as:
+
+1. an element-wise comparison;
+2. followed by a reduction.
+
+---
+
+## Practice: classify the operation
+
+For each expression, decide whether it is primarily an **element-wise transformation**, a **reduction**, or a **composition of both**.
+
+```python
+x * 2
+```
+
+```python
+np.sqrt(x)
+```
+
+```python
+x.mean()
+```
+
+```python
+(x > 0).sum()
+```
+
+```python
+x - x.mean()
+```
+
+```python
+np.abs(x).max()
+```
+
+Being able to classify the structure of an expression often makes unfamiliar numerical code easier to read.
+
+---
+
+## Practice: predict the result
+
+Do not run these immediately.
+
+### Example A
+
+```python
+a = np.array([1, 2, 3])
+b = np.array([4, 5, 6])
+
+(a + b) ** 2
+```
+
+What values do you expect?
+
+### Example B
+
+```python
+x = np.array([-2, -1, 0, 1, 2])
+
+x > 0
+```
+
+What is the dtype of the result?
+
+Then predict:
+
+```python
+(x > 0).sum()
+```
+
+### Example C
+
+```python
+x = np.zeros((3, 5))
+
+x.sum(axis=0).shape
+```
+
+Which axis disappears?
+
+### Example D
+
+```python
+x = np.zeros((2, 3, 4))
+
+x.mean(axis=1).shape
+```
+
+Reason from the shape before executing.
+
+---
+
+## Practice: write array-level code
+
+### Celsius to Fahrenheit
+
+Given:
+
+```python
+celsius = np.array([-10.0, 0.0, 10.0, 20.0, 30.0])
+```
+
+Create a new array of Fahrenheit values without writing a loop.
+
+### Measurement error
+
+Given:
+
+```python
+measurements = np.array([9.8, 10.1, 10.4, 9.7, 10.0])
+target = 10.0
+```
+
+Create an array containing the squared error of every measurement relative to `target`.
+
+Then compute the mean squared error with a reduction.
+
+You do not need to treat this as a machine-learning loss function yet. For now, notice the structure:
+
+```text
+measurements
+    ↓ subtract target
+errors
+    ↓ square
+squared errors
+    ↓ mean
+one summary value
+```
+
+This exact transform-then-reduce pattern will appear repeatedly later in the course.
+
+### Axis summaries
+
+Given:
+
+```python
+readings = np.array([
+    [10.0, 12.0, 14.0],
+    [20.0, 22.0, 24.0],
+    [30.0, 32.0, 34.0],
+    [40.0, 42.0, 44.0],
+])
+```
+
+Before running code:
+
+1. predict the shape of `readings.mean(axis=0)`;
+2. predict the shape of `readings.mean(axis=1)`;
+3. explain which axis is collapsed in each case;
+4. then run the expressions and inspect the values.
+
+---
+
+## A note on reshaping
+
+You may encounter `reshape` in examples while practicing array operations:
+
+```python
+x = np.arange(24).reshape(2, 3, 4)
+```
+
+For now, treat `reshape` as a convenient way to arrange existing values into a requested shape so that we can practice axis reasoning.
+
+We are not making reshaping a major topic in this lesson. The important facts are still the ones from Lesson 03:
+
+- inspect the resulting shape;
+- understand its axes;
+- reason about operations from that structure.
+
+---
+
+## The bigger idea
+
+Vectorization is sometimes introduced as a NumPy trick for making loops faster.
+
+That description is incomplete.
+
+The deeper shift is about the **level at which you describe the computation**.
+
+Element-by-element code says:
+
+```text
+visit a value
+perform an operation
+store the result
+visit the next value
+repeat
+```
+
+Array-level code says:
+
+```text
+transform this numerical structure
+```
+
+That difference matters because much of machine learning is naturally expressed in operations over large numerical structures.
+
+Later you will write expressions involving vectors, matrices, batches of observations, model parameters, activations, losses, and gradients. The specific mathematics will become more sophisticated, but the computational habit starts here:
+
+> **Ask what operation applies to the array as a whole before reaching for a loop.**
+
+---
+
+## What you should be able to do now
+
+After this lesson, you should be able to:
+
+- explain what vectorized thinking means in scientific Python;
+- use NumPy arithmetic and common numerical functions element by element over arrays;
+- rewrite simple numerical Python loops as array expressions;
+- explain why native NumPy array operations are often both clearer and faster than Python-level loops;
+- distinguish element-wise transformations from reductions;
+- use common reductions such as `sum`, `mean`, `min`, and `max`;
+- predict how reducing over an axis changes an array's shape;
+- use vectorized comparisons and simple boolean reductions;
+- read composed NumPy expressions as pipelines of transformations.
+
+The next lesson adds one of NumPy's most powerful and initially surprising features: **broadcasting**, which allows certain arrays of different shapes to participate in the same element-wise operation.
