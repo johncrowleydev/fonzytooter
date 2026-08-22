@@ -6,7 +6,7 @@ Instructions for coding agents working in this repository.
 
 Fonzytooter is a personal, single-user technical learning system. The AI/ML curriculum is the initial/default course, but the platform is intentionally course-aware so additional authored courses can be added later without retrofitting single-course assumptions. It is still intentionally small. Favor straightforward code and explicit data flow over generalized infrastructure.
 
-Read the relevant files in `docs/` before making architectural changes. Multi-course work must follow `docs/multi-course.md`. Frontend work must also follow `docs/frontend.md`. API/backend/frontend-contract work must follow `docs/api-contract.md`, and HTTP API design must follow `docs/api-style.md`.
+Read the relevant files in `docs/` before making architectural changes. Multi-course work must follow `docs/multi-course.md`. Frontend work must also follow `docs/frontend.md`. API/backend/frontend-contract work must follow `docs/api-contract.md`, and HTTP API design must follow `docs/api-style.md`. Multi-PR autonomous work must also follow `docs/pr-marathon.md`.
 
 ## Non-negotiable architectural constraints
 
@@ -33,6 +33,15 @@ Read the relevant files in `docs/` before making architectural changes. Multi-co
 - **Use Git worktrees for agent tasks.** Each agent/task should normally work in its own worktree and branch, especially when work may happen in parallel. Multiple agents must not mutate the same working tree and risk overwriting or interleaving each other's changes.
 - **Use purpose-based branch and commit prefixes.** Names should describe the reason for the change, such as `docs/`, `fix/`, or `feat/`, rather than the agent or author identity.
 - **Inspect the working tree before committing.** Review `git status` and the relevant diff so temporary files, extracted artifacts, or another agent's work are not accidentally included.
+
+## Pull request authority and integration
+
+- **Coding agents are not authorized to merge pull requests by default.** Agents may create branches and worktrees, commit, push, open pull requests, update their own branches, respond to review findings, and resolve review conversations that have actually been addressed.
+- **Human review and merge are a hard integration boundary.** A normal agent task is complete when the PR is open, required validation is passing, and known review findings have been addressed. The PR remains open for human review and merge.
+- **Merge permission must be explicit and specific.** An agent may merge only when the user explicitly authorizes merging that particular PR or clearly scoped merge action. General autonomy such as "finish this task," "work through the queue," "use the goal skill," or "complete the marathon" does not grant merge authority.
+- **Do not push directly to `main` unless explicitly authorized for that specific change.** Do not treat repository permissions or technically available merge APIs as user authorization.
+- **Do not close or otherwise integrate a PR merely to unblock dependent work.** Follow the dependency/stacking rules in `docs/pr-marathon.md` for multi-PR efforts.
+- **Never self-approve work on the user's behalf.** Passing CI and agent review are inputs to human review, not substitutes for it.
 
 ## Engineering preferences
 
