@@ -52,6 +52,47 @@ func TestConversationStoreCreateReadAndStableList(t *testing.T) {
 	}
 }
 
+func TestConversationStoreListOrdersFractionalTimestampsChronologically(t *testing.T) {
+	store, db := newTestConversationStore(t)
+	base := time.Date(2026, time.August, 21, 12, 0, 0, 0, time.UTC)
+	store.now = nextTime(t, base.Add(100*time.Millisecond), base.Add(110*time.Millisecond), base.Add(90*time.Millisecond))
+	store.newID = nextID(t, "conversation-100ms", "conversation-110ms", "conversation-90ms")
+
+	for _, title := range []string{"100ms", "110ms", "90ms"} {
+		if _, err := store.CreateConversation(context.Background(), CreateConversationParams{Title: title}); err != nil {
+			t.Fatalf("create %s conversation: %v", title, err)
+		}
+	}
+
+	// Preserve compatibility with timestamps written before the fixed-width
+	// formatter was introduced.
+	if _, err := db.Exec(`UPDATE tutor_conversations SET updated_at = '2026-08-21T12:00:00.1Z' WHERE id = 'conversation-100ms'`); err != nil {
+		t.Fatalf("write legacy variable-width timestamp: %v", err)
+	}
+
+	conversations, err := store.ListConversations(context.Background())
+	if err != nil {
+		t.Fatalf("list conversations: %v", err)
+	}
+	want := []string{"conversation-110ms", "conversation-100ms", "conversation-90ms"}
+	if len(conversations) != len(want) {
+		t.Fatalf("expected %d conversations, got %#v", len(want), conversations)
+	}
+	for index, id := range want {
+		if conversations[index].ID != id {
+			t.Fatalf("expected chronological order %v, got %#v", want, conversations)
+		}
+	}
+
+	var stored string
+	if err := db.QueryRow(`SELECT updated_at FROM tutor_conversations WHERE id = 'conversation-110ms'`).Scan(&stored); err != nil {
+		t.Fatalf("read stored timestamp: %v", err)
+	}
+	if stored != "2026-08-21T12:00:00.110000000Z" {
+		t.Fatalf("expected fixed-width timestamp, got %q", stored)
+	}
+}
+
 func TestConversationStoreMessagesAndRecentWindow(t *testing.T) {
 	store, _ := newTestConversationStore(t)
 	store.newID = nextID(t, "conversation", "message-1", "message-2", "message-3", "message-4")
@@ -138,6 +179,108 @@ func TestConversationStoreToolCallCompletionAndFailure(t *testing.T) {
 	}
 	if _, err := store.CompleteToolCall(context.Background(), first.ID, json.RawMessage(`null`), ""); !errors.Is(err, ErrToolCallAlreadyCompleted) {
 		t.Fatalf("expected already-completed error, got %v", err)
+	}
+}
+
+func TestConversationStoreAppendAssistantResponseIsAtomic(t *testing.T) {
+	store, db := newTestConversationStore(t)
+	store.newID = nextID(t, "conversation", "assistant-message", "tool-1", "tool-2")
+	conversation, err := store.CreateConversation(context.Background(), CreateConversationParams{})
+	if err != nil {
+		t.Fatalf("create conversation: %v", err)
+	}
+	if _, err := db.Exec(`
+		CREATE TRIGGER reject_second_tutor_tool_call
+		BEFORE INSERT ON tutor_tool_calls
+		WHEN NEW.request_id = 'provider-call-2'
+		BEGIN SELECT RAISE(ABORT, 'reject second tool call'); END
+	`); err != nil {
+		t.Fatalf("create rejection trigger: %v", err)
+	}
+
+	_, err = store.AppendAssistantResponse(context.Background(), conversation.ID,
+		[]ContentPart{{Kind: ContentKindText, Text: "I will inspect both resources."}},
+		[]ToolCallInput{
+			{RequestID: "provider-call-1", Name: "first_tool", Arguments: json.RawMessage(`{"value":1}`)},
+			{RequestID: "provider-call-2", Name: "second_tool", Arguments: json.RawMessage(`{"value":2}`)},
+		},
+	)
+	if err == nil {
+		t.Fatal("expected atomic assistant response append to fail")
+	}
+	queries := []struct {
+		name  string
+		query string
+		arg   string
+	}{
+		{name: "messages", query: `SELECT COUNT(*) FROM tutor_messages WHERE conversation_id = ?`, arg: conversation.ID},
+		{name: "message parts", query: `SELECT COUNT(*) FROM tutor_message_parts WHERE message_id = ?`, arg: "assistant-message"},
+		{name: "tool calls", query: `SELECT COUNT(*) FROM tutor_tool_calls WHERE conversation_id = ?`, arg: conversation.ID},
+	}
+	for _, check := range queries {
+		var count int
+		if err := db.QueryRow(check.query, check.arg).Scan(&count); err != nil {
+			t.Fatalf("count %s: %v", check.name, err)
+		}
+		if count != 0 {
+			t.Fatalf("expected rollback to leave no %s, got %d rows", check.name, count)
+		}
+	}
+}
+
+func TestConversationStoreAppendAssistantResponseAndRecoverPendingCalls(t *testing.T) {
+	store, _ := newTestConversationStore(t)
+	base := time.Date(2026, time.August, 21, 12, 0, 0, 0, time.UTC)
+	store.now = nextTime(t,
+		base,
+		base.Add(time.Second),
+		base.Add(2*time.Second),
+		base.Add(3*time.Second),
+		base.Add(4*time.Second),
+		base.Add(5*time.Second),
+	)
+	store.newID = nextID(t, "conversation", "assistant-message", "tool-1", "tool-2")
+	conversation, err := store.CreateConversation(context.Background(), CreateConversationParams{})
+	if err != nil {
+		t.Fatalf("create conversation: %v", err)
+	}
+
+	response, err := store.AppendAssistantResponse(context.Background(), conversation.ID, nil, []ToolCallInput{
+		{RequestID: "provider-call-1", Name: "first_tool", Arguments: json.RawMessage(`{"value":1}`)},
+		{RequestID: "provider-call-2", Name: "second_tool", Arguments: json.RawMessage(`{"value":2}`)},
+	})
+	if err != nil {
+		t.Fatalf("append assistant response: %v", err)
+	}
+	if response.Message.Role != MessageRoleAssistant || len(response.ToolCalls) != 2 {
+		t.Fatalf("unexpected assistant response: %#v", response)
+	}
+	if _, err := store.CompleteToolCall(context.Background(), response.ToolCalls[0].ID, json.RawMessage(`{"ok":true}`), ""); err != nil {
+		t.Fatalf("complete first tool call: %v", err)
+	}
+	recovered, err := store.RecoverPendingToolCalls(context.Background(), conversation.ID)
+	if err != nil {
+		t.Fatalf("recover pending calls: %v", err)
+	}
+	if recovered != 1 {
+		t.Fatalf("expected one recovered call, got %d", recovered)
+	}
+
+	calls, err := store.ToolCalls(context.Background(), conversation.ID)
+	if err != nil {
+		t.Fatalf("list tool calls: %v", err)
+	}
+	if calls[0].Status != ToolCallCompleted {
+		t.Fatalf("expected completed call to remain completed, got %#v", calls[0])
+	}
+	if calls[1].Status != ToolCallFailed || calls[1].Error != InterruptedToolCallError || calls[1].CompletedAt == nil {
+		t.Fatalf("expected pending call to be marked interrupted, got %#v", calls[1])
+	}
+	if recovered, err := store.RecoverPendingToolCalls(context.Background(), conversation.ID); err != nil || recovered != 0 {
+		t.Fatalf("expected idempotent recovery, got count %d and error %v", recovered, err)
+	}
+	if _, err := store.RecoverPendingToolCalls(context.Background(), "missing"); !errors.Is(err, ErrConversationNotFound) {
+		t.Fatalf("expected missing conversation error, got %v", err)
 	}
 }
 
