@@ -1,0 +1,599 @@
+---
+id: 03-numpy-arrays-shape-dimension-and-dtype
+title: "NumPy Arrays: Shape, Dimension, and Dtype"
+objectiveIds:
+  - numpy.arrays
+---
+
+# NumPy Arrays: Shape, Dimension, and Dtype
+
+Python already has lists. You can put numbers in them, index them, slice them, loop over them, and change their contents. So before learning another container, it is worth asking the obvious question: **why does scientific Python need NumPy arrays at all?**
+
+```python
+temperatures = [72.1, 73.4, 71.8, 70.9]
+```
+
+That list is perfectly useful. But it is a general-purpose Python collection. Its elements are Python objects, and different elements can even have different types. Numerical computing usually wants something more structured: many values with a predictable arrangement and a common numerical representation.
+
+NumPy's central object, the `ndarray`, provides exactly that.
+
+```python
+import numpy as np
+
+temperatures = np.array([72.1, 73.4, 71.8, 70.9])
+
+print(temperatures.shape)  # (4,)
+print(temperatures.ndim)   # 1
+print(temperatures.size)   # 4
+print(temperatures.dtype)  # commonly float64
+```
+
+Those properties are not incidental bookkeeping. They describe the structure of the data. Learning to read that structure is one of the most durable skills in numerical computing and machine learning.
+
+Images, audio, datasets, model parameters, activations, and gradients will eventually appear as multidimensional arrays or closely related **tensor** objects. For now, we will stay with NumPy and learn to answer a more basic question reliably:
+
+> **When you look at an array, what exactly are you looking at?**
+
+By the end of this lesson, you should be able to inspect an unfamiliar array, explain its shape and dtype, identify its axes, select and modify intended values, predict the shapes produced by common indexing and slicing operations, and recognize when a slice may share storage with its source.
+
+---
+
+## Arrays are structured numerical data
+
+Create a NumPy array with `np.array`:
+
+```python
+import numpy as np
+
+scores = np.array([91, 84, 97, 88])
+```
+
+At first glance this resembles a Python list. The important difference is not the square brackets; it is the stronger structure NumPy gives the collection.
+
+```python
+print(scores.shape)
+print(scores.ndim)
+print(scores.size)
+print(scores.dtype)
+```
+
+An array has a particular **shape**, a particular number of **dimensions**, and a **dtype** describing how its elements are represented. Those facts let NumPy reason about the collection as a numerical whole rather than merely as a sequence of unrelated Python objects.
+
+You can also create arrays with constructors when the values follow a simple pattern:
+
+```python
+np.zeros(5)
+np.ones((2, 3))
+np.arange(0, 10)
+```
+
+Do not worry about memorizing constructors. The important thing is to inspect what they create.
+
+```python
+x = np.ones((2, 3))
+
+print(x)
+print(x.shape)
+print(x.ndim)
+print(x.size)
+print(x.dtype)
+```
+
+When working with unfamiliar numerical code, inspecting those properties is often more informative than staring at a large printout of values.
+
+---
+
+## Shape describes the arrangement
+
+Consider a one-dimensional array:
+
+```python
+a = np.array([10, 20, 30, 40])
+print(a.shape)
+```
+
+NumPy reports:
+
+```text
+(4,)
+```
+
+The comma matters. `(4,)` is a one-element tuple, and the single number tells us that the array has four positions along its only axis.
+
+Now consider:
+
+```python
+b = np.array([
+    [10, 20, 30],
+    [40, 50, 60],
+])
+
+print(b.shape)
+```
+
+The result is:
+
+```text
+(2, 3)
+```
+
+A useful definition is:
+
+> **An array's shape gives the number of positions available along each axis.**
+
+So `(2, 3)` means there are two positions along axis 0 and three positions along axis 1.
+
+It is tempting to immediately call these "rows" and "columns." For a two-dimensional table, that language is useful: axis 0 corresponds to rows and axis 1 to columns. But NumPy arrays are not limited to tables, so the more general axis language is worth learning now.
+
+```python
+c = np.zeros((2, 3, 4))
+print(c.shape)
+```
+
+`c` has shape `(2, 3, 4)`:
+
+- 2 positions along axis 0;
+- 3 positions along axis 1;
+- 4 positions along axis 2.
+
+There is no need to invent names like rows, columns, and "depth" for every possible array. An array can have many axes. Numbering them works at every dimensionality.
+
+### Read shapes from the outside in
+
+A nested literal can help make a shape concrete:
+
+```python
+x = np.array([
+    [1, 2, 3],
+    [4, 5, 6],
+])
+```
+
+At the outermost level there are two groups. Within each group there are three values. That gives shape `(2, 3)`.
+
+With another level of nesting:
+
+```python
+x = np.array([
+    [
+        [1, 2, 3],
+        [4, 5, 6],
+    ],
+    [
+        [7, 8, 9],
+        [10, 11, 12],
+    ],
+])
+```
+
+there are two outer groups, each containing two groups, each containing three values. The shape is `(2, 2, 3)`.
+
+This nested-list picture is useful while learning, but shape is the more durable abstraction. Later, arrays may be far too large to understand by printing their contents.
+
+---
+
+## Shape, dimensionality, and size are different facts
+
+Three NumPy properties answer three different questions:
+
+```python
+x = np.zeros((2, 3, 4))
+
+print(x.shape)  # (2, 3, 4)
+print(x.ndim)   # 3
+print(x.size)   # 24
+```
+
+- `shape` asks: **How many positions are there along each axis?**
+- `ndim` asks: **How many axes are there?**
+- `size` asks: **How many elements are there in total?**
+
+For shape `(2, 3, 4)`, there are three axes, so `ndim` is `3`. There are `2 × 3 × 4 = 24` total elements, so `size` is `24`.
+
+This vocabulary is easy to muddle. In particular, an array with shape `(2, 3, 4)` is **three-dimensional**, not twenty-four-dimensional. Twenty-four is its size.
+
+Before running this example, predict all three properties:
+
+```python
+mystery = np.zeros((5, 2, 7, 3))
+
+mystery.shape
+mystery.ndim
+mystery.size
+```
+
+The habit of predicting first matters. Shape reasoning becomes much more useful when you can do it before the computer tells you the answer.
+
+---
+
+## Dtype describes the element representation
+
+Shape tells us how values are arranged. **Dtype** tells us what kind of values the array stores and how NumPy represents them.
+
+```python
+integers = np.array([1, 2, 3])
+decimals = np.array([1.0, 2.0, 3.0])
+flags = np.array([True, False, True])
+
+print(integers.dtype)
+print(decimals.dtype)
+print(flags.dtype)
+```
+
+The exact integer width can depend on platform and construction details, but you will commonly encounter names such as:
+
+```text
+int32
+int64
+float32
+float64
+bool
+```
+
+The number in names such as `float32` and `float64` refers to the number of bits used for each value. We will return to the consequences of finite floating-point representation later. For this lesson, the important idea is simpler:
+
+> **A NumPy array normally has one dtype shared by all of its elements.**
+
+That is quite different from a Python list:
+
+```python
+mixed = [1, 2.5, "three", True]
+```
+
+A list can freely hold unrelated Python objects. A numerical NumPy array generally uses one common representation.
+
+### NumPy may choose a common dtype
+
+What should NumPy do here?
+
+```python
+x = np.array([1, 2.5, 3])
+```
+
+The values cannot all be represented as integers without losing the `.5`, so NumPy chooses a floating-point dtype capable of representing all three values.
+
+```python
+print(x)
+print(x.dtype)
+```
+
+You will see the integer-looking values represented as floating point too.
+
+You can also request a dtype explicitly:
+
+```python
+x = np.array([1, 2, 3], dtype=np.float32)
+```
+
+For now, do this when you have a reason, not merely because specifying more details feels safer. The larger lesson is to **notice dtype**. Later, dtype will affect memory use, numerical precision, model compatibility, and hardware performance.
+
+---
+
+## Indexing gives coordinates along axes
+
+One-dimensional indexing looks just like ordinary Python sequence indexing:
+
+```python
+x = np.array([10, 20, 30, 40])
+
+print(x[0])   # 10
+print(x[2])   # 30
+print(x[-1])  # 40
+```
+
+With multiple axes, NumPy accepts one coordinate for each axis:
+
+```python
+x = np.array([
+    [10, 20, 30],
+    [40, 50, 60],
+])
+
+print(x[1, 2])  # 60
+```
+
+Read `x[1, 2]` in terms of the shape `(2, 3)`:
+
+1. move to position `1` along axis 0;
+2. then position `2` along axis 1.
+
+The result is the scalar `60`.
+
+For a three-dimensional array:
+
+```python
+x = np.arange(24).reshape(2, 3, 4)
+value = x[1, 2, 3]
+```
+
+there is one coordinate for each of the three axes.
+
+This coordinate model scales much better than memorizing special cases like "row, column." When later code manipulates tensors with four or more axes, the same idea still works.
+
+---
+
+## Selecting fewer coordinates leaves axes behind
+
+Suppose:
+
+```python
+x = np.arange(12).reshape(3, 4)
+print(x.shape)  # (3, 4)
+```
+
+Selecting a single position along axis 0 gives:
+
+```python
+row = x[1]
+print(row)
+print(row.shape)  # (4,)
+```
+
+We supplied a coordinate for axis 0, so that axis is no longer present in the result. Axis 1 remains, with length 4.
+
+If we supply coordinates for both axes:
+
+```python
+value = x[1, 2]
+print(value)
+```
+
+we arrive at one element rather than another array with those axes.
+
+This gives you a useful way to predict indexing results: **ask which axes have been fixed to a single coordinate and which axes remain.**
+
+---
+
+## Slices select ranges
+
+NumPy uses familiar Python slice syntax:
+
+```python
+x = np.array([10, 20, 30, 40, 50])
+print(x[1:4])
+```
+
+For multidimensional arrays, you can slice independently along each axis:
+
+```python
+x = np.arange(12).reshape(3, 4)
+
+print(x[:, 1])
+print(x[1, :])
+print(x[:, 1:3])
+```
+
+A colon by itself means "take every position along this axis."
+
+Again, shape is the useful question.
+
+```python
+print(x.shape)         # (3, 4)
+print(x[:, 1].shape)   # (3,)
+print(x[1, :].shape)   # (4,)
+print(x[:, 1:3].shape) # (3, 2)
+```
+
+Notice the difference between these two expressions:
+
+```python
+x[0].shape
+x[0:1].shape
+```
+
+For an array with shape `(3, 4)`:
+
+```text
+x[0].shape    -> (4,)
+x[0:1].shape  -> (1, 4)
+```
+
+`x[0]` fixes axis 0 to one coordinate, so that axis disappears from the result. `x[0:1]` selects a range containing one position, so the axis remains and has length 1.
+
+That distinction may seem fussy now. Later, when operations require particular tensor shapes, it becomes extremely important.
+
+---
+
+## Mutation changes array values in place
+
+Arrays are mutable:
+
+```python
+x = np.array([10, 20, 30, 40])
+x[0] = 99
+
+print(x)
+# [99 20 30 40]
+```
+
+You can assign through multidimensional selections too:
+
+```python
+x = np.arange(12).reshape(3, 4)
+x[1, 2] = -1
+x[:, 0] = 100
+```
+
+The second assignment changes every selected position in the first column.
+
+This is one reason slices are useful: a selection can identify a whole region to modify. It also introduces one of NumPy's most important surprises for programmers accustomed to treating a derived collection as independent data.
+
+---
+
+## A slice may be a view, not a copy
+
+Consider this code:
+
+```python
+original = np.array([10, 20, 30, 40])
+middle = original[1:3]
+
+middle[0] = 999
+
+print(middle)
+print(original)
+```
+
+The output includes:
+
+```text
+[ 10 999  30  40]
+```
+
+in `original`. Why did changing `middle` change a different variable?
+
+The names are different, but the numerical storage is not necessarily independent.
+
+A basic NumPy slice commonly produces a **view**. A view is another array object that refers to some of the same underlying data as the source array.
+
+Conceptually:
+
+```text
+original ───────────► underlying numerical storage
+                           ▲
+                           │
+middle (view) ─────────────┘
+```
+
+The slice describes a window onto existing storage rather than automatically duplicating the selected values.
+
+This connects back to Python's broader names-and-objects model: assigning a new name has never implied cloning an object. NumPy adds another layer to that idea because two distinct array objects can themselves refer to overlapping numerical storage.
+
+### Make an independent copy when you need one
+
+If the derived data must be independent, ask for a copy explicitly:
+
+```python
+original = np.array([10, 20, 30, 40])
+middle = original[1:3].copy()
+
+middle[0] = 999
+
+print(middle)    # [999  30]
+print(original)  # [10 20 30 40]
+```
+
+Now the conceptual picture is:
+
+```text
+original ──► storage A
+
+middle   ──► storage B
+```
+
+NumPy has more detailed rules about which operations return views and which return copies. You do **not** need to memorize all of them yet. The durable rule for now is:
+
+> **An array derived from another array is not necessarily independent data. If independence matters, verify the behavior or make it explicit with `.copy()`.**
+
+We will avoid a detour into strides, memory order, contiguous arrays, and advanced indexing. Those details matter in some numerical work, but they are not needed to build the mental model required for this course.
+
+---
+
+## A compact shape-reading strategy
+
+When you encounter an unfamiliar array, use the same questions every time:
+
+1. **What is its `shape`?** How many positions exist along each axis?
+2. **What is its `ndim`?** How many axes are there?
+3. **What is its `size`?** How many total elements are stored?
+4. **What is its `dtype`?** How are those elements represented?
+5. **What does each axis mean in this particular problem?** Shape gives structure, but your domain gives that structure meaning.
+
+That final question is important. NumPy knows that an array has shape `(100, 3)`. NumPy does not know whether that means 100 observations with 3 measurements each, 100 points in three-dimensional space, or something entirely different. **The shape is computational structure; the interpretation comes from the problem.**
+
+---
+
+## Practice: predict before you run
+
+Consider:
+
+```python
+x = np.zeros((4, 3, 2))
+```
+
+Without executing the code, answer:
+
+1. What is `x.ndim`?
+2. What is `x.shape`?
+3. What is `x.size`?
+4. What is the shape of `x[1]`?
+5. What is the shape of `x[:, 1]`?
+6. What is the shape of `x[:, 1:2]`?
+7. What kind of thing does `x[2, 1, 0]` select?
+
+Then run the expressions and check your predictions.
+
+### Build a target shape
+
+Create an array containing the integers `0` through `11` with shape `(3, 4)`.
+
+```python
+# Your code here
+```
+
+Verify all of the following:
+
+```python
+assert x.shape == (3, 4)
+assert x.ndim == 2
+assert x.size == 12
+```
+
+### Select without dropping an axis
+
+Given:
+
+```python
+x = np.arange(20).reshape(4, 5)
+```
+
+Select the second and third columns so that the result has shape `(4, 2)`.
+
+Then select only the second column **while preserving two dimensions**, producing shape `(4, 1)` rather than `(4,)`.
+
+### Modify a region
+
+Given:
+
+```python
+x = np.arange(12).reshape(3, 4)
+```
+
+Change every value in the final row to `-1` without assigning each element separately.
+
+### Debug the shared-data surprise
+
+A programmer writes:
+
+```python
+original = np.array([1, 2, 3, 4])
+middle = original[1:3]
+middle[:] = 0
+
+print(original)
+```
+
+They expected `original` to remain `[1, 2, 3, 4]`.
+
+Explain why that expectation is wrong, then change the code so that modifying `middle` cannot modify `original`.
+
+---
+
+## What you should carry forward
+
+NumPy arrays will soon become so common that creating one will barely feel noteworthy. The concepts in this lesson should not disappear with the syntax.
+
+Carry these mental models forward:
+
+- an array is **structured numerical data**, not merely a Python list with extra methods;
+- `shape` tells you the length of each axis;
+- `ndim` tells you how many axes there are;
+- `size` tells you the total number of elements;
+- `dtype` describes the common representation of those elements;
+- multidimensional indexing supplies coordinates along axes;
+- indexing and slicing can change shape in predictable ways;
+- a basic slice can share underlying storage with its source.
+
+Most importantly, get used to asking **"what is the shape?"** before trying to understand what numerical code is doing. That question will recur through linear algebra, datasets, neural networks, attention, and Transformers.
+
+In the next lesson, we will stop treating arrays mainly as containers and start operating on whole arrays at once. That shift—from element-by-element loops to **vectorized thinking**—is where NumPy begins to change not just the syntax of numerical code, but the way you reason about it.
