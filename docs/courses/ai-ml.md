@@ -1,752 +1,339 @@
 # AI/ML curriculum plan
 
-This document defines the current high-level curriculum direction for Fonzytooter. It is intentionally a plan, not the final detailed syllabus. Individual modules, objectives, readings, videos, exercises, notebook labs, and projects will be authored and refined later.
+This document defines the **high-level philosophy and direction** of Fonzytooter's AI & Machine Learning course.
 
-The curriculum is designed for a strong professional software engineer who is largely self-taught in computer science and has not completed formal university coursework in calculus, linear algebra, probability/statistics, or related ML mathematics.
+It is intentionally not the canonical lesson sequence. The authoritative core structure lives in [`ai-ml-syllabus.md`](ai-ml-syllabus.md), with lesson-level planning in the four detailed tranche documents and final cross-course amendments in [`ai-ml-syllabus-coherence.md`](ai-ml-syllabus-coherence.md).
 
-The goal is not merely to learn how to call AI APIs. The goal is to understand machine learning deeply enough to reason about models, reproduce important ideas, run meaningful experiments, read papers, and eventually operate at an ML/research-engineering level.
+The hierarchy is:
+
+```text
+ai-ml.md
+    high-level purpose, learner model, pedagogy, and boundaries
+
+ai-ml-syllabus.md
+    canonical mandatory Modules 00–23 and course-wide spines
+
+ai-ml-modules-01-07.md
+ai-ml-modules-08-14.md
+ai-ml-modules-15-18.md
+ai-ml-modules-19-23.md
+    lesson-level planning
+
+ai-ml-syllabus-coherence.md
+    final cross-tranche amendments; wins where an earlier detailed plan conflicts
+
+curriculum/courses/ai-ml/
+    runtime-authored curriculum that actually exists in the product
+```
+
+The course is designed for an experienced professional software engineer who is comfortable programming but does not have a formal university foundation in calculus, linear algebra, probability/statistics, optimization, or related ML mathematics.
+
+The goal is not merely to use AI APIs. The goal is to understand machine learning deeply enough to:
+
+- reason from first principles about important model mechanisms;
+- implement foundational algorithms personally;
+- train and adapt manageable models;
+- understand Transformer language models rather than treating them as opaque services;
+- reason about GPU/inference behavior and quantization;
+- design trustworthy experiments;
+- read papers critically;
+- reproduce or extend tractable results;
+- continue independently toward ML/research-engineering work.
 
 ## Core principles
 
 ### Self-paced, not calendar-paced
 
-The curriculum has ordering and prerequisites, but no weeks, semesters, due dates, target completion dates, or "behind schedule" state.
+The curriculum has ordering and prerequisites, but no semesters, target completion dates, or "behind schedule" state.
 
-Spaced repetition uses elapsed time internally, but curriculum progress is structural rather than calendar-based.
+Progress is structural: the learner advances by demonstrating capabilities, not by spending a prescribed number of weeks on a topic.
 
 ### Objectives before lessons
 
-Learning objectives are the connective tissue of the curriculum.
+Learning objectives are the connective tissue of the curriculum. Reading a lesson is not equivalent to mastering an objective.
 
-A concept may be supported by:
+An objective may be supported by:
 
-- authored lessons;
-- readings;
-- curated YouTube videos;
+- authored explanation;
+- curated primary/secondary readings and videos;
 - interactive visualizations;
+- printable worksheets;
 - recall/review items;
-- mathematical exercises;
 - embedded coding exercises;
-- Jupyter notebook experiments;
-- repository-based projects;
-- mastery/transfer checks.
+- Jupyter experiments;
+- repository-based implementation work;
+- transfer/mastery assessments.
 
-The curriculum should not confuse "read a lesson" with "learned the objective."
+Runtime objective metadata should encode **real prerequisite capabilities**, not mechanically treat every earlier module as a prerequisite for every later one.
 
-### Math is learned just in time
+### Math is just in time, but not hand-waved
 
-Do not require a long isolated mathematics curriculum before meaningful ML begins.
-
-Teach mathematical ideas near the ML concepts that motivate them, while maintaining enough prerequisite structure to avoid hand-waving.
+The learner should not spend a year completing detached prerequisite mathematics before seeing machine learning. Mathematics should appear when a concrete ML mechanism creates the need for it, then recur at increasing depth.
 
 The main mathematical spine is:
 
-- functions, algebra, exponentials, logarithms, sequences, and notation;
+- functions, algebra, notation, exponentials, logarithms, and sequences;
 - linear algebra;
+- calculus and optimization;
 - probability and statistics;
-- calculus;
-- optimization;
-- information theory;
-- numerical computing.
+- information theory where it explains real objectives;
+- numerical computing and finite-precision reasoning.
 
-Discrete mathematics remains useful for computer science generally, but it has lower priority than the above topics for the ML path.
+The course intentionally does **not** require detached semester-length sequences in calculus, abstract linear algebra, real analysis, mathematical statistics, or information theory before meaningful ML work begins.
 
-### History runs in parallel
+### Mechanisms before abstractions
 
-Technical ideas should be situated historically where that improves understanding.
+Where implementation creates understanding, the learner should personally cross the conceptual boundary once before relying on high-level libraries or coding agents.
 
-Important historical landmarks include:
+Important examples include:
 
-- McCulloch and Pitts;
-- Turing;
-- Dartmouth and early symbolic AI;
-- the perceptron;
-- expert systems;
-- AI winters;
+- linear regression prediction/loss;
+- gradient descent;
+- logistic regression;
+- k-means;
+- neural-network forward/backward mechanics;
 - backpropagation;
-- statistical machine learning;
-- ImageNet and deep learning;
-- word embeddings;
-- sequence-to-sequence models;
+- a complete small neural network;
+- attention;
+- a Transformer block;
+- an autoregressive language-model training loop;
+- sampling/decoding;
+- LoRA's low-rank update.
+
+After the foundational implementation is understood, libraries and agents may be used normally for testing, debugging, refactoring, extension, and larger engineering work.
+
+### History explains why ideas exist
+
+History should be integrated into technical explanations rather than taught as a detached chronology.
+
+The recurring question is:
+
+> What problem, limitation, or change in available data/compute caused this idea to become useful?
+
+Important historical threads include:
+
+- Turing and early machine-intelligence questions;
+- Dartmouth and early symbolic AI;
+- McCulloch–Pitts and the perceptron;
+- symbolic/expert systems versus connectionist/statistical approaches;
+- AI winters as multifactorial rather than a one-event story;
+- statistical machine learning and held-out empirical evaluation;
+- backpropagation and neural-network revival;
+- ImageNet/deep-learning resurgence;
+- word embeddings and neural language models;
+- recurrent seq2seq models;
 - attention;
 - the Transformer;
-- scaling laws;
-- instruction tuning and RLHF;
-- multimodal models;
-- modern reasoning systems and agents.
+- decoder-only autoregressive language models;
+- scaling laws and data/compute engineering;
+- instruction tuning, preference optimization, and RLHF;
+- inference-time reasoning/search, retrieval, and tool use;
+- GPU/inference systems and low-precision deployment.
 
-Recurring historical/technical tensions are worth making explicit:
+Recurring tensions worth revisiting include:
 
-- symbolic systems vs statistical learning;
-- hand-engineered features vs learned representations;
-- specialized systems vs general models;
-- training-time compute vs inference-time compute;
-- monolithic learned systems vs models combined with deterministic tools.
-
-### Foundational implementations should initially be human-written
-
-Coding agents are part of the learning environment, but they should not erase the work that creates understanding.
-
-For foundational concepts, the learner should personally write the first implementation before using agents aggressively for review, tests, debugging, refactoring, or extension.
-
-Examples include:
-
-- linear regression;
-- logistic regression;
-- gradient descent;
-- backpropagation;
-- a small neural network;
-- attention;
-- a transformer block;
-- an autoregressive language-model training loop;
-- sampling;
-- LoRA.
-
-Once the learner has demonstrated understanding, agents may be used normally.
+- symbolic systems versus statistical learning;
+- hand-engineered features versus learned representations;
+- specialized models versus broad foundation models;
+- training-time compute versus inference-time compute;
+- monolithic learned behavior versus models combined with deterministic retrieval/tools.
 
 ## Three coding environments
 
-The curriculum deliberately uses three different coding environments for three different kinds of work.
+The course deliberately uses three different environments for different learning jobs.
 
-### 1. Fonzytooter embedded exercise: practice
+### 1. Fonzytooter embedded Python — constrained practice and assessment
 
-Small, focused coding problems belong in the app's CodeMirror + Pyodide environment.
-
-Examples:
-
-- implement `sigmoid`;
-- calculate softmax;
-- implement matrix multiplication;
-- write one gradient-descent update;
-- calculate MSE;
-- implement a small numerical derivative;
-- manipulate NumPy arrays.
-
-These exercises are constrained enough to run comfortably in the browser and can be automatically checked.
-
-Their purpose is **practice and assessment**.
-
-Pyodide is the only Python interpreter built into Fonzytooter. There is no backend Python runner.
-
-### 2. Jupyter notebook: exploration
-
-Jupyter notebooks are used when the goal is to investigate a concept experimentally rather than merely solve a small exercise.
-
-A notebook mixes executable Python cells with Markdown, mathematical explanation, plots, tables, and retained outputs. A Python kernel keeps state between cell executions, making notebooks particularly useful for exploratory scientific and ML work.
+Small, focused Python/NumPy exercises belong in the in-app CodeMirror + Pyodide runtime.
 
 Examples:
 
-- visualize how different learning rates affect convergence;
-- inspect a dataset and plot distributions;
-- compare several loss functions;
-- explore matrix transformations geometrically;
-- inspect neural-network activations;
-- vary initialization strategies and plot training curves;
-- investigate attention patterns;
-- compare quantization error experimentally.
+- array/shape manipulation;
+- matrix multiplication;
+- MSE;
+- sigmoid and stable softmax;
+- numerical derivatives;
+- one gradient-descent step;
+- simple metric calculations;
+- tiny attention components.
 
-The purpose is **experimentation and intuition-building**.
+The purpose is **focused practice and automatically checkable assessment**.
 
-Jupyter should be introduced early in the Scientific Python phase. The learner should understand:
+Pyodide is the only Python interpreter built into Fonzytooter. The course should not depend on a hidden backend Python runner.
 
-- code cells;
-- Markdown cells;
-- kernels and persistent state;
-- inline plots and outputs;
-- restarting the kernel;
-- running all cells from a clean state;
-- why out-of-order execution can produce misleading or irreproducible notebooks;
-- when a notebook is appropriate;
-- when reusable code should move into normal `.py` modules.
+### 2. Jupyter — exploration and visualization
 
-Fonzytooter should **not embed or host Jupyter**. Notebook files should live in Git repositories and be opened with normal Jupyter-compatible tooling.
-
-This preserves a clean application boundary:
-
-```text
-embedded exercise
-    -> practice a concept
-
-Jupyter notebook
-    -> explore a concept
-
-Git repository + IDE
-    -> build with a concept
-```
-
-### 3. Git repository + normal IDE: engineering and substantial experiments
-
-When work becomes large, multi-file, GPU-dependent, data-heavy, or otherwise uncomfortable in Pyodide, it should be a real repository-based lab or project.
+Notebooks are used when the learner should vary assumptions, visualize behavior, preserve intermediate results, or conduct a small numerical experiment.
 
 Examples:
 
-- build a neural network from scratch;
-- train a CNN;
-- build and train a small Transformer;
-- train a tiny language model;
-- fine-tune an open model with LoRA;
-- benchmark inference systems;
-- profile GPU memory;
-- compare quantization methods;
-- reproduce a paper result.
-
-The purpose is **engineering, synthesis, and transfer**.
-
-Fonzytooter may track the assignment, objectives, repository, status, evidence, and reflection, but the code itself belongs in Git and a real editor/IDE.
-
-## Curriculum phases
-
-The phases below describe conceptual progression, not calendar periods.
-
-## Phase 0: Scientific Python and computational experimentation
-
-Goal: become comfortable using Python as the language of numerical and ML experimentation without requiring a detour through unrelated Python application development.
-
-Topics include:
-
-- Python syntax needed for scientific work;
-- NumPy arrays and vectorized operations;
-- shapes, dimensions, indexing, broadcasting;
-- plotting;
-- packages and environments;
-- Jupyter notebooks;
-- Markdown and mathematical notation in notebooks;
-- reproducible notebook habits;
-- type hints where useful;
-- basic scientific-computing workflow;
-- introductory numerical thinking.
-
-Tooling should favor a typed, disciplined workflow where practical, including tools such as Pyright/mypy, Ruff, and modern package/environment tooling.
-
-Do not spend major curriculum time on Python web frameworks, deep Python OOP patterns, or application architecture unrelated to ML.
-
-Representative work:
-
-- embedded NumPy exercises;
-- notebook-based plotting and numerical experiments;
-- small data-inspection tasks.
-
-## Phase 1: Classical machine learning
-
-Goal: understand the basic machine-learning problem before neural networks dominate the curriculum.
-
-Topics include:
-
-- supervised vs unsupervised learning;
-- regression and classification;
-- features and targets;
-- loss/objective functions;
-- train/validation/test splits;
-- generalization;
-- overfitting and underfitting;
-- regularization;
-- bias/variance;
-- cross-validation;
-- data leakage;
-- class imbalance;
-- calibration;
-- metrics;
-- linear regression;
-- logistic regression;
-- decision trees;
-- clustering;
-- k-means;
-- PCA and dimensionality reduction;
-- scikit-learn workflow.
-
-Important implementations should be written manually before relying on libraries:
-
-- linear regression;
-- logistic regression;
-- k-means;
-- a small decision tree where pedagogically useful.
-
-Then solve comparable problems using scikit-learn.
-
-Representative work:
-
-- browser exercises for losses, gradients, metrics, and small algorithms;
-- notebooks comparing models and visualizing decision boundaries;
-- a rigorous classical-ML project with train/validation/test discipline and clear evaluation.
-
-## Phase 2: Neural networks from first principles
-
-Goal: make neural networks understandable as compositions of ordinary mathematical operations rather than magic.
-
-Topics include:
-
-- perceptrons;
-- layers;
-- weights and biases;
-- activation functions;
-- loss functions;
-- computational graphs;
-- derivatives and partial derivatives;
-- gradients;
-- the chain rule;
-- backpropagation;
-- automatic differentiation conceptually;
-- initialization;
-- gradient descent;
-- SGD;
-- momentum;
-- Adam;
-- regularization;
-- normalization;
-- embeddings.
-
-A central project should be a small neural-network implementation from scratch without relying on a deep-learning framework for the core mechanics.
-
-Representative work:
-
-- embedded derivative/backprop exercises;
-- notebook experiments with loss surfaces, initialization, and optimization;
-- repository project: neural network from scratch.
-
-## Phase 3: Deep learning and PyTorch
-
-Goal: transition from hand-built neural-network mechanics to modern framework-based model development and GPU computation.
-
-Topics include:
-
-- PyTorch tensors;
-- tensor shapes and device placement;
-- autograd;
-- `nn.Module`;
-- datasets and dataloaders;
-- training loops;
-- evaluation loops;
-- checkpoints;
-- mixed precision;
-- CUDA concepts;
-- profiling;
-- memory constraints;
-- reproducibility;
-- experiment organization.
-
-Architectural history should include:
-
-- multilayer perceptrons;
-- CNNs;
-- RNNs;
-- LSTMs/GRUs;
-- why attention eventually displaced recurrent architectures for many sequence tasks.
-
-Representative work:
-
-- notebooks exploring tensor operations and training behavior;
-- repo-based model training;
-- experiments comparing architectures or optimization choices.
-
-## Phase 4: Transformers from scratch
-
-Goal: understand the Transformer deeply enough to implement a small language model rather than treating attention as an API primitive.
-
-Topics include:
-
-- tokenization;
-- vocabulary and token IDs;
-- embeddings;
-- positional information;
-- queries, keys, and values;
-- dot-product attention;
-- causal masks;
-- multi-head attention;
-- residual connections;
-- normalization;
-- feed-forward blocks;
-- logits;
-- softmax;
-- cross-entropy;
-- autoregressive training;
-- sampling and decoding.
-
-Build:
-
-- attention manually;
-- a transformer block manually;
-- a tiny GPT-style language model;
-- training and evaluation loops;
-- autoregressive generation.
-
-Stanford-style "language modeling from scratch" material is an appropriate target level for this phase.
-
-Representative work:
-
-- embedded attention/math exercises;
-- notebooks visualizing attention and sampling behavior;
-- repository project: TinyLM.
-
-## Phase 5: Modern language models
-
-Goal: connect the basic Transformer to the systems and techniques used by contemporary open and frontier language models.
-
-Architecture topics include:
-
-- RMSNorm;
-- RoPE;
-- modern gated feed-forward layers such as SwiGLU-like designs;
-- grouped-query and multi-query attention;
-- mixture-of-experts;
-- long-context techniques;
-- multimodal extensions.
-
-Training/data topics include:
-
-- dataset construction and filtering;
-- pretraining objectives;
-- scaling laws;
-- compute/data tradeoffs;
-- Chinchilla-style scaling considerations;
-- evaluation design.
-
-Post-training topics include:
-
-- supervised fine-tuning;
-- preference learning;
-- reward models conceptually;
-- RLHF conceptually;
-- PPO conceptually;
-- DPO;
-- RLAIF;
-- verifiable rewards;
-- reasoning/test-time compute.
-
-Adaptation topics include:
-
-- full fine-tuning;
-- LoRA;
-- PEFT;
-- quantization;
-- low-resource local experiments.
-
-The learner cannot reproduce frontier-scale training locally, but should perform the same *categories* of experiments at small scale where possible.
-
-Representative project:
-
-- take an open model through a small fine-tuning/adaptation/evaluation/serving workflow.
-
-## Phase 5B: Inference and ML systems for LLMs
-
-Goal: understand why inference behaves the way it does on real hardware.
-
-Topics include:
-
-- parameter memory;
-- activation memory;
-- FLOPs;
-- memory bandwidth;
-- arithmetic intensity;
-- batching;
-- prefill vs decode;
-- KV cache;
-- quantization;
-- speculative decoding;
-- continuous batching;
-- tensor parallelism;
-- pipeline parallelism;
-- data parallelism;
-- GPU/CPU tradeoffs;
-- latency vs throughput.
-
-Use multiple inference stacks experimentally where useful, for example:
-
-- raw PyTorch/Transformers;
-- llama.cpp;
-- Ollama;
-- LM Studio;
-- vLLM or equivalent serving systems where hardware permits.
-
-The purpose is not memorizing product APIs but understanding the underlying systems tradeoffs.
-
-## Phase 6: Broaden beyond language models
-
-Goal: avoid conflating "AI" with "LLMs."
-
-Potential areas include:
-
-- computer vision;
-- representation learning;
-- multimodal systems;
-- diffusion and flow-based generative models;
-- speech and audio;
-- reinforcement learning;
-- probabilistic methods;
-- additional classical/specialized ML methods.
-
-Reinforcement-learning foundations should include:
-
-- states;
-- actions;
-- rewards;
-- policies;
-- value functions;
-- Markov decision processes;
-- Bellman equations;
-- Q-learning;
-- policy gradients;
-- actor-critic methods.
-
-This phase can become more elective based on interest.
-
-## Phase 7: Research and ML systems practice
-
-Goal: transition from following a curriculum to doing increasingly independent technical work.
-
-Activities include:
-
-- reading papers;
-- reproducing selected results;
-- implementing methods from papers;
-- running controlled experiments;
-- designing ablations;
-- forming hypotheses;
-- measuring failures;
-- writing experiment reports;
-- asking novel technical questions;
-- contributing to or building ML systems.
-
-This phase should increasingly resemble research-engineering practice rather than coursework.
-
-## Mathematics spine
-
-Math should be connected to concrete ML use wherever possible.
-
-### Functions and algebra
-
-Topics include:
-
-- domain and codomain;
-- mappings;
-- composition;
-- inverse functions;
-- exponentials;
-- logarithms;
-- sequences;
-- notation;
-- asymptotic intuition where useful.
+- loss surfaces and learning-rate behavior;
+- matrix transformations;
+- probability simulations;
+- PCA projections;
+- activation/gradient distributions;
+- attention visualizations;
+- sampling behavior;
+- scaling-law fits;
+- quantization error and performance measurements.
+
+The learner should understand notebook state, kernel restarts, clean execution, plotting, Markdown/math, reproducibility, and when reusable logic belongs in normal modules rather than notebook cells.
+
+Fonzytooter should track notebook work but should **not embed or host Jupyter**.
+
+### 3. Git repository + normal IDE — engineering, synthesis, and transfer
+
+Substantial implementations, GPU-dependent experiments, multi-file work, and research artifacts belong in ordinary Git repositories.
+
+Examples:
+
+- neural network from scratch;
+- CNN/sequence experiments;
+- Transformer block implementation;
+- TinyLM;
+- open-model LoRA adaptation;
+- grounded LLM-system study;
+- inference/quantization profiling;
+- paper reproduction and capstone research.
+
+Fonzytooter may track the assignment, objective evidence, repository, status, and reflection. The code itself belongs in Git and a normal development environment.
+
+## Canonical core architecture
+
+The mandatory core contains Modules 00–23. Module count does **not** imply equal module length.
+
+### Foundation
+
+- **00 — Orientation**
+- **01 — Scientific Python Foundations**
+
+### First ML models and mathematical foundations
+
+- **02 — Vectors, Matrices, and Numerical Data**
+- **03 — Linear Regression: Your First ML Model**
+- **04 — Derivatives and Gradient Descent**
+- **05 — Probability and Statistical Thinking for ML**
+- **06 — Classification and Logistic Regression**
+- **07 — Generalization, Evaluation, and Good Experiments**
+
+### Selective classical-ML breadth
+
+- **08 — Classical ML Beyond Linear Models**
+- **09 — Unsupervised Learning and Dimensionality Reduction**
+
+### Neural networks from first principles
+
+- **10 — Neural Networks as Composed Functions**
+- **11 — Computational Graphs and Backpropagation**
+- **12 — Neural Network From Scratch**
+- **13 — PyTorch and Training Neural Networks**
+
+### Deep learning and the road to attention
+
+- **14 — Deep Learning Architectures: CNNs and Sequences**
+- **15 — Embeddings and Language Modeling**
+- **16 — Attention**
+
+### Transformers and language models from scratch
+
+- **17 — Transformer From Scratch**
+- **18 — Tiny Autoregressive Language Model**
+
+### Modern LLM lifecycle and systems
+
+- **19 — From the Original Transformer to Modern LLMs**
+- **20 — Fine-Tuning, LoRA, and Post-Training**
+- **21 — Evaluation, Reasoning, Retrieval, and Tool Use**
+- **22 — GPUs, Quantization, and LLM Inference**
+
+### Research synthesis
+
+- **23 — Research Engineering / Capstone**
+
+The detailed teaching contract for these modules lives in the canonical syllabus and tranche documents rather than this overview.
+
+## Mathematical progression
+
+The course should feel cumulative rather than like a sequence of disconnected math mini-courses.
+
+### Functions and notation
+
+Begin in Module 01 and reuse continuously through parameterized models, composition, computational graphs, and neural architectures.
 
 ### Linear algebra
 
-Topics include:
+- Module 02: vectors, matrices, dot products, multiplication, transformations, geometry;
+- Module 09: projection, covariance geometry, eigenvectors/eigenvalues for PCA;
+- Modules 10–19: layers, embeddings, attention, tensor shapes, Transformer architecture;
+- Module 20: low-rank structure through LoRA.
 
-- vectors;
-- matrices;
-- dot products;
-- matrix multiplication;
-- linear transformations;
-- basis and coordinates;
-- norms;
-- projections;
-- eigenvalues/eigenvectors where motivated;
-- decompositions where useful;
-- high-dimensional geometric intuition.
+### Calculus and optimization
 
-### Probability and statistics
+- Module 04: derivatives, partial derivatives, gradients, chain rule, gradient descent;
+- Module 11: deeper chain-rule/backpropagation and reverse-mode differentiation;
+- Module 13: stochastic optimization, momentum, Adam/AdamW, initialization, normalization, learning-rate schedules.
 
-Topics include:
+### Probability, statistics, and information theory
 
-- random variables;
-- common distributions;
-- expectation;
-- variance;
-- covariance;
-- conditional probability;
-- Bayes' rule;
-- sampling;
-- estimators;
-- uncertainty;
-- likelihood;
-- hypothesis/evaluation concepts needed for experiments.
+- Module 05: probability, random variables, expectation, variance, conditional probability, Bayes, sampling;
+- Modules 06–07: likelihood, classification, softmax/cross-entropy, metrics, calibration, generalization;
+- Module 15: sequence probability, NLL/perplexity, surprisal, entropy, cross-entropy, KL divergence;
+- Modules 20–23: preference objectives, KL constraints, stochastic evaluation, uncertainty, effect-size reasoning.
 
-### Calculus
+### Numerical/systems reasoning
 
-Topics include:
+- Module 01: floating-point awareness and reproducible numerical work;
+- Modules 06/15: stable sigmoid/softmax/log calculations;
+- Module 13: FP32/FP16/BF16 and mixed precision;
+- Module 22: memory arithmetic, KV cache, bit widths, quantization, bandwidth/throughput/latency.
 
-- limits conceptually;
-- derivatives;
-- rates of change;
-- partial derivatives;
-- gradients;
-- chain rule;
-- multivariable differentiation;
-- integration when useful rather than as an arbitrary prerequisite sequence.
+## Major mastery projects
 
-### Optimization
+The course should contain a small number of substantial projects, with smaller labs and implementation checkpoints preparing for them.
 
-Topics include:
+The six major synthesis projects are:
 
-- objective functions;
-- local/global minima;
-- convexity intuition;
-- gradient-based optimization;
-- conditioning;
-- learning rates;
-- stochastic optimization;
-- momentum/adaptive optimizers.
+1. **Classical ML experiment** — frame a problem, establish a baseline, apply appropriate preprocessing/modeling, evaluate honestly, and explain results.
+2. **Neural Network From Scratch** — implement forward propagation, backpropagation, optimization, and evaluation without a deep-learning framework hiding the mechanics.
+3. **TinyLM** — implement and train a small autoregressive Transformer language model and personally write the initial sampling path.
+4. **Open-model adaptation/evaluation experiment** — adapt a manageable open model with LoRA/PEFT under a controlled evaluation.
+5. **Inference systems experiment** — profile or benchmark a real inference question and explain the result using hardware, precision, memory, and algorithmic reasoning.
+6. **Research capstone** — investigate or reproduce a tractable result with prior work, baselines, controlled experiments, uncertainty, reproducibility, limitations, and bounded conclusions.
 
-### Information theory
+Smaller activities such as the Module 07 trustworthiness study, attention calculation/implementation, Transformer-block build, architecture autopsy, and grounded-system study are labs or transfer checkpoints rather than additional capstones.
 
-Topics include:
+## Scope boundary: a deep primer, not an exhaustive degree
 
-- entropy;
-- cross-entropy;
-- KL divergence;
-- mutual information where useful;
-- relationship to model objectives and probabilistic prediction.
+The mandatory core protects **foundational depth**, not exhaustive breadth.
 
-### Numerical computing
+The learner should leave the core able to understand unfamiliar ML/LLM ideas from known primitives and continue into specialist literature. The learner is not expected to become a specialist in every subfield before completing the course.
 
-Topics include:
+Topics deliberately left primarily for optional post-core paths include:
 
-- floating-point limitations;
-- numerical stability;
-- vectorization;
-- precision;
-- overflow/underflow;
-- stable softmax/log calculations;
-- reproducibility and random seeds.
+- advanced computer vision;
+- diffusion, flow matching, and image/video generative modeling;
+- reinforcement learning beyond the minimum foundation required for RLHF;
+- advanced LLM post-training/alignment;
+- multimodal ML;
+- speech/audio ML;
+- Bayesian/probabilistic ML;
+- time-series ML;
+- graph neural networks;
+- causal inference;
+- advanced inference/performance engineering, CUDA, Triton, and ML compilers;
+- distributed training and large-scale serving systems;
+- advanced mathematics/theory.
 
-## Typical module composition
+Optional paths should deepen the same mental model and experimental discipline rather than becoming disconnected topic catalogs.
 
-A module does not need every activity type, but a rich module may contain:
+## Source-of-truth rule
 
-```text
-Module
-├── objectives
-├── prerequisite review
-├── sourced MDX lessons
-├── curated readings
-├── curated YouTube playlist
-├── interactive visualization(s)
-├── spaced-repetition items
-├── conceptual/math exercises
-├── embedded Pyodide coding exercises
-├── Jupyter notebook lab(s)
-├── mastery check
-└── repository project or synthesis task
-```
+If planning documents disagree, use this order:
 
-Example:
+1. runtime-authored `curriculum/courses/ai-ml/` for content that actually exists;
+2. [`ai-ml-syllabus-coherence.md`](ai-ml-syllabus-coherence.md) for final cross-tranche amendments;
+3. [`ai-ml-syllabus.md`](ai-ml-syllabus.md) for the canonical core architecture;
+4. detailed tranche plans for lesson-level intended design;
+5. this document for high-level philosophy and boundaries.
 
-```text
-Linear Regression
-├── Lesson: what it means to fit a line
-├── Math: squared error and derivatives
-├── Video: geometric/statistical intuition
-├── Embedded exercise: implement MSE
-├── Embedded exercise: compute/update a gradient
-├── Notebook lab: visualize loss and learning-rate behavior
-├── Review cards: regression/generalization vocabulary
-└── Repo lab: implement and evaluate linear regression
-```
-
-## Assessment and retention
-
-Progress should use multiple forms of evidence.
-
-### Recall
-
-Spaced repetition assesses whether concepts remain retrievable over time.
-
-### Conceptual understanding
-
-Explanation, comparison, prediction, and reasoning tasks assess whether the learner understands why a technique behaves as it does.
-
-### Mathematical application
-
-Problems assess whether the learner can actually perform the relevant algebra/calculus/probability rather than recognizing terminology.
-
-### Coding/application
-
-Embedded exercises and tests assess constrained implementation ability.
-
-### Transfer
-
-Notebook investigations, open-ended tasks, projects, novel debugging scenarios, and synthesis work assess whether knowledge transfers beyond rehearsed examples.
-
-Avoid collapsing all of these into a fake-precision single mastery percentage.
-
-## AI tutor and agent policy
-
-The tutor should know what the learner is currently doing and what relevant objectives they have struggled with, but it should not silently complete the core learning work.
-
-For foundational coding exercises, default tutor behavior should scaffold:
-
-- explain errors;
-- ask guiding questions;
-- point back to relevant concepts;
-- offer progressively stronger hints;
-- review an attempted implementation.
-
-A full solution can be available when explicitly requested, but should not be the default interaction.
-
-The tutor may suggest that an objective is ready for assessment, but it does not award mastery merely because a conversation sounded convincing.
-
-## Sources and curriculum quality
-
-All substantive lesson content must have an inspectable source basis.
-
-Prefer:
-
-- original papers;
-- official framework/tool documentation;
-- reputable textbooks;
-- strong university course material;
-- other high-quality educational sources where appropriate.
-
-YouTube resources are curated for explanation and intuition but are not automatically authoritative citations.
-
-AI-generated lesson text must follow the same workflow as human-authored content:
-
-1. draft;
-2. identify and verify reputable sources;
-3. check claims against those sources;
-4. review;
-5. commit with stable source references.
-
-## Portfolio direction
-
-The curriculum should naturally produce a small portfolio of technically meaningful work rather than dozens of toy notebooks.
-
-Representative milestone projects include:
-
-- a rigorous classical-ML project;
-- neural network from scratch;
-- TinyLM / transformer from scratch;
-- open-model fine-tuning + evaluation + inference project;
-- one domain/research project based on learner interest.
-
-The precise projects can evolve with interests and available hardware.
-
-## Career direction
-
-The curriculum should support a progression from existing software-engineering strengths toward ML/research engineering.
-
-A rough distinction:
-
-- **AI application engineer:** integrates models into products and systems;
-- **ML/research engineer:** additionally understands training, data, model internals, evaluation, inference, experiments, and paper-to-code work;
-- **researcher:** typically requires deeper mathematical specialization and sustained novel-method research.
-
-The initial curriculum target is research/ML engineering depth while preserving strong software-engineering practice.
-
-## Future syllabus work
-
-This document deliberately stops at the high-level curriculum architecture.
-
-The next curriculum-design step is to expand these phases into a detailed sequence of modules and objectives. A module may eventually follow a pattern such as:
-
-```text
-motivation/history
-    -> mathematical prerequisite
-    -> conceptual lesson
-    -> reading/video
-    -> embedded practice
-    -> notebook exploration
-    -> mastery check
-    -> project/synthesis
-    -> spaced review
-```
-
-The detailed syllabus should be authored incrementally so the learning-system implementation does not become a substitute for actually using the curriculum.
+The purpose of this overview is to keep the course's intent legible. It should not drift into a second competing syllabus again.
