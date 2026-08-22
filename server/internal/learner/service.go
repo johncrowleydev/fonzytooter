@@ -186,7 +186,7 @@ func (s *Service) SetLessonProgress(ctx context.Context, courseID, moduleID, les
 	}
 
 	now := s.now().UTC()
-	nowText := now.Format(time.RFC3339Nano)
+	nowText := formatLearnerTime(now)
 	var completedAt any
 	if completed {
 		completedAt = nowText
@@ -393,6 +393,10 @@ func (s *Service) Activities(ctx context.Context, courseID string, limit int) ([
 		return nil, fmt.Errorf("iterate learner activities: %w", err)
 	}
 	return activities, nil
+}
+
+func formatLearnerTime(value time.Time) string {
+	return value.UTC().Format("2006-01-02T15:04:05.000000000Z")
 }
 
 func lessonProgressFromStored(courseID, moduleID, lessonID string, completed bool, completedAt sql.NullString) (LessonProgress, error) {

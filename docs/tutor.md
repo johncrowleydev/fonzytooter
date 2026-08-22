@@ -248,6 +248,12 @@ Return previous saved attempts, checks, and failure information for an exercise 
 
 Return relevant spaced-repetition history for one or more objectives/review items.
 
+## Implemented Fonzytooter context and tools
+
+The backend runtime now uses a versioned Fonzytooter policy and an authoritative context builder. Client page labels are treated as hints only: course, module, lesson, exercise, objective, and source ownership is resolved against the immutable curriculum catalog, with current selected text, code, and execution state kept as bounded ephemeral input. Current lesson excerpts, source metadata, relevant objective evidence, and compact course progress are injected when predictable, so the model does not need a `get_current_page` tool.
+
+The six initial tools above are implemented as typed, validated, read-only capabilities. Search uses a deterministic normalized text score and stable tie-breaking; content retrieval and learner histories are course-scoped and size-limited; worksheet answer keys and hidden exercise tests are never returned. Source-bearing curriculum results expose only registered source IDs and metadata, and the runtime emits normalized citation events for those retrieved IDs. No tool mutates learner state, runs server-side Python, performs web search, or awards mastery.
+
 Tool definitions should use typed Go argument/result structures. Prefer deriving tool JSON schemas from typed definitions using existing project schema machinery when that can be done cleanly; avoid maintaining redundant hand-written schemas without a concrete reason.
 
 The registry should validate model-supplied arguments before invoking a tool.

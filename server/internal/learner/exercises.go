@@ -10,6 +10,11 @@ import (
 
 const ActivityExerciseChecked = "exercise_checked"
 
+const (
+	DefaultExerciseHistoryLimit = 10
+	MaxExerciseHistoryLimit     = 50
+)
+
 var (
 	ErrExerciseNotFound       = errors.New("exercise not found")
 	ErrInvalidExerciseAttempt = errors.New("invalid exercise attempt")
@@ -80,7 +85,7 @@ func (s *Service) SetExerciseWorkspace(ctx context.Context, courseID, moduleID, 
 		ON CONFLICT (course_id, module_id, exercise_id) DO UPDATE SET
 			code = excluded.code,
 			updated_at = excluded.updated_at
-	`, courseID, moduleID, exerciseID, code, now.Format(time.RFC3339Nano))
+	`, courseID, moduleID, exerciseID, code, formatLearnerTime(now))
 	if err != nil {
 		return ExerciseWorkspace{}, fmt.Errorf("write exercise workspace: %w", err)
 	}
@@ -135,7 +140,7 @@ func (s *Service) CreateExerciseAttempt(ctx context.Context, courseID, moduleID,
 		return ExerciseAttempt{}, fmt.Errorf("begin exercise attempt: %w", err)
 	}
 	defer func() { _ = tx.Rollback() }()
-	createdAt := now.Format(time.RFC3339Nano)
+	createdAt := formatLearnerTime(now)
 	result, err := tx.ExecContext(ctx, `
 		INSERT INTO exercise_attempts
 			(course_id, module_id, exercise_id, created_at, passed_count, failed_count, duration_ms, all_passed, code_snapshot)
@@ -168,4 +173,72 @@ func (s *Service) CreateExerciseAttempt(ctx context.Context, courseID, moduleID,
 		return ExerciseAttempt{}, fmt.Errorf("commit exercise attempt: %w", err)
 	}
 	return attempt, nil
+}
+
+func (s *Service) ExerciseAttempts(ctx context.Context, courseID, moduleID, exerciseID string, limit int) ([]ExerciseAttempt, error) {
+	if _, ok := s.catalog.ExerciseByCourse(courseID, moduleID, exerciseID); !ok {
+		return nil, ErrExerciseNotFound
+	}
+	if limit <= 0 {
+		limit = DefaultExerciseHistoryLimit
+	}
+	if limit > MaxExerciseHistoryLimit {
+		limit = MaxExerciseHistoryLimit
+	}
+	rows, err := s.db.QueryContext(ctx, `
+		SELECT id, created_at, passed_count, failed_count, duration_ms, all_passed, code_snapshot
+		FROM exercise_attempts
+		WHERE course_id = ? AND module_id = ? AND exercise_id = ?
+		ORDER BY created_at DESC, id DESC
+		LIMIT ?
+	`, courseID, moduleID, exerciseID, limit)
+	if err != nil {
+		return nil, fmt.Errorf("read exercise attempts: %w", err)
+	}
+	attempts := make([]ExerciseAttempt, 0)
+	for rows.Next() {
+		attempt := ExerciseAttempt{CourseID: courseID, ModuleID: moduleID, ExerciseID: exerciseID}
+		var createdAt string
+		if err := rows.Scan(&attempt.ID, &createdAt, &attempt.PassedCount, &attempt.FailedCount, &attempt.DurationMS, &attempt.AllPassed, &attempt.CodeSnapshot); err != nil {
+			return nil, fmt.Errorf("scan exercise attempt: %w", err)
+		}
+		attempt.CreatedAt, err = time.Parse(time.RFC3339Nano, createdAt)
+		if err != nil {
+			return nil, fmt.Errorf("parse exercise attempt time: %w", err)
+		}
+		attempts = append(attempts, attempt)
+	}
+	if err := rows.Err(); err != nil {
+		_ = rows.Close()
+		return nil, fmt.Errorf("iterate exercise attempts: %w", err)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, fmt.Errorf("close exercise attempts: %w", err)
+	}
+	for index := range attempts {
+		resultRows, err := s.db.QueryContext(ctx, `
+			SELECT test_id, status, message, duration_ms
+			FROM exercise_test_results WHERE attempt_id = ? ORDER BY rowid
+		`, attempts[index].ID)
+		if err != nil {
+			return nil, fmt.Errorf("read exercise attempt results: %w", err)
+		}
+		for resultRows.Next() {
+			var result ExerciseTestResult
+			if err := resultRows.Scan(&result.TestID, &result.Status, &result.Message, &result.DurationMS); err != nil {
+				_ = resultRows.Close()
+				return nil, fmt.Errorf("scan exercise attempt result: %w", err)
+			}
+			attempts[index].Results = append(attempts[index].Results, result)
+		}
+		if err := resultRows.Err(); err != nil {
+			_ = resultRows.Close()
+			return nil, fmt.Errorf("iterate exercise attempt results: %w", err)
+		}
+		_ = resultRows.Close()
+		if attempts[index].Results == nil {
+			attempts[index].Results = []ExerciseTestResult{}
+		}
+	}
+	return attempts, nil
 }
