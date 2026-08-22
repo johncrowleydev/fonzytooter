@@ -38,3 +38,4 @@ lessons:
   - 02-functions-code-and-mathematics
   - 03-numpy-arrays-shape-dimension-and-dtype
   - 04-vectorized-thinking
+  - 05-broadcasting
