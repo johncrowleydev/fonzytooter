@@ -420,6 +420,93 @@ func TestConversationStorePersistsAcrossReopen(t *testing.T) {
 	}
 }
 
+func TestConversationStorePersistsCompactionMemoryAndAdvancesMarker(t *testing.T) {
+	store, _ := newTestConversationStore(t)
+	conversation, err := store.CreateConversation(context.Background(), CreateConversationParams{CourseID: "ai-ml"})
+	if err != nil {
+		t.Fatalf("create conversation: %v", err)
+	}
+	for _, text := range []string{"question one", "answer one", "question two"} {
+		role := MessageRoleUser
+		if text == "answer one" {
+			role = MessageRoleAssistant
+		}
+		if _, err := store.AppendTextMessage(context.Background(), conversation.ID, role, text); err != nil {
+			t.Fatalf("append message: %v", err)
+		}
+	}
+	memory, err := store.SaveConversationMemory(context.Background(), ConversationMemory{
+		ConversationID:            conversation.ID,
+		Summary:                   "The learner is comparing two explanations.",
+		SummarizedThroughSequence: 2,
+		Structured: StructuredMemory{
+			LearnerGoal:            "Understand composition",
+			Misconceptions:         []string{"Composition is commutative"},
+			UnresolvedQuestions:    []string{"Why does order matter?"},
+			SourceIDs:              []string{"src.functions"},
+			UnsuccessfulApproaches: []string{"Only showing symbolic notation"},
+		},
+	})
+	if err != nil {
+		t.Fatalf("save conversation memory: %v", err)
+	}
+	if memory.FormatVersion != ConversationMemoryFormatVersion || memory.SummarizedThroughSequence != 2 || memory.Structured.LearnerGoal != "Understand composition" {
+		t.Fatalf("unexpected memory: %#v", memory)
+	}
+	loaded, err := store.ConversationMemory(context.Background(), conversation.ID)
+	if err != nil {
+		t.Fatalf("load conversation memory: %v", err)
+	}
+	if loaded.Summary != memory.Summary || len(loaded.Structured.Misconceptions) != 1 {
+		t.Fatalf("unexpected loaded memory: %#v", loaded)
+	}
+	if _, err := store.SaveConversationMemory(context.Background(), ConversationMemory{
+		ConversationID:            conversation.ID,
+		Summary:                   "stale",
+		SummarizedThroughSequence: 1,
+	}); !errors.Is(err, ErrCompactionMarkerRegression) {
+		t.Fatalf("expected marker regression error, got %v", err)
+	}
+	advanced, err := store.SaveConversationMemory(context.Background(), ConversationMemory{
+		ConversationID:            conversation.ID,
+		Summary:                   "advanced",
+		SummarizedThroughSequence: 3,
+	})
+	if err != nil {
+		t.Fatalf("advance conversation memory: %v", err)
+	}
+	if advanced.SummarizedThroughSequence != 3 || advanced.Summary != "advanced" || !advanced.CreatedAt.Equal(memory.CreatedAt) {
+		t.Fatalf("unexpected advanced memory: %#v", advanced)
+	}
+}
+
+func TestConversationMemoryRequiresKnownConversationAndCascades(t *testing.T) {
+	store, db := newTestConversationStore(t)
+	if _, err := store.ConversationMemory(context.Background(), "missing"); !errors.Is(err, ErrConversationNotFound) {
+		t.Fatalf("expected unknown conversation error, got %v", err)
+	}
+	conversation, err := store.CreateConversation(context.Background(), CreateConversationParams{})
+	if err != nil {
+		t.Fatalf("create conversation: %v", err)
+	}
+	if _, err := store.AppendTextMessage(context.Background(), conversation.ID, MessageRoleUser, "remember this"); err != nil {
+		t.Fatalf("append message: %v", err)
+	}
+	if _, err := store.SaveConversationMemory(context.Background(), ConversationMemory{ConversationID: conversation.ID, Summary: "memory", SummarizedThroughSequence: 1}); err != nil {
+		t.Fatalf("save memory: %v", err)
+	}
+	if _, err := db.Exec(`DELETE FROM tutor_conversations WHERE id = ?`, conversation.ID); err != nil {
+		t.Fatalf("delete conversation: %v", err)
+	}
+	var count int
+	if err := db.QueryRow(`SELECT COUNT(*) FROM tutor_conversation_memory`).Scan(&count); err != nil {
+		t.Fatalf("count memory rows: %v", err)
+	}
+	if count != 0 {
+		t.Fatalf("expected memory cascade, got %d rows", count)
+	}
+}
+
 func newTestConversationStore(t *testing.T) (*ConversationStore, *sql.DB) {
 	t.Helper()
 	db, err := database.Open(context.Background(), filepath.Join(t.TempDir(), "fonzytooter.db"))

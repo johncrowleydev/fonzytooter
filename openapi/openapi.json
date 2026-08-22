@@ -325,6 +325,9 @@
       "Event": {
         "additionalProperties": false,
         "properties": {
+          "conversationId": {
+            "type": "string"
+          },
           "error": {
             "type": "string"
           },
@@ -335,6 +338,9 @@
             "type": "string"
           },
           "tool": {
+            "type": "string"
+          },
+          "toolCallId": {
             "type": "string"
           },
           "type": {
@@ -1507,12 +1513,22 @@
       "Usage": {
         "additionalProperties": false,
         "properties": {
+          "cachedTokens": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
           "inputTokens": {
             "format": "int64",
             "minimum": 0,
             "type": "integer"
           },
           "outputTokens": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "reasoningTokens": {
             "format": "int64",
             "minimum": 0,
             "type": "integer"

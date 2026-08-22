@@ -31,6 +31,13 @@ TutorService
     |     +-- relevant learner evidence
     |     +-- bounded conversation history
     |
+    +-- ContextManager
+    |     +-- provider-independent token budgeting
+    |     +-- recent verbatim conversation tail
+    |     +-- persistent compacted conversation memory
+    |     +-- automatic pre-limit compaction
+    |     +-- output and tool-call headroom
+    |
     +-- ToolRegistry
     |     +-- typed definitions
     |     +-- JSON schemas
@@ -113,6 +120,20 @@ Fonzytooter owns conversation state. Do not make a provider thread ID the author
 Persist the canonical conversation in SQLite so that providers can be changed without losing history or coupling the application to one vendor's state model. The exact schema may evolve, but it will likely need explicit records for conversations, messages, tool calls/results, and later attachments.
 
 Inference requests should use bounded recent history plus deliberately selected older context or summaries when needed. Do not blindly resend an unbounded conversation forever merely because a model advertises a very large context window.
+
+## Context management and automatic compaction
+
+Context management is a first-class runtime responsibility. Every model request is assembled within a provider-independent budget that explicitly accounts for the system/tutor policy, compacted memory, recent verbatim messages, fresh application context, deterministic curriculum or learner context, tool definitions, and the current user message. The runtime reserves output and tool-call headroom rather than filling the provider's entire advertised context window with input.
+
+The system/tutor policy and current user message are always retained. A bounded recent conversation tail remains verbatim. When older unsummarized history approaches a configured safety threshold—or grows beyond that retained tail—the runtime compacts it before the hard context limit and persists both the resulting memory and the exact message sequence summarized through. Repeated compaction advances that marker so transcript content is neither summarized twice nor included both verbatim and through memory.
+
+Compacted memory should preserve salient learning state such as the learner's current goal, established understanding, known misconceptions, corrections already made, explanations that did not work, unresolved questions, active longer-lived task context, relevant tool findings, and source or citation IDs. The representation remains bounded and versioned so it can evolve without becoming an opaque replacement for the canonical transcript.
+
+Production compaction uses the configured model to produce a strictly decoded structured-memory document. A bounded deterministic compactor remains the failure fallback and the test implementation; it is not the normal semantic-memory path. If the ordinary recent verbatim tail is still too large, context preparation progressively compacts more of its oldest messages while always retaining the current user message, stopping only when the request fits or the irreducible current request exceeds the hard budget.
+
+Current page state is different: it is fresh, ephemeral input rebuilt from application state on every turn. Route identifiers, selected text, current code, and execution results must not become durable truth merely because they appeared in an older request, and stale page state must not be reintroduced through compaction memory.
+
+Token estimation is an interface rather than a commitment to one tokenizer or model family. Providers may later supply more accurate model-aware estimates and context limits, while the runtime retains responsibility for enforcing its safety threshold and reserved response/tool capacity.
 
 ## Canonical multimodal messages
 

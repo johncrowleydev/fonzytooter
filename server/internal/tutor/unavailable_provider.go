@@ -8,8 +8,8 @@ func NewUnavailableProvider() *UnavailableProvider {
 	return &UnavailableProvider{}
 }
 
-func (p *UnavailableProvider) StreamTurn(ctx context.Context, _ TurnRequest) (<-chan Event, error) {
-	events := make(chan Event, 2)
+func (p *UnavailableProvider) Stream(ctx context.Context, _ ModelRequest) (<-chan ProviderEvent, error) {
+	events := make(chan ProviderEvent, 2)
 
 	go func() {
 		defer close(events)
@@ -17,8 +17,8 @@ func (p *UnavailableProvider) StreamTurn(ctx context.Context, _ TurnRequest) (<-
 		select {
 		case <-ctx.Done():
 			return
-		case events <- Event{
-			Type: EventTextDelta,
+		case events <- ProviderEvent{
+			Type: ProviderEventTextDelta,
 			Text: "The tutor UI and streaming contract are wired, but no inference provider is configured yet.",
 		}:
 		}
@@ -26,7 +26,7 @@ func (p *UnavailableProvider) StreamTurn(ctx context.Context, _ TurnRequest) (<-
 		select {
 		case <-ctx.Done():
 			return
-		case events <- Event{Type: EventCompleted}:
+		case events <- ProviderEvent{Type: ProviderEventCompleted}:
 		}
 	}()
 
