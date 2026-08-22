@@ -67,6 +67,51 @@ func TestCreateExerciseAttemptDerivesAggregatesAndActivity(t *testing.T) {
 	}
 }
 
+func TestRecentExerciseAttemptsAndActivitiesUseChronologicalFixedWidthTimestamps(t *testing.T) {
+	service, db := exerciseTestService(t)
+	base := time.Date(2026, time.August, 20, 12, 30, 0, 0, time.UTC)
+	times := []time.Time{base.Add(90 * time.Millisecond), base.Add(100 * time.Millisecond), base.Add(110 * time.Millisecond)}
+	index := 0
+	service.now = func() time.Time {
+		value := times[index]
+		index++
+		return value
+	}
+	results := []ExerciseTestResult{
+		{TestID: "visible", Status: "passed"},
+		{TestID: "hidden", Status: "passed"},
+	}
+	created := make([]ExerciseAttempt, 0, len(times))
+	for range times {
+		attempt, err := service.CreateExerciseAttempt(context.Background(), "course", "module", "double", "code", 1, results)
+		if err != nil {
+			t.Fatalf("create exercise attempt: %v", err)
+		}
+		created = append(created, attempt)
+	}
+	var stored string
+	if err := db.QueryRow(`SELECT created_at FROM exercise_attempts WHERE id = ?`, created[1].ID).Scan(&stored); err != nil {
+		t.Fatalf("read fixed-width exercise timestamp: %v", err)
+	}
+	if stored != "2026-08-20T12:30:00.100000000Z" {
+		t.Fatalf("expected fixed-width exercise timestamp, got %q", stored)
+	}
+	attempts, err := service.ExerciseAttempts(context.Background(), "course", "module", "double", 1)
+	if err != nil {
+		t.Fatalf("read recent exercise attempts: %v", err)
+	}
+	if len(attempts) != 1 || attempts[0].ID != created[2].ID {
+		t.Fatalf("expected 110ms exercise attempt, got %#v", attempts)
+	}
+	activities, err := service.Activities(context.Background(), "course", 1)
+	if err != nil {
+		t.Fatalf("read recent activities: %v", err)
+	}
+	if len(activities) != 1 || !activities[0].OccurredAt.Equal(times[2]) {
+		t.Fatalf("expected 110ms activity, got %#v", activities)
+	}
+}
+
 func TestCreateExerciseAttemptRejectsUnknownDuplicateAndIncompleteTests(t *testing.T) {
 	service, db := exerciseTestService(t)
 	tests := []struct {

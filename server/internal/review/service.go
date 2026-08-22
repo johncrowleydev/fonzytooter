@@ -16,6 +16,11 @@ import (
 
 const ActivityReviewCompleted = "review_completed"
 
+const (
+	DefaultHistoryLimit = 10
+	MaxHistoryLimit     = 50
+)
+
 var (
 	ErrCourseNotFound        = errors.New("course not found")
 	ErrReviewItemNotFound    = errors.New("review item not found")
@@ -60,6 +65,21 @@ type Card struct {
 type SubmittedReview struct {
 	ID   int64
 	Card Card
+}
+
+type HistoryEntry struct {
+	ID              int64
+	CourseID        string
+	ModuleID        string
+	ReviewItemID    string
+	ReviewedAt      time.Time
+	Rating          Rating
+	PreviousDue     time.Time
+	NextDue         time.Time
+	AfterStability  float64
+	AfterDifficulty float64
+	AfterReps       uint64
+	AfterLapses     uint64
 }
 
 type Service struct {
@@ -230,6 +250,55 @@ func (s *Service) Submit(ctx context.Context, courseID, moduleID, reviewItemID s
 			IsDue: !after.Card.Due.After(now), New: false, LastRated: &lastRated,
 		},
 	}, nil
+}
+
+func (s *Service) History(ctx context.Context, courseID, moduleID, reviewItemID string, limit int) ([]HistoryEntry, error) {
+	if _, err := s.findReviewItem(courseID, moduleID, reviewItemID); err != nil {
+		return nil, err
+	}
+	if limit <= 0 {
+		limit = DefaultHistoryLimit
+	}
+	if limit > MaxHistoryLimit {
+		limit = MaxHistoryLimit
+	}
+	rows, err := s.db.QueryContext(ctx, `
+		SELECT id, reviewed_at, rating, previous_due, next_due,
+			after_stability, after_difficulty, after_reps, after_lapses
+		FROM review_logs
+		WHERE course_id = ? AND module_id = ? AND review_item_id = ?
+		ORDER BY reviewed_at DESC, id DESC
+		LIMIT ?
+	`, courseID, moduleID, reviewItemID, limit)
+	if err != nil {
+		return nil, fmt.Errorf("read review history: %w", err)
+	}
+	defer rows.Close()
+	entries := make([]HistoryEntry, 0)
+	for rows.Next() {
+		entry := HistoryEntry{CourseID: courseID, ModuleID: moduleID, ReviewItemID: reviewItemID}
+		var reviewedAt, previousDue, nextDue string
+		if err := rows.Scan(&entry.ID, &reviewedAt, &entry.Rating, &previousDue, &nextDue, &entry.AfterStability, &entry.AfterDifficulty, &entry.AfterReps, &entry.AfterLapses); err != nil {
+			return nil, fmt.Errorf("scan review history: %w", err)
+		}
+		entry.ReviewedAt, err = time.Parse(time.RFC3339Nano, reviewedAt)
+		if err != nil {
+			return nil, fmt.Errorf("parse review history time: %w", err)
+		}
+		entry.PreviousDue, err = time.Parse(time.RFC3339Nano, previousDue)
+		if err != nil {
+			return nil, fmt.Errorf("parse review previous due: %w", err)
+		}
+		entry.NextDue, err = time.Parse(time.RFC3339Nano, nextDue)
+		if err != nil {
+			return nil, fmt.Errorf("parse review next due: %w", err)
+		}
+		entries = append(entries, entry)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate review history: %w", err)
+	}
+	return entries, nil
 }
 
 func (s *Service) findReviewItem(courseID, moduleID, reviewItemID string) (curriculum.ReviewItem, error) {
@@ -443,7 +512,7 @@ func parseOptionalTime(label string, value sql.NullString) (time.Time, error) {
 }
 
 func formatTime(value time.Time) string {
-	return value.UTC().Format(time.RFC3339Nano)
+	return value.UTC().Format("2006-01-02T15:04:05.000000000Z")
 }
 
 func nullableTime(value time.Time) any {

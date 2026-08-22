@@ -23,6 +23,17 @@ type fixedClock struct{ now time.Time }
 
 func (clock fixedClock) Now() time.Time { return clock.now }
 
+type sequenceClock struct {
+	values []time.Time
+	index  int
+}
+
+func (clock *sequenceClock) Now() time.Time {
+	value := clock.values[clock.index]
+	clock.index++
+	return value
+}
+
 func TestCardMappingRoundTripsEveryFSRSField(t *testing.T) {
 	db, _ := newTestService(t, testNow)
 	want := fsrs.Card{
@@ -162,6 +173,35 @@ func TestSubmitIsAtomicAcrossCardLogAndActivity(t *testing.T) {
 	}
 	assertTableCount(t, db, "review_cards", 0)
 	assertTableCount(t, db, "review_logs", 0)
+}
+
+func TestHistoryUsesChronologicalFixedWidthTimestampsBeforeLimiting(t *testing.T) {
+	db, service := newTestService(t, testNow)
+	base := time.Date(2026, time.August, 20, 14, 30, 0, 0, time.UTC)
+	times := []time.Time{base.Add(90 * time.Millisecond), base.Add(100 * time.Millisecond), base.Add(110 * time.Millisecond)}
+	service.clock = &sequenceClock{values: times}
+	ids := make([]int64, 0, len(times))
+	for range times {
+		submitted, err := service.Submit(context.Background(), "course", "module", "first", RatingGood)
+		if err != nil {
+			t.Fatalf("submit review: %v", err)
+		}
+		ids = append(ids, submitted.ID)
+	}
+	var stored string
+	if err := db.QueryRow(`SELECT reviewed_at FROM review_logs WHERE id = ?`, ids[1]).Scan(&stored); err != nil {
+		t.Fatalf("read fixed-width review timestamp: %v", err)
+	}
+	if stored != "2026-08-20T14:30:00.100000000Z" {
+		t.Fatalf("expected fixed-width review timestamp, got %q", stored)
+	}
+	history, err := service.History(context.Background(), "course", "module", "first", 1)
+	if err != nil {
+		t.Fatalf("read review history: %v", err)
+	}
+	if len(history) != 1 || history[0].ID != ids[2] {
+		t.Fatalf("expected 110ms review, got %#v", history)
+	}
 }
 
 func TestInvalidAndMissingSubmissionsDoNotWrite(t *testing.T) {

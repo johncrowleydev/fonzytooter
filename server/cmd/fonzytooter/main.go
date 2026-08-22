@@ -20,6 +20,7 @@ import (
 	"github.com/johncrowleydev/fonzytooter/server/internal/review"
 	"github.com/johncrowleydev/fonzytooter/server/internal/tutor"
 	openrouterprovider "github.com/johncrowleydev/fonzytooter/server/internal/tutor/openrouter"
+	"github.com/johncrowleydev/fonzytooter/server/internal/tutorlearning"
 )
 
 func main() {
@@ -94,11 +95,47 @@ func prepareServer(ctx context.Context, cfg config.Config, openDatabase database
 		_ = db.Close()
 		return nil, nil, err
 	}
-	tutorService := tutor.NewPersistentService(tutorProvider, conversationStore)
 	learnerService := learner.NewService(db, catalog)
 	reviewService := review.NewService(db, catalog, review.SystemClock{})
+	tutorService, err := configuredTutorService(tutorProvider, conversationStore, catalog, learnerService, reviewService)
+	if err != nil {
+		_ = db.Close()
+		return nil, nil, err
+	}
 	server := httpapi.NewServer(cfg.Address, tutorService, catalog, learnerService, reviewService)
 	return server, db, nil
+}
+
+func configuredTutorService(provider tutor.Provider, conversations *tutor.ConversationStore, catalog *curriculum.Catalog, learnerService *learner.Service, reviewService *review.Service) (*tutor.Service, error) {
+	builder, err := tutorlearning.NewContextBuilder(catalog, learnerService)
+	if err != nil {
+		return nil, fmt.Errorf("configure tutor context: %w", err)
+	}
+	learningTools, err := tutorlearning.NewTools(tutorlearning.Services{Catalog: catalog, Learner: learnerService, Review: reviewService})
+	if err != nil {
+		return nil, fmt.Errorf("configure tutor learning tools: %w", err)
+	}
+	registry, err := tutor.NewToolRegistry(learningTools...)
+	if err != nil {
+		return nil, fmt.Errorf("configure tutor tool registry: %w", err)
+	}
+	manager, err := tutor.NewContextManager(
+		conversations,
+		tutor.ConservativeTokenEstimator{},
+		tutor.ModelCompactor{Provider: provider, Fallback: tutor.RuleBasedCompactor{}},
+		tutor.DefaultContextManagerConfig(),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("configure tutor context manager: %w", err)
+	}
+	service, err := tutor.NewRuntimeService(tutor.RuntimeConfig{
+		Provider: provider, Store: conversations, Tools: registry, ContextManager: manager,
+		ContextBuilder: builder, MaxModelRounds: tutor.DefaultMaxModelRounds,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("configure tutor runtime: %w", err)
+	}
+	return service, nil
 }
 
 func configuredTutorProvider(cfg config.Config) (tutor.Provider, error) {

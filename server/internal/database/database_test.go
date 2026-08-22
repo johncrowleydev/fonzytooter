@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -23,10 +24,10 @@ func TestOpenCreatesParentAndMigratesFreshDatabase(t *testing.T) {
 	}
 
 	var migrationCount int
-	if err := db.QueryRow("SELECT COUNT(*) FROM goose_db_version WHERE version_id BETWEEN 1 AND 7 AND is_applied = 1").Scan(&migrationCount); err != nil {
+	if err := db.QueryRow("SELECT COUNT(*) FROM goose_db_version WHERE version_id BETWEEN 1 AND 8 AND is_applied = 1").Scan(&migrationCount); err != nil {
 		t.Fatalf("query migration state: %v", err)
 	}
-	if migrationCount != 7 {
+	if migrationCount != 8 {
 		t.Fatalf("expected all migrations, got %d rows", migrationCount)
 	}
 	for _, table := range []string{
@@ -131,11 +132,72 @@ func TestOpenMigratesIdempotently(t *testing.T) {
 	t.Cleanup(func() { _ = second.Close() })
 
 	var migrationCount int
-	if err := second.QueryRow("SELECT COUNT(*) FROM goose_db_version WHERE version_id BETWEEN 1 AND 7 AND is_applied = 1").Scan(&migrationCount); err != nil {
+	if err := second.QueryRow("SELECT COUNT(*) FROM goose_db_version WHERE version_id BETWEEN 1 AND 8 AND is_applied = 1").Scan(&migrationCount); err != nil {
 		t.Fatalf("query migration state: %v", err)
 	}
-	if migrationCount != 7 {
+	if migrationCount != 8 {
 		t.Fatalf("expected all migrations after reopening, got %d", migrationCount)
+	}
+}
+
+func TestOpenNormalizesLegacyHistoryTimestamps(t *testing.T) {
+	ctx := context.Background()
+	path := filepath.Join(t.TempDir(), "fonzytooter.db")
+	legacyMigrations := fstest.MapFS{}
+	entries, err := fs.ReadDir(embeddedMigrations, "migrations")
+	if err != nil {
+		t.Fatalf("read embedded migrations: %v", err)
+	}
+	for _, entry := range entries {
+		if entry.IsDir() || strings.HasPrefix(entry.Name(), "00008_") {
+			continue
+		}
+		data, err := fs.ReadFile(embeddedMigrations, "migrations/"+entry.Name())
+		if err != nil {
+			t.Fatalf("read migration %s: %v", entry.Name(), err)
+		}
+		legacyMigrations[entry.Name()] = &fstest.MapFile{Data: data}
+	}
+	legacy, err := open(ctx, path, legacyMigrations)
+	if err != nil {
+		t.Fatalf("open pre-normalization database: %v", err)
+	}
+	statements := []string{
+		`INSERT INTO activities (kind, course_id, occurred_at) VALUES ('legacy', 'course', '2026-08-20T12:30:00.1Z')`,
+		`INSERT INTO exercise_attempts (course_id, module_id, exercise_id, created_at, passed_count, failed_count, duration_ms, all_passed, code_snapshot) VALUES ('course', 'module', 'exercise', '2026-08-20T12:30:00.11Z', 1, 0, 0, 1, '')`,
+		`INSERT INTO review_cards (course_id, module_id, review_item_id, due_at, stability, difficulty, scheduled_days, reps, lapses, state, remaining_steps, updated_at) VALUES ('course', 'module', 'review', '2026-08-20T12:30:00Z', 0, 0, 0, 0, 0, 0, 0, '2026-08-20T12:30:00Z')`,
+		`INSERT INTO review_logs (course_id, module_id, review_item_id, reviewed_at, rating, previous_due, next_due, before_stability, after_stability, before_difficulty, after_difficulty, before_scheduled_days, after_scheduled_days, before_reps, after_reps, before_lapses, after_lapses, before_state, after_state, before_remaining_steps, after_remaining_steps) VALUES ('course', 'module', 'review', '2026-08-20T12:30:00Z', 'good', '2026-08-20T12:30:00Z', '2026-08-21T12:30:00Z', 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0)`,
+	}
+	for _, statement := range statements {
+		if _, err := legacy.ExecContext(ctx, statement); err != nil {
+			_ = legacy.Close()
+			t.Fatalf("seed legacy timestamp: %v", err)
+		}
+	}
+	if err := legacy.Close(); err != nil {
+		t.Fatalf("close pre-normalization database: %v", err)
+	}
+
+	upgraded, err := Open(ctx, path)
+	if err != nil {
+		t.Fatalf("upgrade database: %v", err)
+	}
+	t.Cleanup(func() { _ = upgraded.Close() })
+	for table, test := range map[string]struct {
+		column string
+		want   string
+	}{
+		"activities":        {"occurred_at", "2026-08-20T12:30:00.100000000Z"},
+		"exercise_attempts": {"created_at", "2026-08-20T12:30:00.110000000Z"},
+		"review_logs":       {"reviewed_at", "2026-08-20T12:30:00.000000000Z"},
+	} {
+		var got string
+		if err := upgraded.QueryRow("SELECT " + test.column + " FROM " + table + " LIMIT 1").Scan(&got); err != nil {
+			t.Fatalf("read normalized %s: %v", table, err)
+		}
+		if got != test.want {
+			t.Fatalf("normalized %s timestamp = %q, want %q", table, got, test.want)
+		}
 	}
 }
 

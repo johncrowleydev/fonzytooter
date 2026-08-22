@@ -343,6 +343,13 @@ func (s *Service) run(
 			if !sendTutorEvent(ctx, events, Event{Type: EventToolCompleted, ConversationID: conversationID, Tool: call.Name, ToolCallID: call.ID, Error: errorText(toolErr)}) {
 				return
 			}
+			if toolErr == nil {
+				for _, sourceID := range s.tools.SourceIDs(call.Name, result) {
+					if !sendTutorEvent(ctx, events, Event{Type: EventCitation, ConversationID: conversationID, Tool: call.Name, ToolCallID: call.ID, SourceID: sourceID}) {
+						return
+					}
+				}
+			}
 			request.Messages = append(request.Messages, ModelMessage{
 				Role:       ModelRoleTool,
 				ToolCallID: call.ID,

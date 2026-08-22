@@ -27,6 +27,11 @@ type Tool interface {
 	Execute(ctx context.Context, arguments json.RawMessage) (json.RawMessage, error)
 }
 
+type ProvenanceTool interface {
+	Tool
+	SourceIDs(result json.RawMessage) []string
+}
+
 type ToolRegistry struct {
 	mu    sync.RWMutex
 	tools map[string]Tool
@@ -88,6 +93,31 @@ func (r *ToolRegistry) Execute(ctx context.Context, name string, arguments json.
 	return tool.Execute(ctx, arguments)
 }
 
+func (r *ToolRegistry) SourceIDs(name string, result json.RawMessage) []string {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	tool, ok := r.tools[name].(ProvenanceTool)
+	if !ok {
+		return nil
+	}
+	values := tool.SourceIDs(result)
+	seen := make(map[string]struct{}, len(values))
+	unique := make([]string, 0, len(values))
+	for _, value := range values {
+		value = strings.TrimSpace(value)
+		if value == "" {
+			continue
+		}
+		if _, duplicate := seen[value]; duplicate {
+			continue
+		}
+		seen[value] = struct{}{}
+		unique = append(unique, value)
+	}
+	sort.Strings(unique)
+	return unique
+}
+
 func (r *ToolRegistry) allowedNames(allowed []string) ([]string, error) {
 	if allowed == nil {
 		names := make([]string, 0, len(r.tools))
@@ -119,6 +149,7 @@ type typedTool[Arguments any, Result any] struct {
 	schema     *huma.Schema
 	validate   func(Arguments) error
 	execute    func(context.Context, Arguments) (Result, error)
+	provenance func(Result) []string
 }
 
 func NewTypedTool[Arguments any, Result any](
@@ -126,6 +157,26 @@ func NewTypedTool[Arguments any, Result any](
 	description string,
 	validate func(Arguments) error,
 	execute func(context.Context, Arguments) (Result, error),
+) (Tool, error) {
+	return newTypedTool(name, description, validate, execute, nil)
+}
+
+func NewTypedToolWithProvenance[Arguments any, Result any](
+	name string,
+	description string,
+	validate func(Arguments) error,
+	execute func(context.Context, Arguments) (Result, error),
+	provenance func(Result) []string,
+) (Tool, error) {
+	return newTypedTool(name, description, validate, execute, provenance)
+}
+
+func newTypedTool[Arguments any, Result any](
+	name string,
+	description string,
+	validate func(Arguments) error,
+	execute func(context.Context, Arguments) (Result, error),
+	provenance func(Result) []string,
 ) (Tool, error) {
 	if execute == nil {
 		return nil, errors.New("typed tutor tool execute function is nil")
@@ -141,7 +192,18 @@ func NewTypedTool[Arguments any, Result any](
 	if err := validateToolDefinition(definition); err != nil {
 		return nil, err
 	}
-	return &typedTool[Arguments, Result]{definition: definition, registry: registry, schema: schema, validate: validate, execute: execute}, nil
+	return &typedTool[Arguments, Result]{definition: definition, registry: registry, schema: schema, validate: validate, execute: execute, provenance: provenance}, nil
+}
+
+func (t *typedTool[Arguments, Result]) SourceIDs(raw json.RawMessage) []string {
+	if t.provenance == nil {
+		return nil
+	}
+	var result Result
+	if json.Unmarshal(raw, &result) != nil {
+		return nil
+	}
+	return t.provenance(result)
 }
 
 func (t *typedTool[Arguments, Result]) Definition() ToolDefinition {
