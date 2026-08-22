@@ -4,6 +4,8 @@ name: Deploy to jc-dev
 # - JC_DEV_HOST
 # - JC_DEV_SSH_PRIVATE_KEY
 # - JC_DEV_SSH_KNOWN_HOSTS
+# - JC_DEV_AWS_ACCESS_KEY_ID
+# - JC_DEV_AWS_SECRET_ACCESS_KEY
 
 on:
   workflow_dispatch:
@@ -86,11 +88,46 @@ jobs:
           chmod 0600 ~/.ssh/jc-dev ~/.ssh/known_hosts
           ssh-keygen -y -f ~/.ssh/jc-dev >/dev/null
 
+      - name: Allow runner SSH ingress
+        id: ssh_ingress
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.JC_DEV_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.JC_DEV_AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: us-east-1
+          AWS_PAGER: ""
+          SECURITY_GROUP_ID: sg-0a25b825526a4d0f0
+        run: |
+          runner_ip="$(curl --fail --silent --show-error --retry 5 https://checkip.amazonaws.com)"
+          runner_ip="${runner_ip//[[:space:]]/}"
+          python - "${runner_ip}" <<'PY'
+          import ipaddress
+          import sys
+
+          address = ipaddress.ip_address(sys.argv[1])
+          if address.version != 4:
+              raise SystemExit("GitHub runner did not report an IPv4 address")
+          PY
+          runner_cidr="${runner_ip}/32"
+          aws ec2 authorize-security-group-ingress \
+            --group-id "${SECURITY_GROUP_ID}" \
+            --protocol tcp \
+            --port 22 \
+            --cidr "${runner_cidr}"
+          echo "cidr=${runner_cidr}" >> "${GITHUB_OUTPUT}"
+          echo "opened=true" >> "${GITHUB_OUTPUT}"
+
       - name: Upload and activate release
         run: |
           remote_archive="/tmp/fonzytooter-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.tar.gz"
           archive_sha256="$(sha256sum fonzytooter-release.tar.gz | cut -d ' ' -f 1)"
-          ssh_options=(-i ~/.ssh/jc-dev -o BatchMode=yes -o StrictHostKeyChecking=yes)
+          ssh_options=(
+            -i ~/.ssh/jc-dev
+            -o BatchMode=yes
+            -o ConnectTimeout=15
+            -o ServerAliveInterval=15
+            -o ServerAliveCountMax=3
+            -o StrictHostKeyChecking=yes
+          )
           scp "${ssh_options[@]}" fonzytooter-release.tar.gz \
             "${DEPLOY_USER}@${DEPLOY_HOST}:${remote_archive}"
           ssh "${ssh_options[@]}" "${DEPLOY_USER}@${DEPLOY_HOST}" \
@@ -107,3 +144,18 @@ jobs:
           curl --fail --location --silent --show-error \
             --retry 5 --retry-delay 2 \
             https://fonzytooter.johncrowley.dev/healthz
+
+      - name: Remove runner SSH ingress
+        if: ${{ always() && steps.ssh_ingress.outputs.opened == 'true' }}
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.JC_DEV_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.JC_DEV_AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: us-east-1
+          AWS_PAGER: ""
+          SECURITY_GROUP_ID: sg-0a25b825526a4d0f0
+        run: |
+          aws ec2 revoke-security-group-ingress \
+            --group-id "${SECURITY_GROUP_ID}" \
+            --protocol tcp \
+            --port 22 \
+            --cidr "${{ steps.ssh_ingress.outputs.cidr }}"
