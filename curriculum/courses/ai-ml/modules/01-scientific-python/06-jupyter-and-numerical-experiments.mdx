@@ -1,0 +1,597 @@
+---
+id: 06-jupyter-and-numerical-experiments
+title: "Jupyter and Numerical Experiments"
+objectiveIds:
+  - python.numerical-experiments
+---
+
+# Jupyter and Numerical Experiments
+
+So far, we have mostly treated Python code as something you write and then run. That is a good model for applications, scripts, and libraries. But scientific work often has a different rhythm.
+
+You have an idea. You try something. You look at what happened. You change one thing. You try again. You plot the result because a page of numbers is not helping. You discover that your original intuition was wrong, which is often the most useful outcome of the whole exercise.
+
+That style of work is **experimentation**, and Jupyter notebooks are built around it.
+
+A notebook mixes executable Python, its outputs, explanatory prose, equations, and visualizations in one document. That makes it unusually well suited to mathematics, data science, and machine learning. It also introduces a few ways to accidentally fool yourself. A notebook can look like a tidy sequence of reasoning while secretly depending on code you ran twenty minutes ago in a completely different order.
+
+This lesson is therefore about more than learning where the Run button is. We are going to use Jupyter as a laboratory: a place to ask numerical questions, gather evidence, and leave behind enough of the experiment that it can be understood and reproduced later.
+
+By the end, you should be able to build a small numerical experiment, inspect and visualize its results, control intentional randomness, recognize hidden notebook state, and verify your work by restarting the environment and running it cleanly from beginning to end.
+
+---
+
+## A notebook is a document attached to a running Python process
+
+A Jupyter notebook is divided into **cells**. Some cells contain Markdown: ordinary prose, headings, lists, links, and mathematical notation. Other cells contain Python code.
+
+A code cell might contain:
+
+```python
+import numpy as np
+
+values = np.array([1, 2, 3, 4, 5])
+values.mean()
+```
+
+When you run it, the result appears beneath the cell. You can then add another cell:
+
+```python
+values ** 2
+```
+
+and another:
+
+```python
+values.max() - values.min()
+```
+
+This feels a little like a document and a little like an interactive Python shell because it is both. The notebook file stores the cells and, usually, their displayed outputs. The actual Python execution happens in a separate running process called the **kernel**.
+
+That distinction matters.
+
+The kernel remembers variables, imports, functions, and other state from code you have already executed. If you define `values` in one cell, later cells can use it because the same Python process is still alive.
+
+That persistence is what makes notebooks pleasant for exploration. It is also the source of their most notorious trap.
+
+---
+
+## The page has an order. The kernel has a history.
+
+Imagine a notebook that currently looks like this:
+
+```python
+# Cell 1
+rate = 2
+```
+
+```python
+# Cell 2
+result = rate * 10
+result
+```
+
+```text
+20
+```
+
+Everything appears straightforward. Cell 1 defines `rate`; Cell 2 uses it.
+
+Now suppose you edit Cell 1:
+
+```python
+rate = 5
+```
+
+but do not run it. Then you rerun Cell 2.
+
+What is `result`?
+
+It is still `20`, because the text visible in Cell 1 is not necessarily the code the kernel most recently executed. The kernel still remembers `rate = 2`.
+
+It gets stranger. You could add a cell at the bottom:
+
+```python
+rate = 100
+```
+
+run it, scroll back upward, and rerun Cell 2. Now a cell near the top of the notebook displays `1000`, even though the only definition above it visibly says `rate = 5`.
+
+The notebook has two different notions of order:
+
+**Document order** is the top-to-bottom arrangement you see on the page.
+
+**Execution order** is the actual history of code sent to the kernel.
+
+Python obeys execution order.
+
+This is not merely a beginner annoyance. Hidden notebook state can produce analyses that work perfectly on one person's machine and fail immediately when someone else opens them. Worse, it can produce plausible-looking results that no longer correspond to the visible code.
+
+So adopt a rule early:
+
+> **A trustworthy notebook should work when started from a fresh kernel and executed from top to bottom.**
+
+During exploration, jump around. Rerun cells. Break things. That is what notebooks are for. But before treating the result as finished, restart the kernel and run everything in order.
+
+If it fails, the notebook was depending on history that the document did not reveal.
+
+---
+
+## Markdown is part of the experiment
+
+Code tells the computer what you did. It does not always tell a human why you did it.
+
+A useful notebook alternates between computation and explanation. Before an experiment, write down the question you are trying to answer. If you have a prediction, record it before seeing the result. Afterward, write down what you observed and whether it changed your understanding.
+
+For example, a Markdown cell might say:
+
+```text
+## Question
+
+How does increasing the number of random measurements affect the stability
+of their sample mean?
+
+I expect small samples to bounce around considerably, while larger samples
+should usually produce means closer to the center of the generating distribution.
+```
+
+Then comes the code that tests it.
+
+This may feel almost comically formal for a ten-line experiment. That is precisely why it is a good habit to learn on ten-line experiments. When a notebook eventually contains data loading, preprocessing, model training, plots, metrics, and several failed ideas, a few sentences explaining the question and reasoning become enormously valuable.
+
+Jupyter Markdown also supports mathematical notation. Depending on the notebook environment, LaTeX-style syntax such as
+
+```text
+$y = x^2$
+```
+
+can render inline mathematics, while
+
+```text
+$$
+y = \frac{x - \mu}{\sigma}
+$$
+```
+
+can render a displayed equation. You do not need to become a LaTeX expert. The useful idea is that the mathematics, code, result, and explanation can live beside one another instead of being scattered across separate tools.
+
+---
+
+## Computation can be a way of asking mathematical questions
+
+Suppose someone claims that
+
+\[
+1 + 3 + 5 + \cdots + (2n-1) = n^2.
+\]
+
+You may not yet know how to prove that statement. But you can certainly poke it with a computer.
+
+```python
+import numpy as np
+
+n = 8
+odd_numbers = np.arange(1, 2 * n, 2)
+
+print(odd_numbers)
+print(odd_numbers.sum())
+print(n ** 2)
+```
+
+Try different values of `n`. If the two results keep matching, you have gathered evidence.
+
+You have **not proved the claim**.
+
+That distinction is fundamental. A numerical experiment can reveal patterns, expose counterexamples, test intuition, and suggest what might be true. It cannot generally establish a universal mathematical statement by checking finitely many cases.
+
+But evidence is extraordinarily useful. In practice, computation often lets us see a structure before we know how to explain it.
+
+This gives us a productive loop:
+
+**question → prediction → computation → observation → revised understanding**
+
+The computer is not replacing mathematical reasoning. It is giving the reasoning something to push against.
+
+---
+
+## Inspect before you explain
+
+Scientific Python gives you many ways to interrogate an intermediate result. Use them.
+
+Suppose an experiment creates:
+
+```python
+x = np.linspace(-5, 5, 101)
+y = x ** 2
+```
+
+Before drawing conclusions, inspect what you actually produced:
+
+```python
+print(x.shape)
+print(y.shape)
+print(x[:5])
+print(y[:5])
+print(y.min(), y.max())
+```
+
+This should feel familiar from the previous lessons. Shape, dtype, slices, reductions, comparisons, and vectorized transformations are not isolated NumPy trivia. They are the instruments on your laboratory bench.
+
+When something surprising happens, resist the urge to stare at the final line and guess. Inspect the intermediate values. Ask what shape each object has. Ask what range the numbers occupy. Check a few concrete elements. Numerical code becomes much easier to debug when you make its hidden structure visible.
+
+---
+
+## Sometimes the right output is a picture
+
+A hundred numbers can hide a pattern that a plot makes obvious immediately.
+
+Python has several plotting libraries. We will use Matplotlib for basic plots because it is widespread and sufficient for the kind of numerical experiments we need here.
+
+```python
+import matplotlib.pyplot as plt
+import numpy as np
+
+x = np.linspace(-5, 5, 101)
+y = x ** 2
+
+plt.plot(x, y)
+plt.xlabel("x")
+plt.ylabel("x squared")
+plt.title("The function y = x²")
+plt.show()
+```
+
+The important skill is not memorizing every plotting option. A plot is another way to **inspect a result**.
+
+For example, compare these two functions:
+
+```python
+x = np.linspace(-2, 2, 201)
+
+y1 = x ** 2
+y2 = x ** 4
+
+plt.plot(x, y1, label="x²")
+plt.plot(x, y2, label="x⁴")
+plt.legend()
+plt.show()
+```
+
+You could compare arrays of values manually. The graph instead lets you immediately ask visual questions. Where do the curves meet? Which grows faster outside the interval from `-1` to `1`? Which is smaller inside it?
+
+Visualization does not remove the need to reason carefully. Plots can mislead through bad scales, cherry-picked ranges, or inappropriate summaries. For now, the lesson is simply that numerical experimentation is not restricted to printing numbers. Choose a representation that makes the question easier to investigate.
+
+---
+
+## Randomness is useful only when you know what kind of randomness you asked for
+
+Random numbers appear constantly in machine learning. We use them to initialize parameters, shuffle data, choose samples, simulate noisy measurements, split datasets, and much more.
+
+NumPy's modern random-number interface starts with a generator:
+
+```python
+rng = np.random.default_rng()
+
+samples = rng.normal(size=5)
+samples
+```
+
+Run the notebook again and you will probably get different values. That may be exactly what you want while exploring randomness.
+
+But suppose your experiment produces an interesting result and you want another person to see the same thing. If every run generates different data, debugging and comparison become unnecessarily difficult.
+
+Give the generator a **seed**:
+
+```python
+rng = np.random.default_rng(42)
+
+samples = rng.normal(size=5)
+samples
+```
+
+Creating a generator with the same seed starts the same pseudorandom sequence, so the experiment can reproduce the same generated values.
+
+The word **pseudorandom** matters. These numbers are produced deterministically by an algorithm. They are designed to behave statistically like random draws for purposes such as simulation. The seed selects a reproducible starting point in that process.
+
+The particular number `42` has no statistical magic. It is just a popular programmer joke. `7`, `12345`, or another fixed integer would serve the same reproducibility purpose.
+
+A seed is not something you sprinkle onto code to make it scientifically valid. Sometimes an experiment should be repeated across many different random seeds precisely because you want to know whether a result is robust to randomness. The useful distinction is between **intentional variation** and **accidental variation**.
+
+You should know which one your experiment contains.
+
+---
+
+## A first experiment with randomness
+
+Let's investigate something we can see rather than merely assert.
+
+Imagine a process that produces measurements centered around `10` but with random noise. We can simulate measurements from a normal distribution:
+
+```python
+import numpy as np
+
+rng = np.random.default_rng(2026)
+measurements = rng.normal(loc=10, scale=2, size=20)
+
+measurements
+```
+
+The exact statistical theory can wait. For now, `loc=10` says where the distribution is centered, `scale=2` controls how spread out the generated values tend to be, and `size=20` asks for twenty measurements.
+
+Inspect them:
+
+```python
+print(measurements.shape)
+print(measurements.mean())
+print(measurements.min())
+print(measurements.max())
+```
+
+Now change only the sample size:
+
+```python
+rng = np.random.default_rng(2026)
+measurements = rng.normal(loc=10, scale=2, size=10_000)
+
+print(measurements.mean())
+```
+
+What changed? What stayed conceptually the same?
+
+Try several sample sizes. Record your prediction before running them. You may notice that the mean of a very small sample can wander noticeably away from `10`, while a large sample often lands much closer.
+
+That observation is the beginning of an important statistical idea we will formalize later. For now, the point is methodological: you used computation to make an abstract claim tangible enough to inspect.
+
+### Plot the experiment
+
+We can make the behavior easier to see by looking at how the running mean changes as more measurements arrive:
+
+```python
+rng = np.random.default_rng(2026)
+measurements = rng.normal(loc=10, scale=2, size=1000)
+
+running_total = np.cumsum(measurements)
+sample_counts = np.arange(1, measurements.size + 1)
+running_mean = running_total / sample_counts
+
+plt.plot(sample_counts, running_mean)
+plt.axhline(10, linestyle="--", label="generating mean")
+plt.xlabel("number of measurements")
+plt.ylabel("running mean")
+plt.legend()
+plt.show()
+```
+
+Do not worry if `np.cumsum` is new. It produces cumulative sums: the first value, then the sum of the first two, then the first three, and so on. Dividing those totals by `1, 2, 3, ...` gives the mean after each successive measurement.
+
+Look at the plot before trying to describe it. Does the running mean move more violently near the beginning or near the end? Does it become exactly `10`? Does it need to?
+
+Then change `scale` from `2` to `10` and rerun the experiment from the same seed. What changes about the path? Change the number of measurements. Try another seed. You are no longer just executing sample code. You are manipulating an experiment.
+
+---
+
+## Reproducibility is part of the experiment, not a separate ceremony
+
+At this point it would be easy to treat reproducibility as administrative cleanup: something done after the interesting science is over.
+
+That is the wrong mental model.
+
+Suppose your notebook claims that increasing the sample size made the running mean stabilize. But the result depends on an undefined variable left over from an earlier cell, the random data changes unpredictably every time you debug it, and the notebook cannot run from top to bottom without manual intervention. You do not really have a complete experiment yet. You have a result that happened once.
+
+For our purposes, a numerical experiment is complete when the notebook makes the question and procedure understandable and can recreate the intended result from a clean state.
+
+That does not mean every run of every experiment must produce identical numbers. If randomness is part of the question, variation may be intentional. Reproducibility means the source of that variation is explicit and controlled well enough that someone can repeat the procedure and understand what should or should not remain fixed.
+
+A simple finishing discipline catches a remarkable number of mistakes:
+
+1. Save the notebook.
+2. Restart the kernel.
+3. Run all cells from top to bottom.
+4. Confirm that there are no errors or hidden manual steps.
+5. Check that the outputs still support what your Markdown says they support.
+
+That is not a separate mastery objective from numerical experimentation. It is part of doing the experiment correctly.
+
+---
+
+## Floating-point numbers are approximations
+
+There is one more source of numerical surprise worth meeting now because you will encounter it eventually:
+
+```python
+0.1 + 0.2
+```
+
+You might expect:
+
+```text
+0.3
+```
+
+Python commonly displays:
+
+```text
+0.30000000000000004
+```
+
+Nothing has gone wrong with arithmetic. The issue is representation.
+
+Computers store ordinary floating-point values using a finite number of binary digits. Just as `1/3` cannot be written exactly as a finite decimal expansion—`0.333333...` continues forever—many simple decimal fractions cannot be represented exactly with a finite binary expansion. The stored value is therefore a nearby approximation.
+
+Usually this approximation is tiny enough that numerical algorithms work perfectly well with it. But it means exact equality can be the wrong question for computed floating-point values.
+
+For example:
+
+```python
+0.1 + 0.2 == 0.3
+```
+
+is `False`.
+
+For approximate numerical comparisons, NumPy provides tools such as:
+
+```python
+np.isclose(0.1 + 0.2, 0.3)
+```
+
+which asks whether two numbers are sufficiently close according to numerical tolerances.
+
+We will return to floating-point behavior when precision actually matters. For now, remember the broader lesson: the numbers inside a computer are representations of mathematical values, and representations have limits. When an experiment produces a tiny numerical discrepancy, investigate before deciding that either the mathematics or the machine is broken.
+
+---
+
+## Packages and environments: just enough machinery for now
+
+A notebook runs Python code, so it needs access to the packages that code imports. `numpy` and `matplotlib` must therefore be installed in the Python environment used by the notebook's kernel.
+
+This can become confusing because a computer may have several Python installations or virtual environments. A package can be installed somewhere on your machine while still being unavailable to the particular kernel running your notebook.
+
+You do not need an exhaustive Python packaging course before doing numerical work. You do need one dependable principle:
+
+> **The environment that runs the notebook must contain the dependencies the notebook imports.**
+
+For this course, use the project's provided environment and dependency instructions rather than installing packages ad hoc until an import happens to work. When an import fails, first ask which Python environment or kernel is actually running instead of immediately installing another copy of the package.
+
+That small habit prevents a surprising amount of scientific-Python misery.
+
+---
+
+## Build an experiment, not a pile of cells
+
+For the main exercise, create a notebook that investigates this question:
+
+> **How does random noise affect our ability to see an underlying mathematical relationship?**
+
+Start with an input array:
+
+```python
+x = np.linspace(-5, 5, 101)
+```
+
+and an exact relationship:
+
+```python
+y = 2 * x + 3
+```
+
+Plot it. Then create reproducible noise:
+
+```python
+rng = np.random.default_rng(2026)
+noise = rng.normal(loc=0, scale=2, size=x.shape)
+noisy_y = y + noise
+```
+
+Plot the noisy values along with the original relationship. A scatter plot is useful for the noisy observations:
+
+```python
+plt.plot(x, y, label="underlying relationship")
+plt.scatter(x, noisy_y, label="noisy observations")
+plt.legend()
+plt.show()
+```
+
+Then experiment.
+
+Change the noise scale from `2` to `0.5`, then to `5`, then to `20`. Before each run, predict what the plot will look like. How much noise can you add before the relationship becomes difficult to recognize by eye?
+
+Change the number of observations. Keep the same input range but try 11 points, then 101, then 10,001. Does having more observations compensate, visually, for noisier individual measurements?
+
+Try a different underlying function:
+
+```python
+y = x ** 2
+```
+
+or:
+
+```python
+y = np.sin(x)
+```
+
+The point is not to find a single correct parameter value. The point is to ask a question by deliberately changing one part of a computational system and observing what follows.
+
+Your notebook should contain Markdown that states the question, records at least one prediction before an experiment, and summarizes what you observed afterward. It should use NumPy array operations rather than element-by-element Python loops. It should include at least one useful plot and at least one numerical inspection of the generated data.
+
+Finally, restart the kernel and run the notebook from top to bottom. If the experiment cannot survive that test, fix it before calling it complete.
+
+---
+
+## Prediction practice
+
+Before running each snippet, decide what you expect to happen.
+
+### 1. Persistent state
+
+You run these cells in the order `A`, `B`, `A`, `C`:
+
+```python
+# A
+x = 10
+```
+
+```python
+# B
+x = x + 5
+```
+
+```python
+# C
+print(x)
+```
+
+What prints? What would print if you restarted the kernel and ran the visible notebook once from top to bottom in the order `A`, `B`, `C`?
+
+### 2. Reproducible randomness
+
+```python
+rng1 = np.random.default_rng(7)
+rng2 = np.random.default_rng(7)
+
+a = rng1.normal(size=5)
+b = rng2.normal(size=5)
+```
+
+Predict whether `a` and `b` contain the same values. Then test your prediction with:
+
+```python
+np.allclose(a, b)
+```
+
+Now draw another five values from `rng1`. Should those be identical to `a`? Why or why not?
+
+### 3. Shape through an experiment
+
+```python
+x = np.linspace(-1, 1, 50)
+rng = np.random.default_rng(1)
+noise = rng.normal(size=x.shape)
+y = 3 * x + noise
+```
+
+Predict the shapes of `x`, `noise`, and `y` without running `.shape` first. Explain why `3 * x + noise` is legal using what you learned about vectorization and broadcasting.
+
+### 4. Floating-point expectations
+
+Predict whether each expression is `True` or `False`:
+
+```python
+0.1 + 0.2 == 0.3
+np.isclose(0.1 + 0.2, 0.3)
+```
+
+What different questions are those two comparisons asking?
+
+---
+
+## A notebook can tell a scientific story
+
+There is a reason notebooks became so common in data science and machine learning. The work is rarely just a finished program. We often need to see the path from a question to some evidence: the assumptions, transformations, plots, dead ends, and interpretation that connect them.
+
+That makes a good notebook more than a container for code cells. It is an **executable argument**.
+
+The prose says what you are asking. The mathematics makes relationships precise. The code specifies the procedure. The outputs provide evidence. The plots reveal structure. And a clean restart-and-run-all verifies that the argument does not secretly depend on invisible history.
+
+You now have enough scientific Python to use that workflow productively. You can represent structured numerical data with arrays, reason about their shapes, transform them without writing element-by-element loops, understand when differently shaped arrays can interact, and use those operations to investigate a question computationally.
+
+That is the foundation we need before moving into the mathematics those arrays will increasingly represent.
