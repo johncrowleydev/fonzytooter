@@ -15,7 +15,9 @@ docs/
     ├── README.md                    this boundary
     ├── ai-ml.md                     AI/ML high-level curriculum plan
     ├── ai-ml-syllabus.md            AI/ML canonical core syllabus skeleton
-    └── ai-ml-modules-01-07.md       detailed plan for core Modules 01–07
+    ├── ai-ml-modules-01-07.md       detailed plan for core Modules 01–07
+    ├── ai-ml-modules-08-14.md       detailed plan for core Modules 08–14
+    └── ai-ml-modules-15-18.md       detailed plan for core Modules 15–18
 
 curriculum/
 ├── courses/
@@ -30,6 +32,8 @@ The planning documents and the authored curriculum have different jobs. `docs/co
 - [`ai-ml.md`](ai-ml.md) — high-level philosophy and long-range plan for the **AI & Machine Learning** course (`ai-ml`), currently the default and only authored course.
 - [`ai-ml-syllabus.md`](ai-ml-syllabus.md) — canonical mandatory core sequence for the AI/ML course, including module scope, dependency shape, math/history spines, mastery checkpoints, and optional post-core specializations.
 - [`ai-ml-modules-01-07.md`](ai-ml-modules-01-07.md) — lesson-level planning for Scientific Python through generalization/evaluation, including objectives, mathematics, history, learning media, mastery expectations, and explicit deferrals.
+- [`ai-ml-modules-08-14.md`](ai-ml-modules-08-14.md) — lesson-level planning for classical ML, unsupervised learning/PCA, neural networks, backpropagation, PyTorch, CNNs, and recurrent sequence models.
+- [`ai-ml-modules-15-18.md`](ai-ml-modules-15-18.md) — lesson-level planning for embeddings/language modeling, attention, a Transformer from scratch, and the TinyLM synthesis project.
 
 ## Adding another course
 
