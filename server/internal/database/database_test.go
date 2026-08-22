@@ -23,10 +23,10 @@ func TestOpenCreatesParentAndMigratesFreshDatabase(t *testing.T) {
 	}
 
 	var migrationCount int
-	if err := db.QueryRow("SELECT COUNT(*) FROM goose_db_version WHERE version_id IN (1, 2, 3, 4) AND is_applied = 1").Scan(&migrationCount); err != nil {
+	if err := db.QueryRow("SELECT COUNT(*) FROM goose_db_version WHERE version_id IN (1, 2, 3, 4, 5) AND is_applied = 1").Scan(&migrationCount); err != nil {
 		t.Fatalf("query migration state: %v", err)
 	}
-	if migrationCount != 4 {
+	if migrationCount != 5 {
 		t.Fatalf("expected all migrations, got %d rows", migrationCount)
 	}
 	for _, table := range []string{
@@ -37,6 +37,10 @@ func TestOpenCreatesParentAndMigratesFreshDatabase(t *testing.T) {
 		"exercise_test_results",
 		"review_cards",
 		"review_logs",
+		"tutor_conversations",
+		"tutor_messages",
+		"tutor_message_parts",
+		"tutor_tool_calls",
 	} {
 		var tableCount int
 		if err := db.QueryRow("SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = ?", table).Scan(&tableCount); err != nil {
@@ -126,10 +130,10 @@ func TestOpenMigratesIdempotently(t *testing.T) {
 	t.Cleanup(func() { _ = second.Close() })
 
 	var migrationCount int
-	if err := second.QueryRow("SELECT COUNT(*) FROM goose_db_version WHERE version_id IN (1, 2, 3, 4) AND is_applied = 1").Scan(&migrationCount); err != nil {
+	if err := second.QueryRow("SELECT COUNT(*) FROM goose_db_version WHERE version_id IN (1, 2, 3, 4, 5) AND is_applied = 1").Scan(&migrationCount); err != nil {
 		t.Fatalf("query migration state: %v", err)
 	}
-	if migrationCount != 4 {
+	if migrationCount != 5 {
 		t.Fatalf("expected all migrations after reopening, got %d", migrationCount)
 	}
 }
