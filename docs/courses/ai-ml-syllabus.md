@@ -177,20 +177,26 @@ Core ideas:
 - classification versus regression;
 - logits, odds, and log-odds;
 - exponentials and logarithms where they become useful;
-- sigmoid and probabilistic outputs;
+- sigmoid and probabilistic binary outputs;
 - likelihood and maximum-likelihood intuition;
 - binary cross-entropy/log loss;
 - decision boundaries;
-- thresholding and the difference between scores, probabilities, and decisions.
+- thresholding and the difference between scores, probabilities, and decisions;
+- multiclass logits and categorical distributions;
+- softmax;
+- categorical cross-entropy/negative log-likelihood;
+- numerically stable softmax and practical log-sum-exp intuition.
 
 Representative work:
 
 - hand sigmoid/log-loss exercises;
 - decision-boundary interactives;
 - personally implement logistic regression and its training loop;
-- compare the manual implementation with scikit-learn.
+- calculate a tiny multiclass softmax/categorical-cross-entropy example;
+- personally implement numerically stable softmax;
+- compare the manual logistic-regression implementation with scikit-learn.
 
-This is the first place information-theoretic language may be previewed, but entropy and KL divergence should not become a detached math detour.
+Cross-entropy terminology begins here operationally. Entropy and KL divergence receive their first explicit, compact information-theory treatment in Module 15 when language modeling gives those quantities a concrete probabilistic context.
 
 #### 07 — Generalization, Evaluation, and Good Experiments
 
@@ -216,7 +222,7 @@ Representative work:
 
 - diagnose intentionally flawed experiments;
 - notebooks comparing metrics and regularization behavior;
-- a small evaluation-focused project whose main goal is experimental discipline rather than model novelty.
+- a bounded evaluation-focused transfer study whose main goal is experimental discipline rather than model novelty.
 
 ### Classical ML breadth without a survey-course detour
 
@@ -289,7 +295,7 @@ Representative work:
 - network-shape interactives;
 - embedded exercises implementing neurons and small layers with NumPy.
 
-Historical thread: McCulloch-Pitts, the perceptron, early connectionism, symbolic AI, and why early neural-network enthusiasm faded.
+Historical thread: Turing/Dartmouth context, McCulloch-Pitts, the perceptron, symbolic and connectionist traditions, expert systems, multifactor AI winters, and the later statistical/neural resurgence. The point is to explain competing approaches and changing constraints, not repeat a one-book or one-failure myth about neural-network history.
 
 #### 11 — Computational Graphs and Backpropagation
 
@@ -346,19 +352,20 @@ Core ideas:
 - `nn.Module` and parameters;
 - datasets, dataloaders, and minibatches;
 - training/evaluation loops;
-- SGD, momentum, and Adam;
+- SGD, momentum, Adam, and AdamW;
+- L2 regularization versus decoupled weight decay;
+- learning-rate warmup and representative decay schedules;
 - initialization and normalization;
 - regularization;
-- learning-rate behavior;
-- checkpoints;
+- checkpoints, including optimizer/scheduler state where relevant;
 - mixed precision and numerical stability at an introductory level;
 - reproducible experiment organization.
 
 Representative work:
 
 - rebuild a previous small model in PyTorch;
-- notebooks probing optimizer and initialization behavior;
-- explain what `backward()` and optimizer steps are doing beneath the framework abstraction.
+- notebooks probing optimizer, schedule, and initialization behavior;
+- explain what `backward()`, optimizer steps, weight decay, and learning-rate scheduling are doing beneath the framework abstraction.
 
 ### Deep learning beyond dense networks
 
@@ -384,7 +391,7 @@ Historical thread: ImageNet-era deep learning, learned representations, recurren
 
 #### 15 — Embeddings and Language Modeling
 
-**Purpose:** Establish how discrete symbols become learnable numerical representations and what it means to train a model to predict language.
+**Purpose:** Establish how discrete symbols become learnable numerical representations, what it means to train a model to predict language, and the compact information-theory foundation needed to interpret language-model objectives.
 
 Core ideas:
 
@@ -396,13 +403,19 @@ Core ideas:
 - n-gram and simple neural language-model context;
 - next-token prediction;
 - logits, softmax, probability distributions, and cross-entropy revisited;
-- autoregressive factorization conceptually.
+- autoregressive factorization conceptually;
+- surprisal/information content;
+- entropy as expected surprisal;
+- cross-entropy as expected surprisal under a model;
+- KL divergence as excess cross-entropy and its asymmetry;
+- the relationship among negative log-likelihood, cross-entropy, KL divergence, and perplexity.
 
 Representative work:
 
 - embedding visualizations;
 - simple language-model notebooks;
-- inspect how tokenization changes model inputs.
+- inspect how tokenization changes model inputs;
+- hand-calculate surprisal, entropy, cross-entropy, and KL for tiny categorical distributions.
 
 Historical thread: distributed representations, word embeddings, and the transition from feature engineering toward learned representations.
 
@@ -518,9 +531,8 @@ Core ideas:
 - minimal RL vocabulary: state, action, reward, policy, return, value;
 - policy-gradient intuition;
 - reward models conceptually;
-- RLHF and why PPO was used;
-- DPO and preference optimization;
-- RLAIF/verifiable feedback at a conceptual level;
+- RLHF and why PPO-style constraints/KL penalties are used;
+- DPO as a representative direct preference-optimization method;
 - the distinction between training-time and inference-time behavior shaping.
 
 Representative work:
@@ -528,7 +540,7 @@ Representative work:
 - fine-tune a small open model with LoRA using standard tooling after the mechanism is understood;
 - compare base and adapted model behavior with a controlled evaluation set.
 
-**Deliberately deferred:** a full reinforcement-learning curriculum, deep PPO derivations, advanced offline RL, and exhaustive post-training algorithms. Those belong in a specialization if desired.
+**Deliberately deferred:** a full reinforcement-learning curriculum, deep PPO derivations, advanced offline RL, constitutional/self-improvement methods as a major unit, large-scale synthetic/preference-data pipelines, and exhaustive post-training algorithm catalogs. Those belong in a specialization if desired.
 
 #### 21 — LLM Evaluation, Reasoning, Retrieval, and Tool Use
 
@@ -544,7 +556,7 @@ Core ideas:
 - inference-time/test-time compute concepts;
 - retrieval-augmented generation as a system pattern;
 - tool calling and structured interfaces;
-- agent loops, planning, memory, and orchestration at a conceptual/system-design level;
+- agent loops and orchestration at a conceptual/system-design level;
 - learned models combined with deterministic software.
 
 Representative work:
@@ -677,7 +689,7 @@ Begin in Module 01 and reuse continuously. Exponentials and logarithms become im
 
 - **Module 04:** derivatives, partial derivatives, gradients, chain rule introduction, gradient descent;
 - **Module 11:** chain rule and multivariable differentiation revisited through backpropagation;
-- **Module 13:** optimization revisited through SGD, momentum, Adam, initialization, and training behavior.
+- **Module 13:** optimization revisited through SGD, momentum, Adam/AdamW, decoupled weight decay, learning-rate warmup/decay, initialization, and training behavior.
 
 Integration should be introduced later only if a core topic actually needs it. The course does not need a detached full calculus sequence before ML can begin.
 
@@ -689,7 +701,11 @@ Integration should be introduced later only if a core topic actually needs it. T
 
 ### Information theory
 
-Introduce entropy, cross-entropy, KL divergence, and related ideas only where they explain an actual ML objective or comparison. Cross-entropy appears naturally in classification and language modeling; deeper information-theory material is optional unless a later core objective requires it.
+- **Module 06:** cross-entropy is introduced operationally through binary and multiclass classification;
+- **Module 15:** surprisal, entropy, cross-entropy, KL divergence, and their relationships receive the first explicit compact information-theory treatment in the concrete setting of language modeling;
+- **Module 20:** KL divergence is revisited as a way to reason about reference-policy constraints in post-training.
+
+Coding theory, channel capacity, mutual-information derivations, and other deeper information-theory topics remain optional unless a later specialization requires them.
 
 ### Numerical computing
 
@@ -717,7 +733,9 @@ Key placements include:
 - the Transformer around Module 17;
 - GPT-style autoregressive scaling around Modules 18-19;
 - scaling laws, instruction tuning, RLHF, and modern post-training around Modules 19-20;
-- multimodality, reasoning systems, retrieval, and agents around Module 21.
+- reasoning systems, retrieval, structured tool use, and agent-loop patterns around Module 21.
+
+Multimodal ML remains an optional post-core specialization rather than a required Module 21 capability.
 
 Recurring tensions worth revisiting include symbolic versus statistical systems, hand-engineered versus learned representations, specialized versus general models, and learned components versus deterministic tools.
 
@@ -728,6 +746,7 @@ Before agents or high-level libraries take over the mechanics, the learner shoul
 - linear regression prediction/loss;
 - gradient descent;
 - logistic regression;
+- numerically stable softmax;
 - k-means;
 - a small neural network;
 - backpropagation for that network;
@@ -749,6 +768,8 @@ The core should contain a small number of substantial projects rather than a new
 4. **Open-model adaptation/evaluation experiment** — adapt a small open model with LoRA and compare base/adapted behavior with a controlled evaluation process.
 5. **Inference systems experiment** — profile or benchmark real inference configurations and explain the results using hardware, precision, memory, and algorithmic reasoning.
 6. **Research capstone** — reproduce or rigorously investigate a tractable result and report method, evidence, failures, limitations, and conclusions.
+
+Bounded labs and implementation/transfer checkpoints—including the Module 07 trustworthiness study, Module 13–14 framework experiment, Module 16 attention calculation/implementation, Module 17 Transformer-block build, Module 19 architecture autopsy, and Module 21 grounded-system study—remain important but are not additional major projects or capstones.
 
 Smaller notebooks, worksheets, interactives, and embedded exercises should prepare for these checkpoints rather than compete with them.
 
