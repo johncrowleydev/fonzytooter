@@ -21,14 +21,15 @@ const (
 )
 
 var (
-	ErrConversationNotFound      = errors.New("tutor conversation not found")
-	ErrMessageNotFound           = errors.New("tutor message not found")
-	ErrToolCallNotFound          = errors.New("tutor tool call not found")
-	ErrToolCallAlreadyCompleted  = errors.New("tutor tool call already completed")
-	ErrInvalidMessageRole        = errors.New("invalid tutor message role")
-	ErrInvalidMessageContentPart = errors.New("invalid tutor message content part")
-	ErrInvalidToolArguments      = errors.New("invalid tutor tool arguments")
-	ErrInvalidToolResult         = errors.New("invalid tutor tool result")
+	ErrConversationNotFound       = errors.New("tutor conversation not found")
+	ErrMessageNotFound            = errors.New("tutor message not found")
+	ErrToolCallNotFound           = errors.New("tutor tool call not found")
+	ErrToolCallAlreadyCompleted   = errors.New("tutor tool call already completed")
+	ErrInvalidMessageRole         = errors.New("invalid tutor message role")
+	ErrInvalidMessageContentPart  = errors.New("invalid tutor message content part")
+	ErrInvalidToolArguments       = errors.New("invalid tutor tool arguments")
+	ErrInvalidToolResult          = errors.New("invalid tutor tool result")
+	ErrCompactionMarkerRegression = errors.New("tutor compaction marker cannot move backward")
 )
 
 type MessageRole string
@@ -56,6 +57,29 @@ type Conversation struct {
 	Title     string
 	CreatedAt time.Time
 	UpdatedAt time.Time
+}
+
+const ConversationMemoryFormatVersion = 1
+
+type StructuredMemory struct {
+	LearnerGoal              string   `json:"learnerGoal,omitempty"`
+	EstablishedUnderstanding []string `json:"establishedUnderstanding,omitempty"`
+	Misconceptions           []string `json:"misconceptions,omitempty"`
+	UnsuccessfulApproaches   []string `json:"unsuccessfulApproaches,omitempty"`
+	UnresolvedQuestions      []string `json:"unresolvedQuestions,omitempty"`
+	ActiveContext            string   `json:"activeContext,omitempty"`
+	SourceIDs                []string `json:"sourceIds,omitempty"`
+	ToolFindings             []string `json:"toolFindings,omitempty"`
+}
+
+type ConversationMemory struct {
+	ConversationID            string
+	Summary                   string
+	Structured                StructuredMemory
+	SummarizedThroughSequence int
+	FormatVersion             int
+	CreatedAt                 time.Time
+	UpdatedAt                 time.Time
 }
 
 type ContentPart struct {
@@ -501,6 +525,124 @@ func (s *ConversationStore) ToolCalls(ctx context.Context, conversationID string
 		return nil, fmt.Errorf("list tutor tool calls: %w", err)
 	}
 	return toolCalls, nil
+}
+
+func (s *ConversationStore) ConversationMemory(ctx context.Context, conversationID string) (ConversationMemory, error) {
+	if _, err := s.Conversation(ctx, conversationID); err != nil {
+		return ConversationMemory{}, err
+	}
+	var memory ConversationMemory
+	var structuredJSON, createdAt, updatedAt string
+	err := s.db.QueryRowContext(ctx, `
+		SELECT conversation_id, summary, structured_json, summarized_through_sequence,
+		       format_version, created_at, updated_at
+		FROM tutor_conversation_memory
+		WHERE conversation_id = ?
+	`, conversationID).Scan(
+		&memory.ConversationID, &memory.Summary, &structuredJSON,
+		&memory.SummarizedThroughSequence, &memory.FormatVersion, &createdAt, &updatedAt,
+	)
+	if errors.Is(err, sql.ErrNoRows) {
+		return ConversationMemory{ConversationID: conversationID, FormatVersion: ConversationMemoryFormatVersion}, nil
+	}
+	if err != nil {
+		return ConversationMemory{}, fmt.Errorf("read tutor conversation memory: %w", err)
+	}
+	if err := json.Unmarshal([]byte(structuredJSON), &memory.Structured); err != nil {
+		return ConversationMemory{}, fmt.Errorf("decode tutor conversation memory: %w", err)
+	}
+	memory.CreatedAt, err = parseTime(createdAt)
+	if err != nil {
+		return ConversationMemory{}, fmt.Errorf("parse tutor conversation memory created time: %w", err)
+	}
+	memory.UpdatedAt, err = parseTime(updatedAt)
+	if err != nil {
+		return ConversationMemory{}, fmt.Errorf("parse tutor conversation memory updated time: %w", err)
+	}
+	return memory, nil
+}
+
+func (s *ConversationStore) SaveConversationMemory(ctx context.Context, memory ConversationMemory) (ConversationMemory, error) {
+	if memory.SummarizedThroughSequence <= 0 {
+		return ConversationMemory{}, errors.New("tutor compaction marker must be positive")
+	}
+	if memory.FormatVersion == 0 {
+		memory.FormatVersion = ConversationMemoryFormatVersion
+	}
+	structuredJSON, err := json.Marshal(memory.Structured)
+	if err != nil {
+		return ConversationMemory{}, fmt.Errorf("encode tutor conversation memory: %w", err)
+	}
+	now := s.now().UTC()
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return ConversationMemory{}, fmt.Errorf("begin save tutor conversation memory: %w", err)
+	}
+	defer tx.Rollback()
+	var markerExists int
+	if err := tx.QueryRowContext(ctx, `
+		SELECT COUNT(*)
+		FROM tutor_messages
+		WHERE conversation_id = ? AND sequence = ?
+	`, memory.ConversationID, memory.SummarizedThroughSequence).Scan(&markerExists); err != nil {
+		return ConversationMemory{}, fmt.Errorf("validate tutor compaction marker: %w", err)
+	}
+	if markerExists == 0 {
+		var conversationExists int
+		if err := tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM tutor_conversations WHERE id = ?`, memory.ConversationID).Scan(&conversationExists); err != nil {
+			return ConversationMemory{}, fmt.Errorf("validate tutor compaction conversation: %w", err)
+		}
+		if conversationExists == 0 {
+			return ConversationMemory{}, ErrConversationNotFound
+		}
+		return ConversationMemory{}, ErrMessageNotFound
+	}
+
+	var currentMarker int
+	err = tx.QueryRowContext(ctx, `
+		SELECT summarized_through_sequence
+		FROM tutor_conversation_memory
+		WHERE conversation_id = ?
+	`, memory.ConversationID).Scan(&currentMarker)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return ConversationMemory{}, fmt.Errorf("read tutor compaction marker: %w", err)
+	}
+	if err == nil && memory.SummarizedThroughSequence < currentMarker {
+		return ConversationMemory{}, ErrCompactionMarkerRegression
+	}
+	result, err := tx.ExecContext(ctx, `
+		INSERT INTO tutor_conversation_memory (
+			conversation_id, summary, structured_json, summarized_through_sequence,
+			format_version, created_at, updated_at
+		)
+		SELECT id, ?, ?, ?, ?, ?, ?
+		FROM tutor_conversations
+		WHERE id = ?
+		ON CONFLICT (conversation_id) DO UPDATE SET
+			summary = excluded.summary,
+			structured_json = excluded.structured_json,
+			summarized_through_sequence = excluded.summarized_through_sequence,
+			format_version = excluded.format_version,
+			updated_at = excluded.updated_at
+	`, memory.Summary, string(structuredJSON), memory.SummarizedThroughSequence,
+		memory.FormatVersion, formatTime(now), formatTime(now), memory.ConversationID)
+	if err != nil {
+		return ConversationMemory{}, fmt.Errorf("save tutor conversation memory: %w", err)
+	}
+	changed, err := result.RowsAffected()
+	if err != nil {
+		return ConversationMemory{}, fmt.Errorf("inspect saved tutor conversation memory: %w", err)
+	}
+	if changed == 0 {
+		return ConversationMemory{}, ErrConversationNotFound
+	}
+	if _, err := tx.ExecContext(ctx, `UPDATE tutor_conversations SET updated_at = ? WHERE id = ?`, formatTime(now), memory.ConversationID); err != nil {
+		return ConversationMemory{}, fmt.Errorf("update tutor conversation for compaction: %w", err)
+	}
+	if err := tx.Commit(); err != nil {
+		return ConversationMemory{}, fmt.Errorf("commit tutor conversation memory: %w", err)
+	}
+	return s.ConversationMemory(ctx, memory.ConversationID)
 }
 
 func (s *ConversationStore) messages(ctx context.Context, conversationID string, limit int) ([]Message, error) {

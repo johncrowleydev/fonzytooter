@@ -186,6 +186,14 @@ func TestOpenAPIContract(t *testing.T) {
 	if _, ok := app.Spec.Components.Schemas.Map()["TutorStreamEvent"]; ok {
 		t.Fatal("fake TutorStreamEvent wrapper schema is still advertised")
 	}
+	eventSchema := app.Spec.Components.Schemas.Map()["Event"]
+	if eventSchema == nil || eventSchema.Properties["conversationId"] == nil || eventSchema.Properties["toolCallId"] == nil {
+		t.Fatalf("normalized tutor event correlation fields are missing: %#v", eventSchema)
+	}
+	usageSchema := app.Spec.Components.Schemas.Map()["Usage"]
+	if usageSchema == nil || usageSchema.Properties["cachedTokens"] == nil || usageSchema.Properties["reasoningTokens"] == nil {
+		t.Fatalf("normalized tutor usage fields are missing: %#v", usageSchema)
+	}
 	if tutorPath.Post.Responses["422"].Content["application/problem+json"] == nil {
 		t.Fatal("common validation error response is not documented")
 	}
@@ -193,6 +201,6 @@ func TestOpenAPIContract(t *testing.T) {
 
 type failingProvider struct{}
 
-func (failingProvider) StreamTurn(context.Context, tutor.TurnRequest) (<-chan tutor.Event, error) {
+func (failingProvider) Stream(context.Context, tutor.ModelRequest) (<-chan tutor.ProviderEvent, error) {
 	return nil, errors.New("provider secret should not be exposed")
 }
