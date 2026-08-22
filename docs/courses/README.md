@@ -12,13 +12,14 @@ docs/
 ├── learning-model.md        platform learning/evidence model
 ├── content-authoring.md     authored-content conventions
 └── courses/
-    ├── README.md                    this boundary
-    ├── ai-ml.md                     AI/ML high-level curriculum plan
-    ├── ai-ml-syllabus.md            AI/ML canonical core syllabus skeleton
-    ├── ai-ml-modules-01-07.md       detailed plan for core Modules 01–07
-    ├── ai-ml-modules-08-14.md       detailed plan for core Modules 08–14
-    ├── ai-ml-modules-15-18.md       detailed plan for core Modules 15–18
-    └── ai-ml-modules-19-23.md       detailed plan for core Modules 19–23
+    ├── README.md                         this boundary
+    ├── ai-ml.md                          AI/ML high-level curriculum plan
+    ├── ai-ml-syllabus.md                 AI/ML canonical core syllabus skeleton
+    ├── ai-ml-syllabus-coherence.md       final cross-tranche syllabus amendments
+    ├── ai-ml-modules-01-07.md            detailed plan for core Modules 01–07
+    ├── ai-ml-modules-08-14.md            detailed plan for core Modules 08–14
+    ├── ai-ml-modules-15-18.md            detailed plan for core Modules 15–18
+    └── ai-ml-modules-19-23.md            detailed plan for core Modules 19–23
 
 curriculum/
 ├── courses/
@@ -26,12 +27,15 @@ curriculum/
 └── sources.yaml             shared source registry
 ```
 
-The planning documents and the authored curriculum have different jobs. `docs/courses/` may describe long-range phases, pedagogical priorities, the canonical syllabus sequence, detailed future-module plans, representative projects, and future modules. `curriculum/courses/<course-id>/` contains the concrete course metadata, modules, lessons, objective definitions, and other authored artifacts the application can load now.
+The planning documents and the authored curriculum have different jobs. `docs/courses/` may describe pedagogical priorities, the canonical syllabus sequence, detailed future-module plans, representative projects, and optional future specializations. `curriculum/courses/<course-id>/` contains the concrete course metadata, modules, lessons, objective definitions, and other authored artifacts the application can load now.
+
+For the AI/ML course, the final coherence review is normative: where [`ai-ml-syllabus-coherence.md`](ai-ml-syllabus-coherence.md) amends an earlier detailed tranche plan, the coherence document wins during content authoring.
 
 ## Current courses
 
-- [`ai-ml.md`](ai-ml.md) — high-level philosophy and long-range plan for the **AI & Machine Learning** course (`ai-ml`), currently the default and only authored course.
+- [`ai-ml.md`](ai-ml.md) — high-level philosophy, learner model, environments, scope boundaries, and current 00–23 architecture for the **AI & Machine Learning** course (`ai-ml`).
 - [`ai-ml-syllabus.md`](ai-ml-syllabus.md) — canonical mandatory core sequence for the AI/ML course, including module scope, dependency shape, math/history spines, mastery checkpoints, and optional post-core specializations.
+- [`ai-ml-syllabus-coherence.md`](ai-ml-syllabus-coherence.md) — final whole-course review and normative amendments closing cross-tranche prerequisite/scope gaps before lesson authoring.
 - [`ai-ml-modules-01-07.md`](ai-ml-modules-01-07.md) — lesson-level planning for Scientific Python through generalization/evaluation, including objectives, mathematics, history, learning media, mastery expectations, and explicit deferrals.
 - [`ai-ml-modules-08-14.md`](ai-ml-modules-08-14.md) — lesson-level planning for classical ML, unsupervised learning/PCA, neural networks, backpropagation, PyTorch, CNNs, and recurrent sequence models.
 - [`ai-ml-modules-15-18.md`](ai-ml-modules-15-18.md) — lesson-level planning for embeddings/language modeling, attention, a Transformer from scratch, and the TinyLM synthesis project.
