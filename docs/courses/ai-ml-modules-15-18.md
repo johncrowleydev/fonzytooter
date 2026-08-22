@@ -58,7 +58,7 @@ Recommended order is linear through this tranche because the conceptual dependen
 
 Important prerequisite details:
 
-- Module 15 also depends directly on probability, cross-entropy, matrix/vector operations, PyTorch, and neural-network training from earlier modules.
+- Module 15 also depends directly on probability, softmax/categorical cross-entropy, matrix/vector operations, PyTorch, and neural-network training from earlier modules.
 - Module 16 depends on the seq2seq bottleneck introduced at the end of Module 14 and on dot products, matrix multiplication, softmax, and weighted sums from earlier mathematics.
 - Module 17 depends strongly on a working understanding of attention, tensor shapes, neural-network layers, normalization, residual computation, and training mechanics.
 - Module 18 depends on the learner having personally implemented a Transformer block; the project should not substitute a high-level Transformer package for that understanding.
@@ -83,13 +83,15 @@ Establish how discrete symbols become numerical model inputs and what it means t
 
 The learner should understand that a language model is fundamentally a model of conditional probability over sequences. A Transformer is one architecture for parameterizing those probabilities, not the definition of a language model.
 
+This module is also the first explicit information-theory treatment in the core. Rather than creating a detached information-theory unit, surprisal, entropy, cross-entropy, and KL divergence should be introduced here because language modeling makes probabilistic prediction and average log loss concrete.
+
 ## Prerequisites
 
 Required capabilities from earlier modules:
 
 - vectors, matrices, matrix multiplication, dot products, and basic similarity;
 - probability distributions, conditional probability, expectation, and sampling;
-- logits, softmax, cross-entropy, and maximum-likelihood intuition;
+- logits, softmax, categorical cross-entropy, and maximum-likelihood intuition;
 - neural networks as parameterized composed functions;
 - PyTorch tensors, modules, autograd, optimizers, and training loops;
 - recurrent/sequence-model context from Module 14.
@@ -105,6 +107,8 @@ Objective IDs are provisional until authored. Capabilities should cover:
 - explain a language model as a conditional probability model over sequences;
 - use the probability chain rule to factor sequence probability into next-token conditionals;
 - explain and compute next-token logits, softmax probabilities, cross-entropy loss, and perplexity at an introductory level;
+- explain surprisal, entropy, cross-entropy, and KL divergence and relate them to model likelihood/log loss;
+- explain why minimizing cross-entropy to a fixed target distribution also minimizes KL divergence to that target;
 - train and sample from a simple pre-Transformer neural language model;
 - distinguish model architecture, tokenization, training objective, and decoding procedure as separate concerns.
 
@@ -168,7 +172,7 @@ The learner should inspect real tokenizations, but implementing a production tok
 
 ### 04 — What Is a Language Model?
 
-**Job:** Define language modeling independently of neural-network architecture.
+**Job:** Define language modeling independently of neural-network architecture and give information-theory quantities a concrete probabilistic meaning.
 
 Topics:
 
@@ -185,9 +189,18 @@ Topics:
 - training examples created by shifting a sequence;
 - teacher forcing terminology where useful;
 - likelihood/cross-entropy connection revisited;
-- perplexity as exponentiated average negative log-likelihood and as a relative predictive measure, not a universal quality score.
+- surprisal/information content `-log p(x)`: an unlikely event carries more information under a model;
+- entropy as expected surprisal under a reference/true distribution;
+- cross-entropy as expected surprisal when predictions come from another distribution/model;
+- KL divergence as excess cross-entropy incurred by using `q` when data are distributed as `p`;
+- the relationship `H(p, q) = H(p) + D_KL(p || q)` at a conceptual/calculational level;
+- why minimizing cross-entropy with respect to model parameters also minimizes KL to the target distribution when the target entropy is fixed;
+- why KL divergence is asymmetric;
+- perplexity as exponentiated average negative log-likelihood/cross-entropy and as a relative predictive measure, not a universal quality score.
 
-This lesson should make clear that next-token prediction is not a Transformer-specific objective.
+Use tiny categorical distributions that can be calculated by hand. Base-2 versus natural logarithms may be mentioned, but coding theory, channel capacity, mutual-information derivations, and formal information theory remain outside the core.
+
+This lesson should make clear that next-token prediction is not a Transformer-specific objective and that information-theoretic quantities are expectations over distributions, not mystical measures of model "understanding."
 
 ### 05 — A Neural Next-Token Predictor
 
@@ -247,11 +260,14 @@ Module 15 introduces or revisits:
 - conditional probability;
 - the probability chain rule for sequences;
 - logits and softmax;
+- surprisal/negative log probability;
+- entropy;
 - cross-entropy/negative log-likelihood;
+- KL divergence and `H(p,q) = H(p) + D_KL(p || q)`;
 - exponentials/logarithms revisited through perplexity;
 - stochastic sampling from a categorical distribution.
 
-Perplexity should be derived only deeply enough to connect it to average log loss. It should not become a separate information-theory detour.
+The information-theory treatment should be compact and motivated by language-model prediction. It should be deep enough that later KL terms in post-training are a revisit, not a first encounter, without expanding into a general information-theory course.
 
 ## History
 
@@ -272,6 +288,7 @@ Strong candidates:
 - **One-hot to embedding explorer** — select a token and visualize matrix-row lookup;
 - **Embedding-space explorer** — inspect neighbors/similarities in a tiny learned representation;
 - **Tokenizer explorer** — compare character/word/subword segmentations and token counts;
+- **Information-measure explorer** — vary tiny reference/predicted categorical distributions and inspect surprisal, entropy, cross-entropy, and KL;
 - **Next-token distribution explorer** — modify context and inspect probability changes;
 - **Autoregressive generation stepper** — show context, distribution, selected token, and updated context one step at a time.
 
@@ -284,6 +301,8 @@ Useful worksheet topics:
 - sequence-probability factorization;
 - construct shifted context/target training examples;
 - calculate softmax/cross-entropy for a tiny vocabulary;
+- calculate surprisal, entropy, cross-entropy, and KL for tiny categorical distributions;
+- use the `H(p,q) = H(p) + D_KL(p || q)` relationship on a small example;
 - trace several autoregressive generation steps from supplied distributions.
 
 Worksheets should be lighter than Module 16's attention work but still make the sequence-probability mechanics explicit.
@@ -298,6 +317,7 @@ Candidates:
 - compute cosine similarity;
 - construct context/target windows from token sequences;
 - compute next-token cross-entropy from logits;
+- compute entropy/cross-entropy/KL for supplied tiny distributions;
 - implement categorical sampling from a supplied probability vector;
 - implement a simple autoregressive loop around a provided predictor.
 
@@ -327,6 +347,8 @@ After Module 15 the learner should be able to:
 - define a language model without mentioning Transformers;
 - factor sequence probability autoregressively;
 - explain the complete next-token training objective;
+- explain the practical relationship among negative log-likelihood, surprisal, entropy, cross-entropy, perplexity, and KL divergence;
+- calculate those information quantities for tiny categorical distributions and explain what they measure;
 - train and sample from a simple neural language model;
 - distinguish tokenization, architecture, objective, and decoding.
 
@@ -336,7 +358,7 @@ After Module 15 the learner should be able to:
 - exhaustive comparison of tokenizer algorithms;
 - contextual embedding architectures as a standalone survey;
 - masked language modeling/BERT as a major topic;
-- advanced information theory;
+- advanced information theory such as coding theory, channel capacity, and mutual-information derivations;
 - attention and Transformers;
 - large-scale pretraining data engineering;
 - modern decoding algorithms beyond basic sampling.
@@ -801,7 +823,7 @@ Candidates:
 
 **Transformer block from scratch**
 
-This is a foundational learner-written implementation checkpoint. The code should be small enough to inspect in full and include tests for:
+This is a foundational learner-written implementation checkpoint, not a separate major course project. The code should be small enough to inspect in full and include tests for:
 
 - output shape;
 - causal masking behavior;
@@ -1163,7 +1185,7 @@ The mathematics should accumulate/recur as follows:
 
 | Module | Mathematical emphasis |
 | --- | --- |
-| 15 | categorical vectors, embeddings, similarity, conditional probability, sequence factorization, cross-entropy |
+| 15 | categorical vectors, embeddings, similarity, conditional probability, sequence factorization, surprisal/entropy/cross-entropy/KL |
 | 16 | dot products, matrix products, weighted sums, softmax, scaling, masks, tensor shapes |
 | 17 | positional vectors, limited trigonometry, mean/variance normalization, residual composition, tensor shapes |
 | 18 | sequence indexing, token-level loss, categorical sampling, logit transformations, experiment statistics |
@@ -1204,19 +1226,19 @@ By the end of this tranche the learner should personally have written the essent
 - top-p sampling;
 - a complete TinyLM training/generation path.
 
-## Major mastery checkpoints
+## Tranche mastery checkpoints
 
 ### Attention calculation + implementation — Module 16
 
-Evidence should include both hand-worked mathematics and executable code. A learner who can call an attention library but cannot calculate a tiny example has not met the foundational objective.
+This is a **foundational implementation checkpoint**, not a separate major course project. Evidence should include both hand-worked mathematics and executable code. A learner who can call an attention library but cannot calculate a tiny example has not met the foundational objective.
 
 ### Transformer block from scratch — Module 17
 
-The learner should implement and test one complete block using lower-level framework primitives, with explicit shape and causal-behavior reasoning.
+This is another **foundational implementation checkpoint**, not a separate major course project. The learner should implement and test one complete block using lower-level framework primitives, with explicit shape and causal-behavior reasoning.
 
 ### TinyLM — Module 18
 
-This is the tranche's transfer/synthesis project. Completion should provide strong evidence across representation, attention, architecture, optimization, experimentation, and generation objectives.
+This is the tranche's **major transfer/synthesis project**. Completion should provide strong evidence across representation, attention, architecture, optimization, experimentation, and generation objectives.
 
 ## Explicit boundary before Module 19
 

@@ -2,7 +2,7 @@
 
 This document defines the **high-level philosophy and direction** of Fonzytooter's AI & Machine Learning course.
 
-It is intentionally not the canonical lesson sequence. The authoritative core structure lives in [`ai-ml-syllabus.md`](ai-ml-syllabus.md), with lesson-level planning in the four detailed tranche documents and final cross-course amendments in [`ai-ml-syllabus-coherence.md`](ai-ml-syllabus-coherence.md).
+It is intentionally not the canonical lesson sequence. The authoritative core structure lives in [`ai-ml-syllabus.md`](ai-ml-syllabus.md), with lesson-level planning in the four detailed tranche documents.
 
 The hierarchy is:
 
@@ -18,9 +18,6 @@ ai-ml-modules-08-14.md
 ai-ml-modules-15-18.md
 ai-ml-modules-19-23.md
     lesson-level planning
-
-ai-ml-syllabus-coherence.md
-    final cross-tranche amendments; wins where an earlier detailed plan conflicts
 
 curriculum/courses/ai-ml/
     runtime-authored curriculum that actually exists in the product
@@ -90,6 +87,7 @@ Important examples include:
 - linear regression prediction/loss;
 - gradient descent;
 - logistic regression;
+- numerically stable softmax;
 - k-means;
 - neural-network forward/backward mechanics;
 - backpropagation;
@@ -331,9 +329,8 @@ Optional paths should deepen the same mental model and experimental discipline r
 If planning documents disagree, use this order:
 
 1. runtime-authored `curriculum/courses/ai-ml/` for content that actually exists;
-2. [`ai-ml-syllabus-coherence.md`](ai-ml-syllabus-coherence.md) for final cross-tranche amendments;
-3. [`ai-ml-syllabus.md`](ai-ml-syllabus.md) for the canonical core architecture;
-4. detailed tranche plans for lesson-level intended design;
-5. this document for high-level philosophy and boundaries.
+2. [`ai-ml-syllabus.md`](ai-ml-syllabus.md) for the canonical core architecture and course-wide spines;
+3. the detailed tranche plan containing the module for its lesson-level intended design;
+4. this document for high-level philosophy and boundaries.
 
-The purpose of this overview is to keep the course's intent legible. It should not drift into a second competing syllabus again.
+The final coherence review has been integrated directly into the canonical skeleton and tranche plans, so there is intentionally no separate amendment document to cross-check. The purpose of this overview is to keep the course's intent legible. It should not drift into a second competing syllabus again.

@@ -684,13 +684,21 @@ The key new mathematical insight is that nonlinear composition creates a richer 
 
 ## History
 
-History should be tightly integrated:
+History should be tightly integrated and should preserve the parallel symbolic/connectionist story rather than reducing early AI to a single neural-network lineage:
 
+- Turing and early questions about machine intelligence;
+- Dartmouth and the emergence of artificial intelligence as a named field;
+- symbolic reasoning/search as a dominant early paradigm;
 - McCulloch–Pitts as an early formal neuron idea;
-- Rosenblatt's perceptron;
-- early connectionist optimism and limitations;
-- the important limitation of single-layer perceptrons without repeating the simplistic myth that one book single-handedly "killed neural networks";
-- why multilayer differentiable networks change the representational story.
+- Rosenblatt's perceptron and early connectionist optimism;
+- symbolic and connectionist approaches as competing traditions rather than a clean chronological replacement;
+- the real representational limitations of single-layer perceptrons without repeating the simplistic myth that one book single-handedly "killed neural networks";
+- expert systems and the commercial success of symbolic knowledge-based AI;
+- brittleness, knowledge-engineering cost, compute/data constraints, inflated expectations, and funding cycles as multiple contributors to AI winters;
+- why multilayer differentiable networks change the representational story;
+- the later statistical/neural resurgence as enabled by algorithms, data, compute, and engineering rather than one isolated breakthrough.
+
+The recurring historical tension should remain visible through the rest of the course: hand-authored symbolic structure versus learned statistical representations. Module 21 can later revisit a modern version of this tension when learned models are combined with deterministic retrieval and tools.
 
 ## Interactives
 
@@ -1156,7 +1164,9 @@ Capabilities should cover:
 - explain how autograd records and computes gradients;
 - define models with `nn.Module` and inspect parameters;
 - construct datasets/dataloaders and mini-batch training loops;
-- use SGD, momentum, and Adam with conceptual understanding;
+- use SGD, momentum, Adam, and AdamW with conceptual understanding;
+- distinguish ordinary L2 regularization from decoupled weight decay under adaptive optimization;
+- reason about learning-rate warmup and decay schedules and record them as part of an experiment;
 - reason about initialization, normalization, and regularization choices;
 - move models/data between CPU and accelerator devices correctly;
 - save/load checkpoints;
@@ -1233,9 +1243,9 @@ Topics:
 - device movement inside the loop;
 - clean experiment structure.
 
-### 05 — SGD, Momentum, and Adam
+### 05 — SGD, Momentum, Adam, and AdamW
 
-**Job:** Extend optimization beyond plain gradient descent without turning this into an optimizer zoo.
+**Job:** Extend optimization beyond plain gradient descent without turning this into an optimizer zoo, and make common modern training configurations legible.
 
 Topics:
 
@@ -1243,11 +1253,18 @@ Topics:
 - momentum as accumulated direction/smoothing intuition;
 - Adam as adaptive first/second-moment scaling intuition;
 - optimizer state;
+- ordinary L2 penalty in the objective versus decoupled weight decay under an adaptive optimizer;
+- AdamW as the representative modern decoupled-weight-decay formulation;
+- optimizer-state memory implications at a basic level;
 - learning rate remains important;
+- constant learning rate as a baseline;
+- warmup and why earliest optimization steps can be unusually fragile;
+- decay after warmup;
+- cosine decay as a representative commonly encountered schedule;
 - comparing optimization trajectories/curves;
 - reasons an optimizer that trains faster is not necessarily a universally better choice.
 
-Mathematics should be sufficient to read the update equations and explain the intuition, not derive convergence proofs.
+Mathematics should be sufficient to read the update equations and explain the intuition, not derive convergence proofs. The learner should be able to inspect a normal modern training configuration containing AdamW, weight decay, warmup, and decay and explain what each setting is trying to control.
 
 ### 06 — Initialization, Normalization, and Regularization
 
@@ -1257,7 +1274,7 @@ Topics:
 
 - why initialization scale matters;
 - simple Xavier/Glorot and He/Kaiming intuition tied to activation variance;
-- weight decay/L2 connection;
+- L2 regularization and its relationship—but not general equivalence—to weight decay;
 - dropout;
 - batch normalization concept and training/evaluation behavior;
 - normalization as a broader design idea;
@@ -1273,13 +1290,14 @@ Topics:
 - CPU/GPU device selection at an introductory level;
 - checkpoints and state dictionaries;
 - saving model plus optimizer state where appropriate;
+- saving/restoring scheduler state when a schedule is part of training;
 - deterministic seeds and limits of exact reproducibility;
 - train/eval mode pitfalls;
 - floating-point precision revisited;
 - FP32/FP16/BF16 conceptually;
 - mixed-precision training at a high level;
 - overflow/underflow and loss scaling intuition where relevant;
-- logging enough experiment metadata to reproduce a run.
+- logging optimizer, weight-decay, warmup, scheduler, and other experiment metadata needed to reproduce a run.
 
 GPU architecture/performance engineering remains for Module 22.
 
@@ -1290,6 +1308,8 @@ Math is applied/revisited:
 - stochastic gradients;
 - momentum;
 - moving first/second-moment intuition for Adam;
+- AdamW/decoupled weight-decay intuition;
+- learning-rate schedules as time-varying optimization step sizes;
 - variance propagation intuition for initialization;
 - normalization statistics;
 - regularization;
@@ -1311,7 +1331,7 @@ Useful context:
 Fewer custom interactives are needed because code/notebooks are the natural medium. Useful candidates only if justified:
 
 - autograd graph inspector tied to a tiny computation;
-- optimizer trajectory comparison;
+- optimizer/scheduler trajectory comparison;
 - activation-distribution visualization for initialization choices.
 
 ## Worksheets
@@ -1319,7 +1339,9 @@ Fewer custom interactives are needed because code/notebooks are the natural medi
 Light use:
 
 - map PyTorch operations back to from-scratch operations;
-- calculate one or two SGD/momentum/Adam updates;
+- calculate one or two SGD/momentum/Adam/AdamW updates;
+- distinguish L2 penalty from decoupled weight decay in supplied optimizer setups;
+- interpret a warmup/decay schedule;
 - parameter-shape/count exercises;
 - identify train/eval/checkpoint pitfalls.
 
@@ -1330,8 +1352,9 @@ Key work:
 - rebuild the Module 12 model in PyTorch;
 - compare manual versus autograd gradients on a tiny example;
 - compare optimizers under a controlled setup;
+- compare at least one constant-rate run with a simple warmup/decay schedule where useful;
 - probe initialization behavior;
-- train/evaluate a small framework model with checkpointing and reproducible configuration.
+- train/evaluate a small framework model with checkpointing and reproducible optimizer/scheduler configuration.
 
 ## Mastery expectations
 
@@ -1341,6 +1364,9 @@ After Module 13 the learner should be able to:
 - build and train a small model idiomatically;
 - reason about tensor shapes, dtypes, and devices;
 - explain the optimizer lifecycle;
+- explain SGD, momentum, Adam, and AdamW at the level needed to read training code;
+- distinguish L2 regularization from decoupled weight decay;
+- explain the purpose of warmup and learning-rate decay and reproduce their configuration;
 - explain why initialization/normalization/regularization matter;
 - save and restore training state;
 - structure a reproducible experiment;
@@ -1352,7 +1378,7 @@ After Module 13 the learner should be able to:
 - custom CUDA/Triton kernels;
 - compiler internals;
 - advanced mixed-precision systems work;
-- optimizer catalogs;
+- optimizer and scheduler catalogs;
 - large-scale data pipelines;
 - architecture-specific specialist tooling.
 
@@ -1627,7 +1653,7 @@ After Module 14 the learner should be able to:
 | 10 | affine matrix functions, nonlinear composition, tensor/shape reasoning |
 | 11 | chain rule II, reverse-mode differentiation, gradient accumulation |
 | 12 | synthesis of forward/backward/optimization mathematics |
-| 13 | stochastic optimization, momentum/Adam intuition, initialization/normalization, numerical precision |
+| 13 | stochastic optimization, momentum/Adam/AdamW intuition, learning-rate scheduling, initialization/normalization, numerical precision |
 | 14 | convolution arithmetic, recurrent equations, repeated gradient behavior, gating |
 
 This tranche should not accidentally create detached courses in linear algebra II, multivariable calculus, numerical analysis, or signal processing. Mathematical depth should remain tied to the ML mechanism that motivates it.
@@ -1643,7 +1669,11 @@ ensembles and instance-based learning
         ↓
 unsupervised structure + multivariate projection
         ↓
+symbolic AI and early connectionist traditions
+        ↓
 early artificial neurons / perceptrons
+        ↓
+expert systems, AI winters, and changing expectations
         ↓
 multilayer differentiable networks
         ↓

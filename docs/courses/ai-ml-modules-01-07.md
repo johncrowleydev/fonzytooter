@@ -38,10 +38,10 @@ The tranche should **not** add decision trees, random forests, k-means, PCA, SVM
 | 03 — Linear Regression: Your First ML Model | 5 | Understand what a trainable model is |
 | 04 — Derivatives and Gradient Descent | 6 | Build calculus I and optimization intuition |
 | 05 — Probability and Statistical Thinking for ML | 6 | Build probability/statistics I |
-| 06 — Classification and Logistic Regression | 5 | Build the first probabilistic classifier |
+| 06 — Classification and Logistic Regression | 6 | Build binary and multiclass probabilistic classification foundations |
 | 07 — Generalization, Evaluation, and Good Experiments | 6 | Learn how to determine whether ML actually worked |
 
-This is approximately 39 lessons total, including the two Module 01 lessons that already exist. Lesson count is a planning estimate, not a product requirement; concepts should be split or combined when authoring improves the learning experience.
+This is approximately 40 lessons total, including the two Module 01 lessons that already exist. Lesson count is a planning estimate, not a product requirement; concepts should be split or combined when authoring improves the learning experience.
 
 ## Dependency shape
 
@@ -1257,7 +1257,9 @@ Capabilities should cover:
 - interpret likelihood as a function of model parameters;
 - compute and interpret binary cross-entropy/log loss;
 - implement and train binary logistic regression manually;
-- interpret decision boundaries and distinguish model probability from decision threshold.
+- interpret decision boundaries and distinguish model probability from decision threshold;
+- interpret a vector of class logits, compute softmax probabilities, and explain categorical cross-entropy for multiclass prediction;
+- recognize numerically stable softmax/log-sum-exp patterns.
 
 ## Lesson sequence
 
@@ -1340,6 +1342,26 @@ The learner personally implements:
 
 After the manual implementation works, fit the same problem with scikit-learn and compare behavior/API abstractions.
 
+### 06 — From Binary to Multiclass: Softmax and Categorical Cross-Entropy
+
+**Job:** Generalize the probabilistic-classification output layer so later neural networks, CNNs, attention, and language models do not encounter softmax as unexplained machinery.
+
+Topics:
+
+- a vector of class logits rather than one binary logit;
+- converting logits into a categorical probability distribution;
+- the softmax function;
+- why softmax probabilities are coupled across classes;
+- invariance to adding the same constant to every logit;
+- numerically stable softmax by subtracting the maximum logit;
+- log-sum-exp intuition at the practical level needed to recognize stable implementations;
+- categorical negative log-likelihood/cross-entropy;
+- one-hot class targets and index-based class targets;
+- binary sigmoid/BCE versus multiclass softmax/categorical cross-entropy;
+- logits versus probabilities versus the final argmax/application decision.
+
+The learner should calculate a tiny softmax and categorical cross-entropy example by hand and implement a numerically stable softmax. A second full classifier-from-scratch project is unnecessary; the binary logistic-regression implementation remains the module's foundational training checkpoint.
+
 ## Mathematics
 
 New/revisited mathematical layer:
@@ -1352,9 +1374,13 @@ New/revisited mathematical layer:
 - likelihood;
 - negative log-likelihood;
 - binary cross-entropy;
+- vectors of logits;
+- softmax and categorical distributions;
+- categorical cross-entropy;
+- practical log-sum-exp/numerical-stability reasoning;
 - gradient-based optimization revisited.
 
-Information-theoretic language may be previewed, but entropy/KL should wait until later modules have a real need.
+Information-theoretic language may be previewed, but entropy and KL receive their first explicit motivated treatment in Module 15.
 
 ## History
 
@@ -1374,7 +1400,8 @@ Strong candidates:
 - sigmoid explorer showing score-to-probability mapping;
 - probability/odds/log-odds converter;
 - binary log-loss curve;
-- 2D logistic decision-boundary explorer with adjustable parameters/threshold.
+- 2D logistic decision-boundary explorer with adjustable parameters/threshold;
+- softmax explorer showing how changing one logit redistributes probability across all classes.
 
 ## Worksheets
 
@@ -1386,7 +1413,10 @@ Candidates:
 - likelihood comparison for tiny datasets;
 - binary cross-entropy calculations;
 - one hand gradient/update step;
-- distinguish score, probability, threshold, and predicted class.
+- distinguish score, probability, threshold, and predicted class;
+- calculate a tiny multiclass softmax distribution;
+- calculate categorical cross-entropy for a supplied target;
+- recognize the stable-softmax constant-shift trick.
 
 ## Embedded exercises
 
@@ -1397,7 +1427,9 @@ Foundational learner-written implementations:
 - predict probabilities;
 - classify with a supplied threshold;
 - one logistic-regression gradient step;
-- full training loop on a tiny dataset.
+- full training loop on a tiny dataset;
+- numerically stable softmax;
+- categorical cross-entropy for a tiny logits/target example.
 
 Afterward, a separate exercise may reproduce the workflow using scikit-learn.
 
@@ -1425,16 +1457,17 @@ After Module 06 the learner should be able to:
 - implement binary logistic regression and train it with gradient descent;
 - interpret a decision boundary;
 - distinguish predicted probability from the application decision threshold;
+- interpret a vector of logits and compute a multiclass softmax distribution;
+- explain categorical cross-entropy and its relationship to the correct-class probability;
+- recognize a numerically stable softmax/log-sum-exp implementation;
 - use scikit-learn with an understanding of the underlying model.
 
 ## Deliberately deferred
 
-- multiclass softmax until later neural/language-model needs make it useful;
-- full information theory;
-- KL divergence;
+- full information theory beyond the compact Module 15 treatment;
 - advanced generalized-linear-model theory;
 - Bayesian logistic regression;
-- multiclass strategy catalogs;
+- multiclass strategy catalogs beyond the core softmax formulation;
 - broad classifier surveys.
 
 ---
@@ -1641,7 +1674,7 @@ Candidates:
 - demonstrate a leakage bug and correct it;
 - compare an unregularized and L2-regularized objective on supplied values.
 
-## Jupyter/repository capstone
+## Jupyter/repository transfer study
 
 ### Can You Trust This Model?
 
@@ -1683,7 +1716,7 @@ question
 
 The primary assessment target is experimental reasoning, not model novelty or best possible score.
 
-This capstone should produce transfer evidence across several objectives from Modules 03–07.
+This transfer study should produce evidence across several objectives from Modules 03–07.
 
 ## Mastery expectations
 
@@ -1726,7 +1759,7 @@ The mathematics should feel cumulative rather than like isolated prerequisite co
 | 03 | Indexed data, summation, means, residuals, squared loss |
 | 04 | Derivatives, partial derivatives, gradients, chain rule, gradient descent |
 | 05 | Probability, random variables, expectation, variance, conditional probability |
-| 06 | Exponentials, logarithms, odds/log-odds, likelihood, probabilistic loss |
+| 06 | Exponentials, logarithms, odds/log-odds, likelihood, sigmoid/BCE, softmax/categorical cross-entropy |
 | 07 | Generalization, regularization, evaluation metrics, calibration |
 
 By the end of Module 07, the learner should have enough mathematical foundation that the later sequence
@@ -1749,7 +1782,7 @@ Several topics intentionally receive more than one encounter:
 - **vectors/matrices** — Module 02, then every model afterward, with deeper linear algebra deferred until PCA;
 - **chain rule** — Module 04 introduction, then Module 11 backpropagation at much greater depth;
 - **probability** — Module 05 foundation, then likelihood/classification in Module 06 and later language modeling/evaluation;
-- **exponentials/logarithms** — reviewed when logistic regression makes them necessary, then reused in softmax/cross-entropy later;
+- **exponentials/logarithms** — reviewed when logistic regression makes them necessary, extended through softmax/categorical cross-entropy in Module 06, then reused in language modeling;
 - **numerical/reproducibility habits** — Module 01, reinforced in every notebook and experiment;
 - **evaluation** — Module 07 foundation, then increasingly sophisticated evaluation in later classical ML, neural networks, and LLM modules.
 
@@ -1784,6 +1817,7 @@ The learner should personally write the first meaningful implementations of:
 - logistic sigmoid;
 - binary cross-entropy;
 - logistic-regression training;
+- numerically stable softmax;
 - common evaluation metrics.
 
 Libraries should appear **after** those mechanics are understood. Scikit-learn becomes useful in Module 06 and Module 07 because it can then be recognized as a production-quality abstraction over concepts the learner has already implemented.
