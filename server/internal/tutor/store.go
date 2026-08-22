@@ -1,0 +1,578 @@
+package tutor
+
+import (
+	"context"
+	"crypto/rand"
+	"database/sql"
+	"encoding/hex"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"strings"
+	"time"
+)
+
+const (
+	DefaultRecentMessageLimit = 20
+	MaxRecentMessageLimit     = 200
+)
+
+var (
+	ErrConversationNotFound      = errors.New("tutor conversation not found")
+	ErrMessageNotFound           = errors.New("tutor message not found")
+	ErrToolCallNotFound          = errors.New("tutor tool call not found")
+	ErrToolCallAlreadyCompleted  = errors.New("tutor tool call already completed")
+	ErrInvalidMessageRole        = errors.New("invalid tutor message role")
+	ErrInvalidMessageContentPart = errors.New("invalid tutor message content part")
+	ErrInvalidToolArguments      = errors.New("invalid tutor tool arguments")
+	ErrInvalidToolResult         = errors.New("invalid tutor tool result")
+)
+
+type MessageRole string
+
+const (
+	MessageRoleUser      MessageRole = "user"
+	MessageRoleAssistant MessageRole = "assistant"
+)
+
+type ContentKind string
+
+const ContentKindText ContentKind = "text"
+
+type ToolCallStatus string
+
+const (
+	ToolCallPending   ToolCallStatus = "pending"
+	ToolCallCompleted ToolCallStatus = "completed"
+	ToolCallFailed    ToolCallStatus = "failed"
+)
+
+type Conversation struct {
+	ID        string
+	CourseID  string
+	Title     string
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
+type ContentPart struct {
+	Kind ContentKind
+	Text string
+}
+
+type Message struct {
+	ID             string
+	ConversationID string
+	Sequence       int
+	Role           MessageRole
+	Parts          []ContentPart
+	CreatedAt      time.Time
+}
+
+type ToolCall struct {
+	ID             string
+	ConversationID string
+	MessageID      string
+	Sequence       int
+	RequestID      string
+	Name           string
+	Arguments      json.RawMessage
+	Status         ToolCallStatus
+	Result         json.RawMessage
+	Error          string
+	CreatedAt      time.Time
+	CompletedAt    *time.Time
+}
+
+type CreateConversationParams struct {
+	CourseID string
+	Title    string
+}
+
+type RecordToolCallParams struct {
+	ConversationID string
+	MessageID      string
+	RequestID      string
+	Name           string
+	Arguments      json.RawMessage
+}
+
+type ConversationStore struct {
+	db    *sql.DB
+	now   func() time.Time
+	newID func() (string, error)
+}
+
+func NewConversationStore(db *sql.DB) *ConversationStore {
+	if db == nil {
+		panic("tutor.NewConversationStore: nil database")
+	}
+	return &ConversationStore{db: db, now: time.Now, newID: randomID}
+}
+
+func (s *ConversationStore) CreateConversation(ctx context.Context, params CreateConversationParams) (Conversation, error) {
+	if strings.TrimSpace(params.CourseID) != params.CourseID {
+		return Conversation{}, errors.New("course ID must not contain surrounding whitespace")
+	}
+	id, err := s.newID()
+	if err != nil {
+		return Conversation{}, fmt.Errorf("generate tutor conversation ID: %w", err)
+	}
+	now := s.now().UTC()
+	conversation := Conversation{ID: id, CourseID: params.CourseID, Title: params.Title, CreatedAt: now, UpdatedAt: now}
+
+	var courseID any
+	if params.CourseID != "" {
+		courseID = params.CourseID
+	}
+	if _, err := s.db.ExecContext(ctx, `
+		INSERT INTO tutor_conversations (id, course_id, title, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?)
+	`, id, courseID, params.Title, formatTime(now), formatTime(now)); err != nil {
+		return Conversation{}, fmt.Errorf("create tutor conversation: %w", err)
+	}
+	return conversation, nil
+}
+
+func (s *ConversationStore) Conversation(ctx context.Context, id string) (Conversation, error) {
+	return scanConversation(s.db.QueryRowContext(ctx, `
+		SELECT id, course_id, title, created_at, updated_at
+		FROM tutor_conversations
+		WHERE id = ?
+	`, id))
+}
+
+func (s *ConversationStore) ListConversations(ctx context.Context) ([]Conversation, error) {
+	rows, err := s.db.QueryContext(ctx, `
+		SELECT id, course_id, title, created_at, updated_at
+		FROM tutor_conversations
+		ORDER BY updated_at DESC, id DESC
+	`)
+	if err != nil {
+		return nil, fmt.Errorf("list tutor conversations: %w", err)
+	}
+	defer rows.Close()
+
+	conversations := make([]Conversation, 0)
+	for rows.Next() {
+		conversation, err := scanConversation(rows)
+		if err != nil {
+			return nil, err
+		}
+		conversations = append(conversations, conversation)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("list tutor conversations: %w", err)
+	}
+	return conversations, nil
+}
+
+func (s *ConversationStore) AppendTextMessage(ctx context.Context, conversationID string, role MessageRole, text string) (Message, error) {
+	return s.AppendMessage(ctx, conversationID, role, []ContentPart{{Kind: ContentKindText, Text: text}})
+}
+
+func (s *ConversationStore) AppendMessage(ctx context.Context, conversationID string, role MessageRole, parts []ContentPart) (Message, error) {
+	if !validMessageRole(role) {
+		return Message{}, ErrInvalidMessageRole
+	}
+	if len(parts) == 0 && role != MessageRoleAssistant {
+		return Message{}, fmt.Errorf("%w: at least one part is required", ErrInvalidMessageContentPart)
+	}
+	for _, part := range parts {
+		if part.Kind != ContentKindText || strings.TrimSpace(part.Text) == "" {
+			return Message{}, ErrInvalidMessageContentPart
+		}
+	}
+
+	id, err := s.newID()
+	if err != nil {
+		return Message{}, fmt.Errorf("generate tutor message ID: %w", err)
+	}
+	now := s.now().UTC()
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return Message{}, fmt.Errorf("begin append tutor message: %w", err)
+	}
+	defer tx.Rollback()
+
+	var sequence int
+	if err := tx.QueryRowContext(ctx, `
+		SELECT COALESCE(MAX(sequence), 0) + 1
+		FROM tutor_messages
+		WHERE conversation_id = ?
+	`, conversationID).Scan(&sequence); err != nil {
+		return Message{}, fmt.Errorf("choose tutor message sequence: %w", err)
+	}
+	result, err := tx.ExecContext(ctx, `
+		INSERT INTO tutor_messages (id, conversation_id, sequence, role, created_at)
+		SELECT ?, id, ?, ?, ? FROM tutor_conversations WHERE id = ?
+	`, id, sequence, role, formatTime(now), conversationID)
+	if err != nil {
+		return Message{}, fmt.Errorf("append tutor message: %w", err)
+	}
+	inserted, err := result.RowsAffected()
+	if err != nil {
+		return Message{}, fmt.Errorf("inspect appended tutor message: %w", err)
+	}
+	if inserted == 0 {
+		return Message{}, ErrConversationNotFound
+	}
+	for index, part := range parts {
+		if _, err := tx.ExecContext(ctx, `
+			INSERT INTO tutor_message_parts (message_id, sequence, kind, text_content)
+			VALUES (?, ?, ?, ?)
+		`, id, index+1, part.Kind, part.Text); err != nil {
+			return Message{}, fmt.Errorf("append tutor message part: %w", err)
+		}
+	}
+	if _, err := tx.ExecContext(ctx, `UPDATE tutor_conversations SET updated_at = ? WHERE id = ?`, formatTime(now), conversationID); err != nil {
+		return Message{}, fmt.Errorf("update tutor conversation: %w", err)
+	}
+	if err := tx.Commit(); err != nil {
+		return Message{}, fmt.Errorf("commit tutor message: %w", err)
+	}
+
+	return Message{ID: id, ConversationID: conversationID, Sequence: sequence, Role: role, Parts: cloneParts(parts), CreatedAt: now}, nil
+}
+
+func (s *ConversationStore) Messages(ctx context.Context, conversationID string) ([]Message, error) {
+	return s.messages(ctx, conversationID, 0)
+}
+
+func (s *ConversationStore) RecentMessages(ctx context.Context, conversationID string, limit int) ([]Message, error) {
+	if limit <= 0 || limit > MaxRecentMessageLimit {
+		return nil, fmt.Errorf("recent tutor message limit must be between 1 and %d", MaxRecentMessageLimit)
+	}
+	return s.messages(ctx, conversationID, limit)
+}
+
+func (s *ConversationStore) RecordToolCall(ctx context.Context, params RecordToolCallParams) (ToolCall, error) {
+	requestID := strings.TrimSpace(params.RequestID)
+	if requestID == "" {
+		return ToolCall{}, errors.New("tutor tool request ID is empty")
+	}
+	name := strings.TrimSpace(params.Name)
+	if name == "" {
+		return ToolCall{}, errors.New("tutor tool name is empty")
+	}
+	if !json.Valid(params.Arguments) {
+		return ToolCall{}, ErrInvalidToolArguments
+	}
+	id, err := s.newID()
+	if err != nil {
+		return ToolCall{}, fmt.Errorf("generate tutor tool call ID: %w", err)
+	}
+	now := s.now().UTC()
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return ToolCall{}, fmt.Errorf("begin tutor tool call: %w", err)
+	}
+	defer tx.Rollback()
+
+	var sequence int
+	if err := tx.QueryRowContext(ctx, `
+		SELECT COALESCE(MAX(sequence), 0) + 1
+		FROM tutor_tool_calls
+		WHERE message_id = ?
+	`, params.MessageID).Scan(&sequence); err != nil {
+		return ToolCall{}, fmt.Errorf("choose tutor tool call sequence: %w", err)
+	}
+	result, err := tx.ExecContext(ctx, `
+		INSERT INTO tutor_tool_calls (
+			id, conversation_id, message_id, sequence, request_id, name, arguments_json, status, created_at
+		)
+		SELECT ?, conversation_id, id, ?, ?, ?, ?, 'pending', ?
+		FROM tutor_messages
+		WHERE id = ? AND conversation_id = ?
+	`, id, sequence, requestID, name, string(params.Arguments), formatTime(now), params.MessageID, params.ConversationID)
+	if err != nil {
+		return ToolCall{}, fmt.Errorf("record tutor tool call: %w", err)
+	}
+	inserted, err := result.RowsAffected()
+	if err != nil {
+		return ToolCall{}, fmt.Errorf("inspect recorded tutor tool call: %w", err)
+	}
+	if inserted == 0 {
+		return ToolCall{}, ErrMessageNotFound
+	}
+	if _, err := tx.ExecContext(ctx, `UPDATE tutor_conversations SET updated_at = ? WHERE id = ?`, formatTime(now), params.ConversationID); err != nil {
+		return ToolCall{}, fmt.Errorf("update tutor conversation for tool call: %w", err)
+	}
+	if err := tx.Commit(); err != nil {
+		return ToolCall{}, fmt.Errorf("commit tutor tool call: %w", err)
+	}
+
+	return ToolCall{ID: id, ConversationID: params.ConversationID, MessageID: params.MessageID, Sequence: sequence, RequestID: requestID, Name: name, Arguments: cloneJSON(params.Arguments), Status: ToolCallPending, CreatedAt: now}, nil
+}
+
+func (s *ConversationStore) CompleteToolCall(ctx context.Context, id string, result json.RawMessage, executionError string) (ToolCall, error) {
+	if executionError != "" && len(result) != 0 {
+		return ToolCall{}, errors.New("failed tutor tool call cannot have a result")
+	}
+	if len(result) != 0 && !json.Valid(result) {
+		return ToolCall{}, ErrInvalidToolResult
+	}
+	now := s.now().UTC()
+	status := ToolCallCompleted
+	var storedResult, storedError any
+	if executionError != "" {
+		status = ToolCallFailed
+		storedError = executionError
+	} else if len(result) != 0 {
+		storedResult = string(result)
+	}
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return ToolCall{}, fmt.Errorf("begin complete tutor tool call: %w", err)
+	}
+	defer tx.Rollback()
+	update, err := tx.ExecContext(ctx, `
+		UPDATE tutor_tool_calls
+		SET status = ?, result_json = ?, error = ?, completed_at = ?
+		WHERE id = ? AND status = 'pending'
+	`, status, storedResult, storedError, formatTime(now), id)
+	if err != nil {
+		return ToolCall{}, fmt.Errorf("complete tutor tool call: %w", err)
+	}
+	changed, err := update.RowsAffected()
+	if err != nil {
+		return ToolCall{}, fmt.Errorf("inspect completed tutor tool call: %w", err)
+	}
+	if changed == 0 {
+		var existingStatus string
+		err := tx.QueryRowContext(ctx, `SELECT status FROM tutor_tool_calls WHERE id = ?`, id).Scan(&existingStatus)
+		if errors.Is(err, sql.ErrNoRows) {
+			return ToolCall{}, ErrToolCallNotFound
+		}
+		if err != nil {
+			return ToolCall{}, fmt.Errorf("read tutor tool call status: %w", err)
+		}
+		return ToolCall{}, ErrToolCallAlreadyCompleted
+	}
+	var conversationID string
+	if err := tx.QueryRowContext(ctx, `SELECT conversation_id FROM tutor_tool_calls WHERE id = ?`, id).Scan(&conversationID); err != nil {
+		return ToolCall{}, fmt.Errorf("read completed tutor tool call conversation: %w", err)
+	}
+	if _, err := tx.ExecContext(ctx, `UPDATE tutor_conversations SET updated_at = ? WHERE id = ?`, formatTime(now), conversationID); err != nil {
+		return ToolCall{}, fmt.Errorf("update tutor conversation for tool result: %w", err)
+	}
+	if err := tx.Commit(); err != nil {
+		return ToolCall{}, fmt.Errorf("commit completed tutor tool call: %w", err)
+	}
+
+	toolCall, err := s.toolCall(ctx, id)
+	if err != nil {
+		return ToolCall{}, err
+	}
+	return toolCall, nil
+}
+
+func (s *ConversationStore) ToolCalls(ctx context.Context, conversationID string) ([]ToolCall, error) {
+	if _, err := s.Conversation(ctx, conversationID); err != nil {
+		return nil, err
+	}
+	rows, err := s.db.QueryContext(ctx, `
+		SELECT tc.id, tc.conversation_id, tc.message_id, tc.sequence, tc.request_id, tc.name,
+		       tc.arguments_json, tc.status, tc.result_json, tc.error,
+		       tc.created_at, tc.completed_at
+		FROM tutor_tool_calls tc
+		JOIN tutor_messages m ON m.id = tc.message_id
+		WHERE tc.conversation_id = ?
+		ORDER BY m.sequence, tc.sequence
+	`, conversationID)
+	if err != nil {
+		return nil, fmt.Errorf("list tutor tool calls: %w", err)
+	}
+	defer rows.Close()
+
+	toolCalls := make([]ToolCall, 0)
+	for rows.Next() {
+		toolCall, err := scanToolCall(rows)
+		if err != nil {
+			return nil, err
+		}
+		toolCalls = append(toolCalls, toolCall)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("list tutor tool calls: %w", err)
+	}
+	return toolCalls, nil
+}
+
+func (s *ConversationStore) messages(ctx context.Context, conversationID string, limit int) ([]Message, error) {
+	if _, err := s.Conversation(ctx, conversationID); err != nil {
+		return nil, err
+	}
+	query := `
+		SELECT m.id, m.conversation_id, m.sequence, m.role, m.created_at,
+		       p.kind, p.text_content
+		FROM tutor_messages m
+		LEFT JOIN tutor_message_parts p ON p.message_id = m.id
+		WHERE m.conversation_id = ?
+		ORDER BY m.sequence, p.sequence`
+	args := []any{conversationID}
+	if limit > 0 {
+		query = `
+			WITH recent_messages AS (
+				SELECT id, conversation_id, sequence, role, created_at
+				FROM tutor_messages
+				WHERE conversation_id = ?
+				ORDER BY sequence DESC
+				LIMIT ?
+			)
+			SELECT m.id, m.conversation_id, m.sequence, m.role, m.created_at,
+			       p.kind, p.text_content
+			FROM recent_messages m
+			LEFT JOIN tutor_message_parts p ON p.message_id = m.id
+			ORDER BY m.sequence, p.sequence`
+		args = append(args, limit)
+	}
+	rows, err := s.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("list tutor messages: %w", err)
+	}
+	defer rows.Close()
+
+	messages := make([]Message, 0)
+	for rows.Next() {
+		var message Message
+		var role, createdAt string
+		var partKind, partText sql.NullString
+		if err := rows.Scan(&message.ID, &message.ConversationID, &message.Sequence, &role, &createdAt, &partKind, &partText); err != nil {
+			return nil, fmt.Errorf("scan tutor message: %w", err)
+		}
+		if len(messages) > 0 && messages[len(messages)-1].ID == message.ID {
+			if partKind.Valid {
+				messages[len(messages)-1].Parts = append(messages[len(messages)-1].Parts, ContentPart{Kind: ContentKind(partKind.String), Text: partText.String})
+			}
+			continue
+		}
+		message.Role = MessageRole(role)
+		message.CreatedAt, err = parseTime(createdAt)
+		if err != nil {
+			return nil, fmt.Errorf("scan tutor message: %w", err)
+		}
+		message.Parts = make([]ContentPart, 0)
+		if partKind.Valid {
+			message.Parts = append(message.Parts, ContentPart{Kind: ContentKind(partKind.String), Text: partText.String})
+		}
+		messages = append(messages, message)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("list tutor messages: %w", err)
+	}
+	return messages, nil
+}
+
+func (s *ConversationStore) toolCall(ctx context.Context, id string) (ToolCall, error) {
+	return scanToolCall(s.db.QueryRowContext(ctx, `
+		SELECT id, conversation_id, message_id, sequence, request_id, name, arguments_json,
+		       status, result_json, error, created_at, completed_at
+		FROM tutor_tool_calls
+		WHERE id = ?
+	`, id))
+}
+
+type rowScanner interface {
+	Scan(dest ...any) error
+}
+
+func scanConversation(row rowScanner) (Conversation, error) {
+	var conversation Conversation
+	var courseID sql.NullString
+	var createdAt, updatedAt string
+	if err := row.Scan(&conversation.ID, &courseID, &conversation.Title, &createdAt, &updatedAt); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return Conversation{}, ErrConversationNotFound
+		}
+		return Conversation{}, fmt.Errorf("scan tutor conversation: %w", err)
+	}
+	conversation.CourseID = courseID.String
+	var err error
+	conversation.CreatedAt, err = parseTime(createdAt)
+	if err != nil {
+		return Conversation{}, fmt.Errorf("scan tutor conversation created time: %w", err)
+	}
+	conversation.UpdatedAt, err = parseTime(updatedAt)
+	if err != nil {
+		return Conversation{}, fmt.Errorf("scan tutor conversation updated time: %w", err)
+	}
+	return conversation, nil
+}
+
+func scanToolCall(row rowScanner) (ToolCall, error) {
+	var toolCall ToolCall
+	var arguments string
+	var status string
+	var result, executionError, completedAt sql.NullString
+	var createdAt string
+	if err := row.Scan(
+		&toolCall.ID, &toolCall.ConversationID, &toolCall.MessageID, &toolCall.Sequence,
+		&toolCall.RequestID, &toolCall.Name, &arguments, &status, &result, &executionError, &createdAt, &completedAt,
+	); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return ToolCall{}, ErrToolCallNotFound
+		}
+		return ToolCall{}, fmt.Errorf("scan tutor tool call: %w", err)
+	}
+	toolCall.Arguments = json.RawMessage(arguments)
+	toolCall.Status = ToolCallStatus(status)
+	if result.Valid {
+		toolCall.Result = json.RawMessage(result.String)
+	}
+	toolCall.Error = executionError.String
+	var err error
+	toolCall.CreatedAt, err = parseTime(createdAt)
+	if err != nil {
+		return ToolCall{}, fmt.Errorf("scan tutor tool call created time: %w", err)
+	}
+	if completedAt.Valid {
+		parsed, err := parseTime(completedAt.String)
+		if err != nil {
+			return ToolCall{}, fmt.Errorf("scan tutor tool call completed time: %w", err)
+		}
+		toolCall.CompletedAt = &parsed
+	}
+	return toolCall, nil
+}
+
+func validMessageRole(role MessageRole) bool {
+	return role == MessageRoleUser || role == MessageRoleAssistant
+}
+
+func randomID() (string, error) {
+	var value [16]byte
+	if _, err := rand.Read(value[:]); err != nil {
+		return "", err
+	}
+	value[6] = (value[6] & 0x0f) | 0x40
+	value[8] = (value[8] & 0x3f) | 0x80
+	encoded := make([]byte, 36)
+	hex.Encode(encoded[0:8], value[0:4])
+	encoded[8] = '-'
+	hex.Encode(encoded[9:13], value[4:6])
+	encoded[13] = '-'
+	hex.Encode(encoded[14:18], value[6:8])
+	encoded[18] = '-'
+	hex.Encode(encoded[19:23], value[8:10])
+	encoded[23] = '-'
+	hex.Encode(encoded[24:36], value[10:16])
+	return string(encoded), nil
+}
+
+func formatTime(value time.Time) string {
+	return value.UTC().Format(time.RFC3339Nano)
+}
+
+func parseTime(value string) (time.Time, error) {
+	return time.Parse(time.RFC3339Nano, value)
+}
+
+func cloneParts(parts []ContentPart) []ContentPart {
+	return append([]ContentPart(nil), parts...)
+}
+
+func cloneJSON(value json.RawMessage) json.RawMessage {
+	return append(json.RawMessage(nil), value...)
+}

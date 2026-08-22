@@ -87,7 +87,8 @@ func prepareServer(ctx context.Context, cfg config.Config, openDatabase database
 		return nil, nil, fmt.Errorf("load curriculum from %q: %w", cfg.CurriculumPath, err)
 	}
 
-	tutorService := tutor.NewService(tutor.NewUnavailableProvider())
+	conversationStore := tutor.NewConversationStore(db)
+	tutorService := tutor.NewPersistentService(tutor.NewUnavailableProvider(), conversationStore)
 	learnerService := learner.NewService(db, catalog)
 	reviewService := review.NewService(db, catalog, review.SystemClock{})
 	server := httpapi.NewServer(cfg.Address, tutorService, catalog, learnerService, reviewService)

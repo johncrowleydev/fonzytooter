@@ -75,11 +75,19 @@ type Provider interface {
 }
 
 type Service struct {
-	provider Provider
+	provider      Provider
+	conversations *ConversationStore
 }
 
 func NewService(provider Provider) *Service {
 	return &Service{provider: provider}
+}
+
+func NewPersistentService(provider Provider, conversations *ConversationStore) *Service {
+	if conversations == nil {
+		panic("tutor.NewPersistentService: nil conversation store")
+	}
+	return &Service{provider: provider, conversations: conversations}
 }
 
 func (s *Service) StreamTurn(ctx context.Context, request TurnRequest) (<-chan Event, error) {
