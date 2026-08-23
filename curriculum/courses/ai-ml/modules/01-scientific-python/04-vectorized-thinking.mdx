@@ -90,6 +90,8 @@ That is the first useful mental model for vectorization:
 
 > **Write the mathematical operation once; let the array supply all the inputs.**
 
+<LoopVectorizationExplorer />
+
 ---
 
 ## Element-wise arithmetic
@@ -496,6 +498,8 @@ Use this rule instead:
 
 > **The axis named in a reduction is the axis being collapsed.**
 
+<ReductionAxisExplorer />
+
 ---
 
 ## Collapsing an axis
@@ -728,6 +732,8 @@ f(g(h(x)))
 ```
 
 The difference is that `x` can now be a whole numerical array.
+
+<OperationKindCheck />
 
 ---
 

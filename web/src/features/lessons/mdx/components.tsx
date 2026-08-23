@@ -5,11 +5,14 @@ import { ArrayStructureExplorer } from '../components/ArrayStructureExplorer'
 import { CompositionPipeline } from '../components/CompositionPipeline'
 import { IndexingShapeVisualizer } from '../components/IndexingShapeVisualizer'
 import { InverseExplorer } from '../components/InverseExplorer'
+import { LoopVectorizationExplorer } from '../components/LoopVectorizationExplorer'
 import { MappingLab } from '../components/MappingLab'
 import { MappingPropertiesLab } from '../components/MappingPropertiesLab'
 import { MutableDefaultExplorer } from '../components/MutableDefaultExplorer'
+import { OperationKindCheck } from '../components/OperationKindCheck'
 import { PythonMentalModelCheck } from '../components/PythonMentalModelCheck'
 import { ReferenceBindingExplorer } from '../components/ReferenceBindingExplorer'
+import { ReductionAxisExplorer } from '../components/ReductionAxisExplorer'
 import { SliceExplorer } from '../components/SliceExplorer'
 import { ViewCopyExplorer } from '../components/ViewCopyExplorer'
 
@@ -158,11 +161,14 @@ export const lessonMdxComponents = {
   CompositionPipeline,
   IndexingShapeVisualizer,
   InverseExplorer,
+  LoopVectorizationExplorer,
   MappingLab,
   MappingPropertiesLab,
   MutableDefaultExplorer,
+  OperationKindCheck,
   PythonMentalModelCheck,
   ReferenceBindingExplorer,
+  ReductionAxisExplorer,
   SliceExplorer,
   ViewCopyExplorer,
 } satisfies MDXComponents
