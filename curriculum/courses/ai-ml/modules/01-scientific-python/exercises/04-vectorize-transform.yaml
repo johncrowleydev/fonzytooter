@@ -1,0 +1,38 @@
+id: numpy.vectorize-transform
+title: Rewrite a Loop as an Array Expression
+lessonId: 04-vectorized-thinking
+order: 1
+objectiveIds:
+  - numpy.vectorization
+prompt: |
+  Implement `squared_distance_from_five(x)` using NumPy array operations.
+  It should return `(x - 5) ** 2` for every element of `x`.
+
+  Do not write an explicit Python loop or list comprehension.
+starterCode: |
+  import numpy as np
+
+  def squared_distance_from_five(x):
+      pass
+tests:
+  - id: basic-values
+    title: Transforms a basic input correctly
+    visibility: visible
+    code: |
+      x = np.array([1.0, 2.0, 5.0, 8.0])
+      result = squared_distance_from_five(x)
+      assert np.allclose(result, np.array([16.0, 9.0, 0.0, 9.0]))
+  - id: preserves-shape
+    title: Preserves multidimensional shape
+    visibility: visible
+    code: |
+      x = np.arange(12, dtype=float).reshape(3, 4)
+      result = squared_distance_from_five(x)
+      assert result.shape == (3, 4)
+      assert np.allclose(result, (x - 5) ** 2)
+  - id: another-input
+    title: Works for unseen values
+    visibility: hidden
+    code: |
+      x = np.array([-3.5, 0.0, 12.25])
+      assert np.allclose(squared_distance_from_five(x), (x - 5) ** 2)
