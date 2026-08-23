@@ -36,6 +36,7 @@ export function ArrayStructureExplorer() {
           <Button
             key={candidate.name}
             variant={index === exampleIndex ? 'primary' : 'outline'}
+            pressed={index === exampleIndex}
             onClick={() => chooseExample(index)}
           >
             {candidate.name} {formatShape(candidate.shape)}
@@ -49,8 +50,8 @@ export function ArrayStructureExplorer() {
           columns={example.shape.at(-1) ?? 1}
           label={`${example.name} array with shape ${formatShape(example.shape)}`}
         />
-        <div className="grid content-start gap-3 rounded-lg border border-line bg-white/5 p-4">
-          <dl className="grid grid-cols-2 gap-3 text-xs">
+        <div className="grid content-start gap-3 rounded-lg border border-line bg-raised p-4">
+          <dl className="grid grid-cols-2 gap-3 text-sm">
             <dt className="text-muted">shape</dt>
             <dd className="font-mono text-ink">{formatShape(example.shape)}</dd>
             <dt className="text-muted">ndim</dt>
@@ -65,7 +66,7 @@ export function ArrayStructureExplorer() {
       </div>
 
       <fieldset className="grid gap-3 rounded-lg border border-line p-4">
-        <legend className="px-1 text-xs font-semibold text-ink">
+        <legend className="px-1 text-sm font-semibold text-ink">
           Select an axis, then predict its length
         </legend>
         <div className="flex flex-wrap gap-2">
@@ -73,6 +74,7 @@ export function ArrayStructureExplorer() {
             <Button
               key={candidateAxis}
               variant={candidateAxis === axis ? 'secondary' : 'outline'}
+              pressed={candidateAxis === axis}
               onClick={() => {
                 setAxis(candidateAxis)
                 setPrediction(null)
@@ -93,8 +95,8 @@ export function ArrayStructureExplorer() {
           <p
             className={
               predictionCorrect
-                ? 'rounded-md border border-brand-teal/30 bg-brand-teal/10 p-3 text-xs text-ink'
-                : 'rounded-md border border-brand-coral/30 bg-brand-coral/10 p-3 text-xs text-ink'
+                ? 'rounded-md border border-accent-teal/30 bg-accent-teal/10 p-3 text-sm text-ink'
+                : 'rounded-md border border-accent-coral/30 bg-accent-coral/10 p-3 text-sm text-ink'
             }
             role={predictionCorrect ? 'status' : 'alert'}
           >

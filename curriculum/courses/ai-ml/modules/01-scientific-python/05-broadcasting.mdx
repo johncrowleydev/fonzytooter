@@ -379,6 +379,8 @@ Then NumPy performs ordinary element-wise addition.
 
 This pattern appears constantly in numerical work: one array varies along one axis, another varies along another axis, and broadcasting combines them into a larger grid of results.
 
+<SingletonExpansionVisualizer />
+
 ---
 
 ## Missing leading dimensions behave like 1
@@ -492,6 +494,8 @@ Whenever you need to decide whether two arrays can broadcast:
 Do not memorize examples. Memorize the procedure.
 
 Let's use it immediately.
+
+<BroadcastShapeLab />
 
 ---
 
@@ -1028,6 +1032,8 @@ This is why a good numerical programming habit is:
 > **When an expression combines arrays of different shapes, predict the result shape before trusting the result.**
 
 Shape reasoning is not merely academic. It is a debugging tool.
+
+<BroadcastDebugChallenge />
 
 ---
 
