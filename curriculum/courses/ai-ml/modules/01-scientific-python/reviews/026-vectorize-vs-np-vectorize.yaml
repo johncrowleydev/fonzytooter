@@ -1,0 +1,7 @@
+id: vectorize-vs-np-vectorize
+order: 26
+objectiveIds:
+  - numpy.vectorization
+sourceLessonId: 04-vectorized-thinking
+prompt: Why is `np.vectorize` not what we usually mean by vectorized numerical code?
+answer: It mainly gives Python functions array-like calling syntax; true vectorized numerical code uses native NumPy array operations implemented below the Python loop level.
