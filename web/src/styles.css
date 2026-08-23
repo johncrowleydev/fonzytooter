@@ -28,7 +28,16 @@
   --color-line-strong: var(--ft-line-strong);
 }
 
-[data-theme='dark'] {
+/*
+ * `data-theme` is set on <html> by the bootstrap script in index.html before first paint, so the
+ * page never flashes the wrong theme. Dark is the bare-:root default for the same reason.
+ *
+ * `color-scheme` is the point of theming the document element rather than an app-level div: it is
+ * what tells the browser to render scrollbars, form controls, and overscroll to match.
+ */
+:root,
+:root[data-theme='dark'] {
+  color-scheme: dark;
   --ft-canvas: #08111e;
   --ft-shell: rgb(9 18 31 / 78%);
   --ft-shell-nav: rgb(9 18 31 / 96%);
@@ -43,7 +52,8 @@
   --ft-line-strong: rgb(162 181 203 / 24%);
 }
 
-[data-theme='light'] {
+:root[data-theme='light'] {
+  color-scheme: light;
   --ft-canvas: #f3f6f9;
   --ft-shell: rgb(255 255 255 / 86%);
   --ft-shell-nav: rgb(255 255 255 / 96%);
@@ -56,4 +66,14 @@
   --ft-faint: #8b98a8;
   --ft-line: rgb(36 58 83 / 14%);
   --ft-line-strong: rgb(36 58 83 / 25%);
+}
+
+/*
+ * React does not render <html>, so the canvas color cannot be applied as a utility class here.
+ * Without it, overscroll and any area outside the app shell fall back to the browser default.
+ */
+@layer base {
+  html {
+    background-color: var(--ft-canvas);
+  }
 }
