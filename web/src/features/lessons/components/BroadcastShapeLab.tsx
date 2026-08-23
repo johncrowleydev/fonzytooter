@@ -36,21 +36,59 @@ export function broadcastShapes(left: Shape, right: Shape): BroadcastResult {
   }
 }
 
-const cases: readonly { left: Shape; right: Shape }[] = [
-  { left: [5, 4], right: [4] },
-  { left: [2, 5, 4], right: [5, 4] },
-  { left: [2, 5, 4], right: [1, 4] },
-  { left: [3, 1], right: [1, 7] },
-  { left: [8, 3], right: [8] },
-  { left: [4, 1, 6], right: [3, 6] },
+const cases: readonly { left: Shape; right: Shape; shapeOptions: readonly Shape[] }[] = [
+  { left: [5, 4], right: [4], shapeOptions: [[4], [1, 4], [5, 4]] },
+  {
+    left: [2, 5, 4],
+    right: [5, 4],
+    shapeOptions: [
+      [5, 4],
+      [2, 4],
+      [2, 5, 4],
+    ],
+  },
+  {
+    left: [2, 5, 4],
+    right: [1, 4],
+    shapeOptions: [
+      [2, 1, 4],
+      [5, 4],
+      [2, 5, 4],
+    ],
+  },
+  {
+    left: [3, 1],
+    right: [1, 7],
+    shapeOptions: [
+      [3, 1],
+      [1, 7],
+      [3, 7],
+    ],
+  },
+  { left: [8, 3], right: [8], shapeOptions: [] },
+  {
+    left: [4, 1, 6],
+    right: [3, 6],
+    shapeOptions: [
+      [4, 1, 6],
+      [3, 6],
+      [4, 3, 6],
+    ],
+  },
 ]
 
 export function BroadcastShapeLab() {
   const [caseIndex, setCaseIndex] = useState(0)
-  const [prediction, setPrediction] = useState<'works' | 'fails' | null>(null)
+  const [compatibilityPrediction, setCompatibilityPrediction] = useState<'works' | 'fails' | null>(
+    null,
+  )
+  const [shapePrediction, setShapePrediction] = useState<string | null>(null)
   const current = cases[caseIndex]
   const result = broadcastShapes(current.left, current.right)
-  const correct = prediction === (result.compatible ? 'works' : 'fails')
+  const compatibilityCorrect = compatibilityPrediction === (result.compatible ? 'works' : 'fails')
+  const resultShapeLabel = result.shape ? formatShape(result.shape) : null
+  const shapeCorrect = shapePrediction !== null && shapePrediction === resultShapeLabel
+  const terminal = compatibilityCorrect && (!result.compatible || shapeCorrect)
   const width = Math.max(current.left.length, current.right.length)
   const paddedLeft = [...Array(width - current.left.length).fill(1), ...current.left]
   const paddedRight = [...Array(width - current.right.length).fill(1), ...current.right]
@@ -69,7 +107,8 @@ export function BroadcastShapeLab() {
             variant={index === caseIndex ? 'secondary' : 'outline'}
             onClick={() => {
               setCaseIndex(index)
-              setPrediction(null)
+              setCompatibilityPrediction(null)
+              setShapePrediction(null)
             }}
           >
             Case {index + 1}
@@ -99,43 +138,92 @@ export function BroadcastShapeLab() {
         </div>
       </div>
       <div className="flex flex-wrap gap-2">
-        <Button onClick={() => setPrediction('works')}>Compatible</Button>
-        <Button variant="outline" onClick={() => setPrediction('fails')}>
+        <Button
+          onClick={() => {
+            setCompatibilityPrediction('works')
+            setShapePrediction(null)
+          }}
+          disabled={compatibilityCorrect}
+        >
+          Compatible
+        </Button>
+        <Button
+          variant="outline"
+          onClick={() => {
+            setCompatibilityPrediction('fails')
+            setShapePrediction(null)
+          }}
+          disabled={compatibilityCorrect}
+        >
           Incompatible
         </Button>
       </div>
-      {prediction !== null ? (
+      {compatibilityPrediction !== null && !compatibilityCorrect ? (
+        <div className="rounded-lg border border-brand-coral/30 bg-brand-coral/10 p-4" role="alert">
+          <p className="text-xs text-ink">
+            <strong>Not yet.</strong> Compare from the right; missing leading dimensions are shown
+            as 1.
+          </p>
+        </div>
+      ) : null}
+      {compatibilityCorrect && result.compatible ? (
+        <fieldset className="grid gap-3 rounded-lg border border-brand-blue/30 bg-brand-blue/10 p-4">
+          <legend className="px-1 text-xs font-semibold text-ink">Predict the result shape</legend>
+          <p className="text-xs leading-relaxed text-muted">
+            Compatible. For each aligned position, take the larger compatible dimension.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {current.shapeOptions.map((shape) => {
+              const label = formatShape(shape)
+              return (
+                <Button
+                  key={label}
+                  variant={shapePrediction === label ? 'secondary' : 'outline'}
+                  onClick={() => setShapePrediction(label)}
+                  disabled={shapeCorrect}
+                >
+                  {label}
+                </Button>
+              )
+            })}
+          </div>
+          {shapePrediction !== null && !shapeCorrect ? (
+            <p
+              className="rounded-md border border-brand-coral/30 bg-brand-coral/10 p-3 text-xs text-ink"
+              role="alert"
+            >
+              <strong>Not yet.</strong> Build the result from the larger compatible dimension at
+              every aligned position.
+            </p>
+          ) : null}
+        </fieldset>
+      ) : null}
+      {terminal ? (
         <div
-          className={
-            correct
-              ? 'grid gap-3 rounded-lg border border-brand-teal/30 bg-brand-teal/10 p-4'
-              : 'rounded-lg border border-brand-coral/30 bg-brand-coral/10 p-4'
-          }
-          role={correct ? 'status' : 'alert'}
+          className="grid gap-3 rounded-lg border border-brand-teal/30 bg-brand-teal/10 p-4"
+          role="status"
         >
           <p className="text-xs text-ink">
-            <strong>{correct ? 'Correct.' : 'Not yet.'}</strong> Compare from the right; missing
-            leading dimensions are shown as 1.
+            <strong>Correct.</strong>{' '}
+            {result.compatible
+              ? 'The compatibility decision and result-shape prediction both follow the right-aligned rule.'
+              : 'The first unequal pair without a 1 makes failure the terminal result.'}
           </p>
-          {correct ? (
-            <>
-              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                {result.comparisons.map((comparison, index) => (
-                  <p
-                    key={index}
-                    className="rounded-md border border-line bg-panel p-3 text-xs text-muted"
-                  >
-                    aligned axis {index}: {comparison.left} vs {comparison.right} —{' '}
-                    {comparison.compatible ? 'compatible' : 'incompatible'}
-                    {comparison.result === null ? '' : ` → ${comparison.result}`}
-                  </p>
-                ))}
-              </div>
-              <p className="font-mono text-sm text-ink">
-                result: {result.shape ? formatShape(result.shape) : 'broadcasting fails'}
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {result.comparisons.map((comparison, index) => (
+              <p
+                key={index}
+                className="rounded-md border border-line bg-panel p-3 text-xs text-muted"
+              >
+                aligned axis {index}: {comparison.left} vs {comparison.right} —{' '}
+                {comparison.compatible ? 'compatible' : 'incompatible'}
+                {comparison.result === null ? '' : ` → ${comparison.result}`}
               </p>
-            </>
-          ) : null}
+            ))}
+          </div>
+          <p className="font-mono text-sm text-ink">
+            result: {resultShapeLabel ?? 'broadcasting fails'}
+          </p>
         </div>
       ) : null}
     </Card>
