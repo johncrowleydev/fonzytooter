@@ -65,7 +65,7 @@ type CreateCardReviewResponse struct {
 }
 
 func registerReviews(api huma.API, service *review.Service) {
-	huma.Register[ReviewCardQueryInput, ReviewCardListResponse](api, huma.Operation{
+	huma.Register[ReviewCardQueryInput, ReviewCardListResponse](api, authenticatedOperation(huma.Operation{
 		OperationID: "listReviewCards",
 		Method:      http.MethodGet,
 		Path:        "/api/courses/{courseId}/review-cards",
@@ -73,7 +73,7 @@ func registerReviews(api huma.API, service *review.Service) {
 		Description: "Combines authored review items with persistent or virtual FSRS scheduling state.",
 		Tags:        []string{"learner"},
 		Errors:      []int{http.StatusNotFound, http.StatusInternalServerError},
-	}, func(ctx context.Context, input *ReviewCardQueryInput) (*ReviewCardListResponse, error) {
+	}), func(ctx context.Context, input *ReviewCardQueryInput) (*ReviewCardListResponse, error) {
 		if service == nil {
 			return nil, huma.Error500InternalServerError("review service is unavailable")
 		}
@@ -99,7 +99,7 @@ func registerReviews(api huma.API, service *review.Service) {
 		Ref: "#/components/schemas/ReviewCardList",
 	}
 
-	huma.Register[ReviewCardReviewPathInput, CreateCardReviewResponse](api, huma.Operation{
+	huma.Register[ReviewCardReviewPathInput, CreateCardReviewResponse](api, authenticatedOperation(huma.Operation{
 		OperationID:   "createReviewCardReview",
 		Method:        http.MethodPost,
 		Path:          "/api/courses/{courseId}/modules/{moduleId}/review-cards/{reviewItemId}/reviews",
@@ -108,7 +108,7 @@ func registerReviews(api huma.API, service *review.Service) {
 		Tags:          []string{"learner"},
 		DefaultStatus: http.StatusCreated,
 		Errors:        []int{http.StatusNotFound, http.StatusConflict, http.StatusUnprocessableEntity, http.StatusInternalServerError},
-	}, func(ctx context.Context, input *ReviewCardReviewPathInput) (*CreateCardReviewResponse, error) {
+	}), func(ctx context.Context, input *ReviewCardReviewPathInput) (*CreateCardReviewResponse, error) {
 		if service == nil {
 			return nil, huma.Error500InternalServerError("review service is unavailable")
 		}

@@ -118,14 +118,14 @@ type ActivityListResponse struct {
 }
 
 func registerLearning(api huma.API, service *learner.Service) {
-	huma.Register[CourseLessonPathInput, LessonProgressResponse](api, huma.Operation{
+	huma.Register[CourseLessonPathInput, LessonProgressResponse](api, authenticatedOperation(huma.Operation{
 		OperationID: "getLessonProgress",
 		Method:      http.MethodGet,
 		Path:        "/api/courses/{courseId}/modules/{moduleId}/lessons/{lessonId}/progress",
 		Summary:     "Get lesson progress",
 		Tags:        []string{"learner"},
 		Errors:      []int{http.StatusNotFound, http.StatusInternalServerError},
-	}, func(ctx context.Context, input *CourseLessonPathInput) (*LessonProgressResponse, error) {
+	}), func(ctx context.Context, input *CourseLessonPathInput) (*LessonProgressResponse, error) {
 		if service == nil {
 			return nil, huma.Error500InternalServerError("learner service is unavailable")
 		}
@@ -140,14 +140,14 @@ func registerLearning(api huma.API, service *learner.Service) {
 		return &LessonProgressResponse{Body: lessonProgressResource(progress)}, nil
 	})
 
-	huma.Register[PutLessonProgressInput, LessonProgressResponse](api, huma.Operation{
+	huma.Register[PutLessonProgressInput, LessonProgressResponse](api, authenticatedOperation(huma.Operation{
 		OperationID: "putLessonProgress",
 		Method:      http.MethodPut,
 		Path:        "/api/courses/{courseId}/modules/{moduleId}/lessons/{lessonId}/progress",
 		Summary:     "Replace lesson progress",
 		Tags:        []string{"learner"},
 		Errors:      []int{http.StatusNotFound, http.StatusInternalServerError},
-	}, func(ctx context.Context, input *PutLessonProgressInput) (*LessonProgressResponse, error) {
+	}), func(ctx context.Context, input *PutLessonProgressInput) (*LessonProgressResponse, error) {
 		if service == nil {
 			return nil, huma.Error500InternalServerError("learner service is unavailable")
 		}
@@ -162,14 +162,14 @@ func registerLearning(api huma.API, service *learner.Service) {
 		return &LessonProgressResponse{Body: lessonProgressResource(progress)}, nil
 	})
 
-	huma.Register[CoursePathInput, CourseProgressResponse](api, huma.Operation{
+	huma.Register[CoursePathInput, CourseProgressResponse](api, authenticatedOperation(huma.Operation{
 		OperationID: "getCourseProgress",
 		Method:      http.MethodGet,
 		Path:        "/api/courses/{courseId}/progress",
 		Summary:     "Get course progress",
 		Tags:        []string{"learner"},
 		Errors:      []int{http.StatusNotFound, http.StatusInternalServerError},
-	}, func(ctx context.Context, input *CoursePathInput) (*CourseProgressResponse, error) {
+	}), func(ctx context.Context, input *CoursePathInput) (*CourseProgressResponse, error) {
 		if service == nil {
 			return nil, huma.Error500InternalServerError("learner service is unavailable")
 		}
@@ -223,14 +223,14 @@ func registerLearning(api huma.API, service *learner.Service) {
 		}}, nil
 	})
 
-	huma.Register[ActivityQueryInput, ActivityListResponse](api, huma.Operation{
+	huma.Register[ActivityQueryInput, ActivityListResponse](api, authenticatedOperation(huma.Operation{
 		OperationID: "listActivities",
 		Method:      http.MethodGet,
 		Path:        "/api/activities",
 		Summary:     "List recent learner activity",
 		Tags:        []string{"learner"},
 		Errors:      []int{http.StatusNotFound, http.StatusInternalServerError},
-	}, func(ctx context.Context, input *ActivityQueryInput) (*ActivityListResponse, error) {
+	}), func(ctx context.Context, input *ActivityQueryInput) (*ActivityListResponse, error) {
 		if service == nil {
 			return nil, huma.Error500InternalServerError("learner service is unavailable")
 		}

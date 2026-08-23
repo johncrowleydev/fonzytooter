@@ -128,6 +128,11 @@ export type listActivitiesResponse200 = {
   status: 200
 }
 
+export type listActivitiesResponse401 = {
+  data: ErrorModel
+  status: 401
+}
+
 export type listActivitiesResponse404 = {
   data: ErrorModel
   status: 404
@@ -147,7 +152,10 @@ export type listActivitiesResponseSuccess = listActivitiesResponse200 & {
   headers: Record<string, string>
 }
 export type listActivitiesResponseError = (
-  listActivitiesResponse404 | listActivitiesResponse422 | listActivitiesResponse500
+  | listActivitiesResponse401
+  | listActivitiesResponse404
+  | listActivitiesResponse422
+  | listActivitiesResponse500
 ) & {
   headers: Record<string, string>
 }
@@ -1473,6 +1481,11 @@ export type createExerciseAttemptResponse201 = {
   status: 201
 }
 
+export type createExerciseAttemptResponse401 = {
+  data: ErrorModel
+  status: 401
+}
+
 export type createExerciseAttemptResponse404 = {
   data: ErrorModel
   status: 404
@@ -1492,6 +1505,7 @@ export type createExerciseAttemptResponseSuccess = createExerciseAttemptResponse
   headers: Record<string, string>
 }
 export type createExerciseAttemptResponseError = (
+  | createExerciseAttemptResponse401
   | createExerciseAttemptResponse404
   | createExerciseAttemptResponse422
   | createExerciseAttemptResponse500
@@ -1646,6 +1660,11 @@ export type getExerciseCheckDefinitionResponse200 = {
   status: 200
 }
 
+export type getExerciseCheckDefinitionResponse401 = {
+  data: ErrorModel
+  status: 401
+}
+
 export type getExerciseCheckDefinitionResponse404 = {
   data: ErrorModel
   status: 404
@@ -1665,6 +1684,7 @@ export type getExerciseCheckDefinitionResponseSuccess = getExerciseCheckDefiniti
   headers: Record<string, string>
 }
 export type getExerciseCheckDefinitionResponseError = (
+  | getExerciseCheckDefinitionResponse401
   | getExerciseCheckDefinitionResponse404
   | getExerciseCheckDefinitionResponse422
   | getExerciseCheckDefinitionResponse500
@@ -1871,6 +1891,11 @@ export type getExerciseWorkspaceResponse200 = {
   status: 200
 }
 
+export type getExerciseWorkspaceResponse401 = {
+  data: ErrorModel
+  status: 401
+}
+
 export type getExerciseWorkspaceResponse404 = {
   data: ErrorModel
   status: 404
@@ -1890,6 +1915,7 @@ export type getExerciseWorkspaceResponseSuccess = getExerciseWorkspaceResponse20
   headers: Record<string, string>
 }
 export type getExerciseWorkspaceResponseError = (
+  | getExerciseWorkspaceResponse401
   | getExerciseWorkspaceResponse404
   | getExerciseWorkspaceResponse422
   | getExerciseWorkspaceResponse500
@@ -2088,6 +2114,11 @@ export type putExerciseWorkspaceResponse200 = {
   status: 200
 }
 
+export type putExerciseWorkspaceResponse401 = {
+  data: ErrorModel
+  status: 401
+}
+
 export type putExerciseWorkspaceResponse404 = {
   data: ErrorModel
   status: 404
@@ -2107,6 +2138,7 @@ export type putExerciseWorkspaceResponseSuccess = putExerciseWorkspaceResponse20
   headers: Record<string, string>
 }
 export type putExerciseWorkspaceResponseError = (
+  | putExerciseWorkspaceResponse401
   | putExerciseWorkspaceResponse404
   | putExerciseWorkspaceResponse422
   | putExerciseWorkspaceResponse500
@@ -2455,6 +2487,11 @@ export type getLessonProgressResponse200 = {
   status: 200
 }
 
+export type getLessonProgressResponse401 = {
+  data: ErrorModel
+  status: 401
+}
+
 export type getLessonProgressResponse404 = {
   data: ErrorModel
   status: 404
@@ -2474,7 +2511,10 @@ export type getLessonProgressResponseSuccess = getLessonProgressResponse200 & {
   headers: Record<string, string>
 }
 export type getLessonProgressResponseError = (
-  getLessonProgressResponse404 | getLessonProgressResponse422 | getLessonProgressResponse500
+  | getLessonProgressResponse401
+  | getLessonProgressResponse404
+  | getLessonProgressResponse422
+  | getLessonProgressResponse500
 ) & {
   headers: Record<string, string>
 }
@@ -2653,6 +2693,11 @@ export type putLessonProgressResponse200 = {
   status: 200
 }
 
+export type putLessonProgressResponse401 = {
+  data: ErrorModel
+  status: 401
+}
+
 export type putLessonProgressResponse404 = {
   data: ErrorModel
   status: 404
@@ -2672,7 +2717,10 @@ export type putLessonProgressResponseSuccess = putLessonProgressResponse200 & {
   headers: Record<string, string>
 }
 export type putLessonProgressResponseError = (
-  putLessonProgressResponse404 | putLessonProgressResponse422 | putLessonProgressResponse500
+  | putLessonProgressResponse401
+  | putLessonProgressResponse404
+  | putLessonProgressResponse422
+  | putLessonProgressResponse500
 ) & {
   headers: Record<string, string>
 }
@@ -2810,6 +2858,11 @@ export type createReviewCardReviewResponse201 = {
   status: 201
 }
 
+export type createReviewCardReviewResponse401 = {
+  data: ErrorModel
+  status: 401
+}
+
 export type createReviewCardReviewResponse404 = {
   data: ErrorModel
   status: 404
@@ -2834,6 +2887,7 @@ export type createReviewCardReviewResponseSuccess = createReviewCardReviewRespon
   headers: Record<string, string>
 }
 export type createReviewCardReviewResponseError = (
+  | createReviewCardReviewResponse401
   | createReviewCardReviewResponse404
   | createReviewCardReviewResponse409
   | createReviewCardReviewResponse422
@@ -3920,6 +3974,11 @@ export type getCourseProgressResponse200 = {
   status: 200
 }
 
+export type getCourseProgressResponse401 = {
+  data: ErrorModel
+  status: 401
+}
+
 export type getCourseProgressResponse404 = {
   data: ErrorModel
   status: 404
@@ -3939,7 +3998,10 @@ export type getCourseProgressResponseSuccess = getCourseProgressResponse200 & {
   headers: Record<string, string>
 }
 export type getCourseProgressResponseError = (
-  getCourseProgressResponse404 | getCourseProgressResponse422 | getCourseProgressResponse500
+  | getCourseProgressResponse401
+  | getCourseProgressResponse404
+  | getCourseProgressResponse422
+  | getCourseProgressResponse500
 ) & {
   headers: Record<string, string>
 }
@@ -4095,6 +4157,11 @@ export type listReviewCardsResponse200 = {
   status: 200
 }
 
+export type listReviewCardsResponse401 = {
+  data: ErrorModel
+  status: 401
+}
+
 export type listReviewCardsResponse404 = {
   data: ErrorModel
   status: 404
@@ -4114,7 +4181,10 @@ export type listReviewCardsResponseSuccess = listReviewCardsResponse200 & {
   headers: Record<string, string>
 }
 export type listReviewCardsResponseError = (
-  listReviewCardsResponse404 | listReviewCardsResponse422 | listReviewCardsResponse500
+  | listReviewCardsResponse401
+  | listReviewCardsResponse404
+  | listReviewCardsResponse422
+  | listReviewCardsResponse500
 ) & {
   headers: Record<string, string>
 }
