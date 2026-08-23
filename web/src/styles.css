@@ -4,9 +4,11 @@
  * The brand hues exist in two families, split by role. Getting the wrong one is the difference
  * between 9:1 and 1.8:1, so the distinction matters more than it looks.
  *
- * `brand-*` — the vivid palette, used only as a SOLID FILL beneath `text-brand-ink`: primary
- *   buttons, the brand mark, progress bars, status dots. Dark ink on a vivid fill measures
- *   7.4-12.2:1 regardless of theme, so these values are deliberately theme-invariant.
+ * `brand-*` — the vivid, theme-invariant palette for decorative fills and filled controls such as
+ *   primary buttons and the brand mark. When text appears on a brand fill, pair it with
+ *   `text-brand-ink`; that combination measures 7.4-12.2:1 regardless of theme. Bare meters use
+ *   `accent-*` so they contrast with their track. Filled status dots are the exception: they pair a
+ *   vivid brand fill with an accent rim, plus an inset panel ring where separation needs help.
  *
  * `accent-*` — the same hues used as CONTENT: text, borders, focus outlines, SVG strokes, and
  *   low-alpha tints. These sit on canvas/panel, so they must change per theme. The vivid values
