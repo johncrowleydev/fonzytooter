@@ -3,5 +3,5 @@ order: 16
 objectiveIds:
   - numpy.arrays
 sourceLessonId: 03-numpy-arrays-shape-dimension-and-dtype
-prompt: What is the difference between `ndim` and `size` for a NumPy array?
-answer: `ndim` is the number of axes; `size` is the total number of elements.
+prompt: "What is the difference between `ndim` and `size` for a NumPy array?"
+answer: "`ndim` is the number of axes; `size` is the total number of elements."
