@@ -1,0 +1,7 @@
+id: reduction-axis
+order: 23
+objectiveIds:
+  - numpy.vectorization
+sourceLessonId: 04-vectorized-thinking
+prompt: In a NumPy reduction such as `x.mean(axis=1)`, what does the named axis represent?
+answer: It is the axis being collapsed by the reduction.
