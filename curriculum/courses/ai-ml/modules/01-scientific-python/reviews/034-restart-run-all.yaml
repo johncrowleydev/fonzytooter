@@ -1,0 +1,7 @@
+id: restart-run-all
+order: 34
+objectiveIds:
+  - python.numerical-experiments
+sourceLessonId: 06-jupyter-and-numerical-experiments
+prompt: What does restarting the kernel and running a notebook top-to-bottom verify?
+answer: That the notebook does not depend on hidden prior state or an undocumented execution order and can reproduce its intended procedure from a clean environment.
