@@ -15,10 +15,10 @@ import { useTutor } from '../tutor/TutorContext'
 
 const ratingStyles: Record<ReviewSubmission['rating'], string> = {
   again:
-    'min-w-20 rounded-lg border border-line bg-white/5 px-3 py-2 text-muted transition hover:border-brand-coral hover:text-ink disabled:cursor-wait disabled:opacity-60 max-sm:min-w-0 max-sm:flex-1 max-sm:px-2',
-  hard: 'min-w-20 rounded-lg border border-line bg-white/5 px-3 py-2 text-muted transition hover:border-brand-gold hover:text-ink disabled:cursor-wait disabled:opacity-60 max-sm:min-w-0 max-sm:flex-1 max-sm:px-2',
-  good: 'min-w-20 rounded-lg border border-line bg-white/5 px-3 py-2 text-muted transition hover:border-brand-teal hover:text-ink disabled:cursor-wait disabled:opacity-60 max-sm:min-w-0 max-sm:flex-1 max-sm:px-2',
-  easy: 'min-w-20 rounded-lg border border-line bg-white/5 px-3 py-2 text-muted transition hover:border-brand-teal hover:text-ink disabled:cursor-wait disabled:opacity-60 max-sm:min-w-0 max-sm:flex-1 max-sm:px-2',
+    'min-w-20 rounded-lg border border-line bg-raised px-3 py-2 text-muted transition hover:border-accent-coral hover:text-ink disabled:cursor-wait disabled:opacity-60 max-sm:min-w-0 max-sm:flex-1 max-sm:px-2',
+  hard: 'min-w-20 rounded-lg border border-line bg-raised px-3 py-2 text-muted transition hover:border-accent-gold hover:text-ink disabled:cursor-wait disabled:opacity-60 max-sm:min-w-0 max-sm:flex-1 max-sm:px-2',
+  good: 'min-w-20 rounded-lg border border-line bg-raised px-3 py-2 text-muted transition hover:border-accent-teal hover:text-ink disabled:cursor-wait disabled:opacity-60 max-sm:min-w-0 max-sm:flex-1 max-sm:px-2',
+  easy: 'min-w-20 rounded-lg border border-line bg-raised px-3 py-2 text-muted transition hover:border-accent-teal hover:text-ink disabled:cursor-wait disabled:opacity-60 max-sm:min-w-0 max-sm:flex-1 max-sm:px-2',
 }
 
 const ratingLabels: Record<ReviewSubmission['rating'], string> = {
@@ -135,7 +135,7 @@ export function ReviewSessionView({
     <div className="grid max-w-6xl gap-7 max-sm:gap-5">
       <PageIntro compact title="Review">
         <div className="mt-4 text-2xs text-faint">
-          <strong className="text-brand-teal">{remaining}</strong> remaining
+          <strong className="text-accent-teal">{remaining}</strong> remaining
         </div>
       </PageIntro>
       <div className="grid grid-cols-[100px_1fr_45px] items-center gap-4 text-2xs text-faint max-sm:grid-cols-[83px_1fr_32px] max-sm:gap-2">
@@ -157,7 +157,7 @@ export function ReviewSessionView({
               </span>
             </div>
             <div className="mx-2.5 my-auto grid justify-items-center gap-3.5 py-8 text-center">
-              <span className="grid size-11 place-items-center rounded-full border border-brand-teal/40 font-serif text-xl text-brand-teal">
+              <span className="grid size-11 place-items-center rounded-full border border-accent-teal/40 font-serif text-xl text-accent-teal">
                 ?
               </span>
               <h2 className="max-w-xl text-2xl font-semibold leading-tight tracking-tight sm:text-3xl">
@@ -165,13 +165,13 @@ export function ReviewSessionView({
               </h2>
             </div>
             {revealed ? (
-              <div className="border-t border-line bg-brand-teal/5 px-4 py-5">
+              <div className="border-t border-line bg-accent-teal/5 px-4 py-5">
                 <p className="text-2xs font-bold uppercase tracking-widest text-faint">Answer</p>
                 <p className="my-2 text-sm leading-relaxed text-ink">{current.answer}</p>
               </div>
             ) : current.hint ? (
               <div className="border-t border-line pt-4 text-xs text-faint">
-                <span className="mr-2 text-2xs font-bold uppercase tracking-wide text-brand-gold">
+                <span className="mr-2 text-2xs font-bold uppercase tracking-wide text-accent-gold">
                   Hint
                 </span>
                 {current.hint}
@@ -200,18 +200,18 @@ export function ReviewSessionView({
               )}
             </div>
             {submitError ? (
-              <p role="alert" className="mt-4 text-center text-xs text-brand-coral">
+              <p role="alert" className="mt-4 text-center text-xs text-accent-coral">
                 This rating could not be saved. The current card is still here; try again.
               </p>
             ) : null}
           </Card>
           <div className="mt-3 flex items-center gap-2 text-2xs text-faint">
-            <span className="mt-1 size-2 shrink-0 rounded-full bg-brand-teal ring-4 ring-brand-teal/10" />
+            <span className="mt-1 size-2 shrink-0 rounded-full bg-accent-teal ring-4 ring-accent-teal/10" />
             <strong className="font-medium text-muted">FSRS scheduling</strong>
-            <Link className="ml-auto text-brand-teal no-underline" to="/progress">
+            <Link className="ml-auto text-accent-teal no-underline" to="/progress">
               View progress →
             </Link>
-            <Link className="text-brand-teal no-underline" to="/">
+            <Link className="text-accent-teal no-underline" to="/">
               Exit
             </Link>
           </div>
@@ -278,7 +278,7 @@ function ReviewStatus({
 }) {
   return (
     <div className="grid min-h-[65vh] content-center justify-items-center gap-4 text-center">
-      <span className="grid size-14 place-items-center rounded-full border border-brand-teal/40 bg-brand-teal/10 text-2xl text-brand-teal">
+      <span className="grid size-14 place-items-center rounded-full border border-accent-teal/40 bg-accent-teal/10 text-2xl text-accent-teal">
         ↺
       </span>
       <h1 className="text-4xl tracking-tight max-sm:text-3xl">{title}</h1>
@@ -291,7 +291,7 @@ function ReviewStatus({
 function ReviewComplete({ reviewed, revisit }: { reviewed: number; revisit: number }) {
   return (
     <div className="grid min-h-[70vh] max-w-6xl content-center justify-items-center gap-7 text-center max-sm:min-h-[72vh] max-sm:gap-5">
-      <div className="grid size-16 place-items-center rounded-full border border-brand-teal/40 bg-brand-teal/10 text-3xl text-brand-teal">
+      <div className="grid size-16 place-items-center rounded-full border border-accent-teal/40 bg-accent-teal/10 text-3xl text-accent-teal">
         ✓
       </div>
       <p className="mt-7 text-2xs font-bold uppercase tracking-widest text-faint">
@@ -303,11 +303,11 @@ function ReviewComplete({ reviewed, revisit }: { reviewed: number; revisit: numb
         {revisit ? `${revisit} will return sooner.` : 'The scheduler recorded a clean pass.'}
       </p>
       <div className="my-7 flex gap-px">
-        <div className="grid min-w-32 gap-1 bg-brand-slate/10 p-4 max-sm:min-w-24 max-sm:px-2 max-sm:py-3">
+        <div className="grid min-w-32 gap-1 bg-accent-slate/10 p-4 max-sm:min-w-24 max-sm:px-2 max-sm:py-3">
           <strong className="text-2xl max-sm:text-xl">{reviewed}</strong>
           <span className="text-2xs uppercase tracking-wide text-faint">reviewed</span>
         </div>
-        <div className="grid min-w-32 gap-1 bg-brand-slate/10 p-4 max-sm:min-w-24 max-sm:px-2 max-sm:py-3">
+        <div className="grid min-w-32 gap-1 bg-accent-slate/10 p-4 max-sm:min-w-24 max-sm:px-2 max-sm:py-3">
           <strong className="text-2xl max-sm:text-xl">{revisit}</strong>
           <span className="text-2xs uppercase tracking-wide text-faint">returning sooner</span>
         </div>
@@ -320,7 +320,7 @@ function ReviewComplete({ reviewed, revisit }: { reviewed: number; revisit: numb
           Back home
         </Link>
         <Link
-          className="inline-flex items-center justify-center gap-2.5 rounded-lg border border-line-strong bg-brand-slate/10 px-4 py-2.5 text-xs font-bold text-ink no-underline transition hover:bg-brand-slate/20"
+          className="inline-flex items-center justify-center gap-2.5 rounded-lg border border-line-strong bg-accent-slate/10 px-4 py-2.5 text-xs font-bold text-ink no-underline transition hover:bg-accent-slate/20"
           to="/progress"
         >
           View progress

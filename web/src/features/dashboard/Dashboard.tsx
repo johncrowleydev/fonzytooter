@@ -65,14 +65,14 @@ export function DashboardView({
       {intro}
 
       <section className="grid grid-cols-[minmax(0,1.58fr)_minmax(260px,0.84fr)] gap-3.5 max-lg:grid-cols-1">
-        <Card className="min-h-72 border-brand-coral/30 bg-panel p-6 max-sm:min-h-0 max-sm:p-5">
+        <Card className="min-h-72 border-accent-coral/30 bg-panel p-6 max-sm:min-h-0 max-sm:p-5">
           <Badge tone="coral">Continue learning</Badge>
           {progress.nextLesson ? (
             <div className="mt-8 max-w-2xl">
               <h2 className="text-4xl font-semibold leading-none tracking-tight max-sm:text-3xl">
                 {progress.nextLesson.lessonTitle}
               </h2>
-              <p className="mt-4 text-xs font-semibold text-brand-coral">
+              <p className="mt-4 text-xs font-semibold text-accent-coral">
                 {progress.nextLesson.moduleTitle}
               </p>
               <p className="my-4 max-w-lg text-xs leading-relaxed text-muted">
@@ -98,7 +98,7 @@ export function DashboardView({
                 There is no incomplete authored lesson in this course right now.
               </p>
               <Link
-                className="text-xs font-bold text-brand-teal no-underline hover:text-ink"
+                className="text-xs font-bold text-accent-teal no-underline hover:text-ink"
                 to={coursePath(progress.courseId)}
               >
                 Browse curriculum →
@@ -150,7 +150,7 @@ export function DashboardView({
               {progress.completedLessonCount} completed lessons introduce their linked objectives.
             </p>
             <p>{progress.dueReviewCount} authored recall prompts are currently due.</p>
-            <Link className="font-bold text-brand-teal no-underline hover:text-ink" to="/progress">
+            <Link className="font-bold text-accent-teal no-underline hover:text-ink" to="/progress">
               Inspect objective evidence →
             </Link>
           </div>
@@ -159,7 +159,7 @@ export function DashboardView({
 
       <section className="flex items-center justify-between gap-5 border-t border-line pt-6 max-sm:block">
         <div className="flex max-w-xl items-start gap-3">
-          <span className="text-base text-brand-gold">✦</span>
+          <span className="text-base text-accent-gold">✦</span>
           <div>
             <strong className="text-xs">What this progress means</strong>
             <p className="mt-1.5 text-xs leading-normal text-muted">
@@ -196,7 +196,7 @@ export function ActivityList({ activities }: { activities: ActivityResource[] })
         const reviewCompleted = activity.kind === 'review_completed'
         const content = (
           <>
-            <span className="grid size-6 place-items-center rounded-lg bg-brand-gold/10 text-xs text-brand-gold">
+            <span className="grid size-6 place-items-center rounded-lg bg-accent-gold/10 text-xs text-accent-gold">
               ✓
             </span>
             <div>
@@ -219,12 +219,12 @@ export function ActivityList({ activities }: { activities: ActivityResource[] })
         const className =
           'grid grid-cols-[24px_1fr_auto] items-center gap-2.5 border-t border-line py-2.5 text-ink no-underline'
         return reviewCompleted ? (
-          <Link className={`${className} hover:text-brand-teal`} key={activity.id} to="/review">
+          <Link className={`${className} hover:text-accent-teal`} key={activity.id} to="/review">
             {content}
           </Link>
         ) : exerciseChecked && activity.moduleId && activity.exerciseId ? (
           <Link
-            className={`${className} hover:text-brand-teal`}
+            className={`${className} hover:text-accent-teal`}
             key={activity.id}
             to={exercisePath(activity.courseId, activity.moduleId, activity.exerciseId)}
           >
@@ -232,7 +232,7 @@ export function ActivityList({ activities }: { activities: ActivityResource[] })
           </Link>
         ) : activity.moduleId && activity.lessonId ? (
           <Link
-            className={`${className} hover:text-brand-teal`}
+            className={`${className} hover:text-accent-teal`}
             key={activity.id}
             to={lessonPath(activity.courseId, activity.moduleId, activity.lessonId)}
           >
@@ -263,7 +263,7 @@ function ActionCard({
 }) {
   return (
     <Card className="flex min-h-32 items-start gap-4 p-5 max-sm:min-h-28">
-      <div className="grid size-9 place-items-center rounded-lg bg-brand-slate/20 text-xl text-muted">
+      <div className="grid size-9 place-items-center rounded-lg bg-accent-slate/20 text-xl text-muted">
         {icon}
       </div>
       <div>
@@ -272,7 +272,7 @@ function ActionCard({
         <p className="text-2xs leading-relaxed text-faint">{detail}</p>
         {to ? (
           <Link
-            className="mt-3 inline-flex text-2xs font-bold text-brand-teal no-underline"
+            className="mt-3 inline-flex text-2xs font-bold text-accent-teal no-underline"
             to={to}
           >
             Open →

@@ -60,7 +60,7 @@ type MappingDiagramProps = {
 }
 
 const nodeButtonClass =
-  'rounded-lg border px-3 py-2 text-xs font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-teal'
+  'rounded-lg border px-3 py-2 text-xs font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-teal'
 
 export function MappingDiagram({
   domain,
@@ -96,7 +96,7 @@ export function MappingDiagram({
         >
           <defs>
             <marker id={markerId} markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
-              <path className="fill-brand-teal" d="M 0 0 L 8 4 L 0 8 z" />
+              <path className="fill-accent-teal" d="M 0 0 L 8 4 L 0 8 z" />
             </marker>
           </defs>
 
@@ -108,7 +108,7 @@ export function MappingDiagram({
             return (
               <line
                 key={`${edge.from}-${edge.to}`}
-                className="stroke-brand-teal"
+                className="stroke-accent-teal"
                 x1="105"
                 y1={yFor(fromIndex, domain.length)}
                 x2="495"
@@ -126,7 +126,7 @@ export function MappingDiagram({
                 <circle
                   className={
                     selected
-                      ? 'fill-brand-gold/20 stroke-brand-gold'
+                      ? 'fill-accent-gold/20 stroke-accent-gold'
                       : 'fill-panel stroke-line-strong'
                   }
                   cx="75"
@@ -170,7 +170,7 @@ export function MappingDiagram({
       </div>
 
       {editable ? (
-        <div className="grid gap-3 rounded-lg border border-line bg-white/5 p-3">
+        <div className="grid gap-3 rounded-lg border border-line bg-raised p-3">
           <fieldset>
             <legend className="text-2xs font-bold uppercase tracking-widest text-faint">
               1. Select an input
@@ -181,8 +181,8 @@ export function MappingDiagram({
                   key={input}
                   className={`${nodeButtonClass} ${
                     selectedInput === input
-                      ? 'border-brand-gold/60 bg-brand-gold/10 text-ink'
-                      : 'border-line bg-panel text-muted hover:border-brand-gold/50 hover:text-ink'
+                      ? 'border-accent-gold/60 bg-accent-gold/10 text-ink'
+                      : 'border-line bg-panel text-muted hover:border-accent-gold/50 hover:text-ink'
                   }`}
                   type="button"
                   onClick={() => onSelectInput?.(input)}
@@ -207,8 +207,8 @@ export function MappingDiagram({
                     key={output}
                     className={`${nodeButtonClass} ${
                       connected
-                        ? 'border-brand-teal/60 bg-brand-teal/10 text-ink'
-                        : 'border-line bg-panel text-muted hover:border-brand-teal/50 hover:text-ink'
+                        ? 'border-accent-teal/60 bg-accent-teal/10 text-ink'
+                        : 'border-line bg-panel text-muted hover:border-accent-teal/50 hover:text-ink'
                     } disabled:cursor-not-allowed disabled:opacity-50`}
                     type="button"
                     onClick={() => selectedInput && onToggleEdge?.(selectedInput, output)}

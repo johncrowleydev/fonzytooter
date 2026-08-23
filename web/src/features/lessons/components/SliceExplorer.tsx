@@ -4,8 +4,8 @@ import { Badge, Card } from '../../../components/ui'
 const values = [2, 4, 6, 8, 10]
 const sliceIndexOptions = [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5]
 const includedCellClass =
-  'rounded-lg border border-brand-teal/50 bg-brand-teal/10 px-2 py-3 text-ink'
-const excludedCellClass = 'rounded-lg border border-line bg-white/5 px-2 py-3 text-muted'
+  'rounded-lg border border-accent-teal/50 bg-accent-teal/10 px-2 py-3 text-ink'
+const excludedCellClass = 'rounded-lg border border-line bg-raised px-2 py-3 text-muted'
 
 function normalizeSliceBound(bound: number, length: number) {
   return bound < 0 ? Math.max(bound + length, 0) : Math.min(bound, length)
@@ -45,14 +45,14 @@ export function SliceExplorer() {
         <Badge tone="violet">No step</Badge>
       </div>
 
-      <fieldset className="grid gap-4 rounded-lg border border-line bg-white/5 p-4 sm:grid-cols-2">
+      <fieldset className="grid gap-4 rounded-lg border border-line bg-raised p-4 sm:grid-cols-2">
         <legend className="px-1 text-2xs font-bold uppercase tracking-widest text-faint">
           Slice controls
         </legend>
         <label className="grid gap-1.5 text-xs text-muted" htmlFor="slice-start">
           <span className="font-semibold text-ink">start</span>
           <select
-            className="rounded-md border border-line-strong bg-panel px-3 py-2 text-sm text-ink outline-0 focus-visible:border-brand-teal focus-visible:ring-2 focus-visible:ring-brand-teal/30"
+            className="rounded-md border border-line-strong bg-panel px-3 py-2 text-sm text-ink outline-0 focus-visible:border-accent-teal focus-visible:ring-2 focus-visible:ring-accent-teal/30"
             id="slice-start"
             value={start}
             onChange={(event) => setStart(Number(event.target.value))}
@@ -67,7 +67,7 @@ export function SliceExplorer() {
         <label className="grid gap-1.5 text-xs text-muted" htmlFor="slice-stop">
           <span className="font-semibold text-ink">stop</span>
           <select
-            className="rounded-md border border-line-strong bg-panel px-3 py-2 text-sm text-ink outline-0 focus-visible:border-brand-teal focus-visible:ring-2 focus-visible:ring-brand-teal/30"
+            className="rounded-md border border-line-strong bg-panel px-3 py-2 text-sm text-ink outline-0 focus-visible:border-accent-teal focus-visible:ring-2 focus-visible:ring-accent-teal/30"
             id="slice-stop"
             value={stop}
             onChange={(event) => setStop(Number(event.target.value))}
@@ -113,7 +113,7 @@ export function SliceExplorer() {
       </div>
 
       <div
-        className="rounded-lg border border-brand-violet/30 bg-brand-violet/10 p-4"
+        className="rounded-lg border border-accent-violet/30 bg-accent-violet/10 p-4"
         role="status"
         aria-live="polite"
       >

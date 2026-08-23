@@ -170,7 +170,7 @@ function CurriculumState({
 function RetryButton({ onClick }: { onClick: () => void }) {
   return (
     <button
-      className="rounded-lg border border-line-strong bg-brand-slate/10 px-3 py-2 text-xs font-bold text-ink transition hover:bg-brand-slate/20"
+      className="rounded-lg border border-line-strong bg-accent-slate/10 px-3 py-2 text-xs font-bold text-ink transition hover:bg-accent-slate/20"
       type="button"
       onClick={onClick}
     >

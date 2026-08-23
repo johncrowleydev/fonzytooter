@@ -10,8 +10,8 @@ const domainLabels: Record<SquareDomain, string> = {
   nonpositive: 'x ≤ 0',
 }
 const feedbackClasses = {
-  success: 'border-brand-teal/30 bg-brand-teal/10',
-  error: 'border-brand-coral/30 bg-brand-coral/10',
+  success: 'border-accent-teal/30 bg-accent-teal/10',
+  error: 'border-accent-coral/30 bg-accent-coral/10',
 } as const
 
 export function InverseExplorer() {
@@ -108,8 +108,8 @@ export function InverseExplorer() {
       </div>
 
       {complete ? (
-        <div className="rounded-lg border border-brand-teal/30 bg-brand-teal/10 p-5">
-          <p className="text-2xs font-bold uppercase tracking-widest text-brand-teal">
+        <div className="rounded-lg border border-accent-teal/30 bg-accent-teal/10 p-5">
+          <p className="text-2xs font-bold uppercase tracking-widest text-accent-teal">
             Reversibility
           </p>
           <p className="mt-2 text-sm leading-relaxed text-ink">
@@ -140,7 +140,7 @@ export function InverseExplorer() {
 
           {stage === 3 && reverseStep === 2 ? (
             <div
-              className="rounded-lg border border-brand-teal/30 bg-brand-teal/10 p-3 text-xs leading-relaxed text-ink"
+              className="rounded-lg border border-accent-teal/30 bg-accent-teal/10 p-3 text-xs leading-relaxed text-ink"
               role="status"
               aria-live="polite"
             >
@@ -184,10 +184,10 @@ function SquareGraph({ domain }: { domain: SquareDomain }) {
       >
         <line className="stroke-line-strong" x1="40" y1="260" x2="560" y2="260" strokeWidth="2" />
         <line className="stroke-line-strong" x1="300" y1="20" x2="300" y2="280" strokeWidth="2" />
-        <path className="fill-none stroke-brand-blue" d={path} strokeWidth="5" />
+        <path className="fill-none stroke-accent-blue" d={path} strokeWidth="5" />
         {showPositive ? (
           <g>
-            <circle className="fill-brand-gold" cx="480" cy="143" r="8" />
+            <circle className="fill-accent-gold" cx="480" cy="143" r="8" />
             <text className="fill-ink text-xs" x="490" y="133">
               (3, 9)
             </text>
@@ -195,7 +195,7 @@ function SquareGraph({ domain }: { domain: SquareDomain }) {
         ) : null}
         {showNegative ? (
           <g>
-            <circle className="fill-brand-gold" cx="120" cy="143" r="8" />
+            <circle className="fill-accent-gold" cx="120" cy="143" r="8" />
             <text className="fill-ink text-xs" x="52" y="133">
               (-3, 9)
             </text>
@@ -284,11 +284,11 @@ function CodomainStage({ onAnswer }: { onAnswer: (answer: boolean) => void }) {
         </p>
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
-        <div className="rounded-lg border border-brand-coral/30 bg-brand-coral/10 p-4">
+        <div className="rounded-lg border border-accent-coral/30 bg-accent-coral/10 p-4">
           <code className="text-sm text-ink">f : [0, ∞) → ℝ</code>
           <p className="mt-2 text-xs text-muted">Negative codomain values are gaps.</p>
         </div>
-        <div className="rounded-lg border border-brand-teal/30 bg-brand-teal/10 p-4">
+        <div className="rounded-lg border border-accent-teal/30 bg-accent-teal/10 p-4">
           <code className="text-sm text-ink">f : [0, ∞) → [0, ∞)</code>
           <p className="mt-2 text-xs text-muted">Every declared destination is reached.</p>
         </div>

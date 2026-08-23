@@ -185,7 +185,7 @@ function ModuleContent({ course, module }: { course: CourseResource; module: Mod
             {module.lessons.map((lesson, index) => (
               <Link
                 key={lesson.id}
-                className="grid grid-cols-[35px_minmax(0,1fr)_17px] items-center gap-3 border-t border-line py-3 text-left text-ink no-underline hover:text-brand-teal"
+                className="grid grid-cols-[35px_minmax(0,1fr)_17px] items-center gap-3 border-t border-line py-3 text-left text-ink no-underline hover:text-accent-teal"
                 to={lessonPath(course.id, module.id, lesson.id)}
               >
                 <span className="text-2xs text-faint">{String(index + 1).padStart(2, '0')}</span>
@@ -240,7 +240,7 @@ function ModuleContent({ course, module }: { course: CourseResource; module: Mod
               </Button>
             </div>
             {workbookError ? (
-              <p className="w-full text-xs text-brand-coral" role="alert">
+              <p className="w-full text-xs text-accent-coral" role="alert">
                 {workbookError}
               </p>
             ) : null}
@@ -251,7 +251,7 @@ function ModuleContent({ course, module }: { course: CourseResource; module: Mod
               return (
                 <Link
                   key={worksheet.id}
-                  className="flex items-center gap-3 rounded-lg border border-line bg-panel px-4 py-4 text-ink no-underline transition hover:border-line-strong hover:text-brand-teal"
+                  className="flex items-center gap-3 rounded-lg border border-line bg-panel px-4 py-4 text-ink no-underline transition hover:border-line-strong hover:text-accent-teal"
                   to={worksheetPath(course.id, module.id, worksheet.id)}
                 >
                   <Badge tone="teal">Worksheet</Badge>
@@ -285,7 +285,7 @@ function ModuleContent({ course, module }: { course: CourseResource; module: Mod
               return (
                 <Link
                   key={exercise.id}
-                  className="flex items-center gap-3 rounded-lg border border-line bg-panel px-4 py-4 text-ink no-underline transition hover:border-line-strong hover:text-brand-teal"
+                  className="flex items-center gap-3 rounded-lg border border-line bg-panel px-4 py-4 text-ink no-underline transition hover:border-line-strong hover:text-accent-teal"
                   to={exercisePath(course.id, module.id, exercise.id)}
                 >
                   <Badge tone="gold">Python</Badge>
@@ -323,7 +323,7 @@ function ModuleContent({ course, module }: { course: CourseResource; module: Mod
                   </span>
                   {url ? (
                     <a
-                      className="text-xs font-bold text-brand-teal no-underline hover:text-ink"
+                      className="text-xs font-bold text-accent-teal no-underline hover:text-ink"
                       href={url}
                       target="_blank"
                       rel="noopener noreferrer"

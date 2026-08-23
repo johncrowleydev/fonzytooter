@@ -88,11 +88,11 @@ const categoryLabels: Record<MappingCategory, string> = {
 
 type Feedback = { tone: 'success' | 'error'; message: string } | null
 const feedbackClasses = {
-  success: 'border-brand-teal/30 bg-brand-teal/10',
-  error: 'border-brand-coral/30 bg-brand-coral/10',
+  success: 'border-accent-teal/30 bg-accent-teal/10',
+  error: 'border-accent-coral/30 bg-accent-coral/10',
 } as const
 const evidenceButtonClass =
-  'rounded-lg border px-3 py-2 text-left text-xs font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-teal disabled:cursor-not-allowed disabled:opacity-50'
+  'rounded-lg border px-3 py-2 text-left text-xs font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-teal disabled:cursor-not-allowed disabled:opacity-50'
 
 export function MappingPropertiesLab() {
   const [stage, setStage] = useState(0)
@@ -318,8 +318,8 @@ export function MappingPropertiesLab() {
       </div>
 
       {complete ? (
-        <div className="rounded-lg border border-brand-teal/30 bg-brand-teal/10 p-5">
-          <p className="text-2xs font-bold uppercase tracking-widest text-brand-teal">
+        <div className="rounded-lg border border-accent-teal/30 bg-accent-teal/10 p-5">
+          <p className="text-2xs font-bold uppercase tracking-widest text-accent-teal">
             Transition to inverses
           </p>
           <p className="mt-2 text-sm leading-relaxed text-ink">
@@ -435,7 +435,7 @@ function DiagnosticControls({
   ]
 
   return (
-    <div className="grid gap-4 rounded-lg border border-line bg-white/5 p-4">
+    <div className="grid gap-4 rounded-lg border border-line bg-raised p-4">
       <fieldset>
         <legend className="text-xs font-semibold text-ink">
           {stage === 0 ? 'Is this function injective?' : 'Is this function surjective?'}
@@ -503,8 +503,8 @@ function DiagnosticControls({
 
 function evidenceSelectionClass(selected: boolean) {
   return selected
-    ? 'border-brand-violet/60 bg-brand-violet/10 text-ink'
-    : 'border-line bg-panel text-muted hover:border-brand-violet/50 hover:text-ink'
+    ? 'border-accent-violet/60 bg-accent-violet/10 text-ink'
+    : 'border-line bg-panel text-muted hover:border-accent-violet/50 hover:text-ink'
 }
 
 function StageContent({
@@ -591,7 +591,7 @@ function StageContent({
               <label className="grid gap-1.5 text-xs text-muted">
                 Classification
                 <select
-                  className="rounded-md border border-line-strong bg-panel px-3 py-2 text-xs text-ink outline-0 focus-visible:border-brand-teal focus-visible:ring-2 focus-visible:ring-brand-teal/30"
+                  className="rounded-md border border-line-strong bg-panel px-3 py-2 text-xs text-ink outline-0 focus-visible:border-accent-teal focus-visible:ring-2 focus-visible:ring-accent-teal/30"
                   value={classifications[mapping.id] ?? ''}
                   onChange={(event) => onClassify(mapping.id, event.target.value)}
                 >

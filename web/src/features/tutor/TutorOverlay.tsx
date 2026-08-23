@@ -5,18 +5,18 @@ import type { TutorMessage, TutorMode } from './types'
 import { Button } from '../../components/ui'
 
 const modeButtonStyles = {
-  active: 'border-brand-teal/40 bg-brand-teal/10 text-brand-teal',
+  active: 'border-accent-teal/40 bg-accent-teal/10 text-accent-teal',
   inactive:
-    'border-line bg-transparent text-faint hover:border-brand-teal/40 hover:bg-brand-teal/10 hover:text-brand-teal',
+    'border-line bg-transparent text-faint hover:border-accent-teal/40 hover:bg-accent-teal/10 hover:text-accent-teal',
 } as const
 
 const messageStyles = {
-  user: 'ml-11 bg-brand-slate/15 text-ink',
-  assistant: 'mr-6 border border-line bg-white/5 text-muted',
+  user: 'ml-11 bg-accent-slate/15 text-ink',
+  assistant: 'mr-6 border border-line bg-raised text-muted',
 } as const
 
 const messageLabelStyles = {
-  user: 'text-brand-teal',
+  user: 'text-accent-teal',
   assistant: 'text-faint',
 } as const
 
@@ -86,7 +86,7 @@ export function TutorOverlay() {
               Always available
             </p>
             <h2 className="m-0 text-2xl tracking-tight">
-              Tutor <span className="align-middle text-2xs text-brand-teal">●</span>
+              Tutor <span className="align-middle text-2xs text-accent-teal">●</span>
             </h2>
           </div>
           <button
@@ -123,7 +123,7 @@ export function TutorOverlay() {
         <div className="flex-1 overflow-y-auto px-5 py-2 max-sm:px-4">
           {messages.length === 0 ? (
             <div className="p-10 text-center">
-              <span className="block text-2xl text-brand-gold">✦</span>
+              <span className="block text-2xl text-accent-gold">✦</span>
               <p className="text-xs leading-relaxed text-muted">
                 Ask about what you are currently studying. I’ll keep the answer anchored to this
                 screen.
@@ -170,7 +170,7 @@ export function TutorOverlay() {
             onChange={(event) => setInput(event.target.value)}
             placeholder="Ask anything about this screen…"
             rows={3}
-            className="block min-h-20 w-full resize-none rounded-lg border border-line-strong bg-panel-soft p-3 text-xs leading-normal text-ink outline-0 placeholder:text-faint focus:border-brand-teal/50"
+            className="block min-h-20 w-full resize-none rounded-lg border border-line-strong bg-panel-soft p-3 text-xs leading-normal text-ink outline-0 placeholder:text-faint focus:border-accent-teal/50"
           />
           <div className="mt-2 flex items-center justify-between gap-2.5">
             <span className="text-2xs text-faint">

@@ -108,7 +108,7 @@ class LessonMdxErrorBoundary extends Component<
 function LessonMdxError({ error }: { error: Error }) {
   return (
     <div
-      className="rounded-lg border border-brand-coral/40 bg-brand-coral/10 p-4 text-sm text-brand-coral"
+      className="rounded-lg border border-accent-coral/40 bg-accent-coral/10 p-4 text-sm text-accent-coral"
       role="alert"
     >
       <strong className="font-semibold">Lesson rendering error</strong>

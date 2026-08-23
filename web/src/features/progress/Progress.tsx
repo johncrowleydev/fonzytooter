@@ -7,17 +7,19 @@ import { Badge, Card, PageIntro, SectionHeading, StatusDot } from '../../compone
 import { useTutor } from '../tutor/TutorContext'
 
 const summaryToneStyles = {
-  teal: 'border-t-brand-teal',
-  gold: 'border-t-brand-gold',
-  coral: 'border-t-brand-coral',
-  violet: 'border-t-brand-violet',
+  teal: 'border-t-accent-teal',
+  gold: 'border-t-accent-gold',
+  coral: 'border-t-accent-coral',
+  violet: 'border-t-accent-violet',
 } as const
 
+// Accent rather than brand: these are bare meter bars with no text, so they need to contrast with
+// the card behind them. See the note on progressTones in components/ui.tsx.
 const dimensionToneStyles = {
-  introduced: 'bg-brand-teal',
-  pending: 'bg-brand-gold',
-  evidence: 'bg-brand-coral',
-  'not-assessed': 'bg-brand-slate/20',
+  introduced: 'bg-accent-teal',
+  pending: 'bg-accent-gold',
+  evidence: 'bg-accent-coral',
+  'not-assessed': 'bg-accent-slate/20',
 } as const
 
 type EvidenceFilter = 'all' | 'needs-review' | 'application' | 'not-introduced'
@@ -127,7 +129,7 @@ export function ProgressView({
             type="button"
             key={value}
             onClick={() => setFilter(value)}
-            className={`rounded-full border px-3 py-2 text-2xs font-semibold ${filter === value ? 'border-brand-teal bg-brand-teal/10 text-ink' : 'border-line bg-panel text-muted'}`}
+            className={`rounded-full border px-3 py-2 text-2xs font-semibold ${filter === value ? 'border-accent-teal bg-accent-teal/10 text-ink' : 'border-line bg-panel text-muted'}`}
           >
             {label}
           </button>
@@ -214,7 +216,7 @@ function ObjectiveDetail({ objective }: { objective: ObjectiveProgressResource }
           <p>Last exercise check {formatEvidenceTime(objective.application.lastCheckedAt)}.</p>
         ) : null}
       </div>
-      <p className="mt-8 rounded-lg border border-line bg-brand-slate/10 p-4 text-2xs leading-relaxed text-muted">
+      <p className="mt-8 rounded-lg border border-line bg-accent-slate/10 p-4 text-2xs leading-relaxed text-muted">
         These are counts and timestamps from real learner actions. They are evidence, not a mastery
         score. Transfer remains {objective.transferAssessed ? 'assessed' : 'not assessed'}.
       </p>
@@ -255,7 +257,7 @@ function ObjectiveBrowserRow({
     <button
       type="button"
       onClick={onClick}
-      className={`grid w-full grid-cols-[11px_minmax(0,1fr)_auto_15px] items-center gap-2.5 border-0 border-b border-line bg-transparent py-3 text-left text-ink max-sm:flex max-sm:min-w-0 ${selected ? 'border-l-2 border-brand-teal bg-brand-teal/5 pl-2' : 'hover:bg-brand-teal/5'}`}
+      className={`grid w-full grid-cols-[11px_minmax(0,1fr)_auto_15px] items-center gap-2.5 border-0 border-b border-line bg-transparent py-3 text-left text-ink max-sm:flex max-sm:min-w-0 ${selected ? 'border-l-2 border-accent-teal bg-accent-teal/5 pl-2' : 'hover:bg-accent-teal/5'}`}
     >
       <StatusDot state={objective.introduced ? 'completed' : 'available'} />
       <span className="min-w-0 max-sm:flex-1">
