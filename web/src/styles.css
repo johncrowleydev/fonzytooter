@@ -47,6 +47,19 @@
    */
   --color-code-surface: #0b171e;
   --color-code-ink: #e9edf3;
+
+  /*
+   * Syntax token colors, all measured against --color-code-surface: 5.9:1 for comments through
+   * 15.5:1 for plain identifiers. Comments are the dimmest on purpose but still clear AA, since
+   * curriculum code comments frequently carry the explanation.
+   */
+  --color-code-keyword: #a99be7;
+  --color-code-string: #76d0c0;
+  --color-code-number: #e1b86a;
+  --color-code-function: #80afe4;
+  --color-code-type: #ef916e;
+  --color-code-comment: #7f97a1;
+  --color-code-punctuation: #9db9c2;
 }
 
 @theme inline {
@@ -172,5 +185,66 @@
   summary,
   [role='button'] {
     touch-action: manipulation;
+  }
+}
+
+/*
+ * Syntax highlighting. These class names come from `classHighlighter` in @lezer/highlight, so they
+ * cannot be expressed as Tailwind utilities -- the markup is generated from a parse tree rather
+ * than authored. This is the third-party integration override that docs/frontend.md allows for.
+ *
+ * Colors are tokens rather than literals so the code surface can be re-themed in one place. It is
+ * currently dark in both light and dark mode by design; see the note on --color-code-surface.
+ */
+@layer components {
+  .tok-keyword,
+  .tok-controlKeyword,
+  .tok-moduleKeyword,
+  .tok-operatorKeyword,
+  .tok-modifier,
+  .tok-self {
+    color: var(--color-code-keyword);
+  }
+
+  .tok-string,
+  .tok-string2,
+  .tok-regexp,
+  .tok-escape {
+    color: var(--color-code-string);
+  }
+
+  .tok-number,
+  .tok-bool,
+  .tok-null,
+  .tok-atom {
+    color: var(--color-code-number);
+  }
+
+  .tok-variableName.tok-definition,
+  .tok-propertyName.tok-definition,
+  .tok-macroName {
+    color: var(--color-code-function);
+  }
+
+  .tok-typeName,
+  .tok-className,
+  .tok-namespace {
+    color: var(--color-code-type);
+  }
+
+  .tok-comment,
+  .tok-lineComment,
+  .tok-blockComment,
+  .tok-docComment {
+    color: var(--color-code-comment);
+    font-style: italic;
+  }
+
+  .tok-operator,
+  .tok-punctuation,
+  .tok-bracket,
+  .tok-separator,
+  .tok-meta {
+    color: var(--color-code-punctuation);
   }
 }

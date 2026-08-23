@@ -13,6 +13,7 @@ import {
 } from '../../api/generated/endpoints'
 import { lessonPath, modulePath } from '../../app/routes'
 import { Badge, Button, Card, PageIntro, SectionHeading } from '../../components/ui'
+import { HighlightedCode } from '../../components/HighlightedCode'
 import { useTutor } from '../tutor/TutorContext'
 import { CodeEditor } from './CodeEditor'
 import { LatestTaskQueue } from './LatestTaskQueue'
@@ -299,7 +300,11 @@ export function Exercise() {
                     <div key={test.id}>
                       <p className="mb-2 font-semibold text-ink">{test.title}</p>
                       <pre className="overflow-x-auto overscroll-x-contain rounded-lg bg-code-surface p-3 text-sm text-code-ink">
-                        <code>{test.code}</code>
+                        <code>
+                          {/* Exercise tests are Python by construction: Pyodide is the only
+                              interpreter in the learning app. */}
+                          <HighlightedCode code={test.code} language="python" />
+                        </code>
                       </pre>
                     </div>
                   ))}
