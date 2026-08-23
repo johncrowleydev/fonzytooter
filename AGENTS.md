@@ -6,7 +6,7 @@ Instructions for coding agents working in this repository.
 
 Fonzytooter is a personal, single-user technical learning system. The AI/ML curriculum is the initial/default course, but the platform is intentionally course-aware so additional authored courses can be added later without retrofitting single-course assumptions. It is still intentionally small. Favor straightforward code and explicit data flow over generalized infrastructure.
 
-Read the relevant files in `docs/` before making architectural changes. Multi-course work must follow `docs/multi-course.md`. Frontend work must also follow `docs/frontend.md`. API/backend/frontend-contract work must follow `docs/api-contract.md`, and HTTP API design must follow `docs/api-style.md`. Multi-PR autonomous work must also follow `docs/pr-marathon.md`.
+Read the relevant files in `docs/` before making architectural changes. Multi-course work must follow `docs/multi-course.md`. Frontend work must also follow `docs/frontend.md` for code conventions and `docs/ui-design-system.md` for design tokens, type scale, and interaction rules. API/backend/frontend-contract work must follow `docs/api-contract.md`, and HTTP API design must follow `docs/api-style.md`. Multi-PR autonomous work must also follow `docs/pr-marathon.md`.
 
 ## Non-negotiable architectural constraints
 
@@ -70,8 +70,14 @@ Read the relevant files in `docs/` before making architectural changes. Multi-co
 - **Ordinary server-state/API access must use the generated TanStack Query client. Do not add feature-level raw `fetch`, Axios, or handwritten API DTOs.**
 - **Generated Zod schemas are the frontend runtime API contract and the source for inferred API types via `z.infer`, `z.input`, or `z.output`.**
 - MDX is the lesson-content format.
+- **Brand hues exist in two families split by role.** `brand-*` is a solid fill under `text-brand-ink`; `accent-*` is the same hues as content — text, borders, focus outlines, tints — and is theme-aware. Using the wrong one is the difference between 9:1 and 1.8:1 in light mode.
+- **Nothing renders below 12px, and 12px is a label rather than a sentence.** There is no size below `text-xs`; a stray `text-2xs` generates no CSS at all.
+- **Focus styling is a single global `:focus-visible` rule.** Do not add per-component focus utilities, and do not use `outline-0`.
+- **A toggle button passes `pressed`, and a disabled control looks disabled.** Selection conveyed only by color reaches neither assistive technology nor anyone who cannot separate the two variants.
+- **A learner only ever reads authored prose.** Never render a curriculum identifier as visible text, never de-slugify one into prose, and never pass a state key to `aria-label`.
+- See `docs/ui-design-system.md` for the full rules and the automated guards that enforce them.
 
-See `docs/frontend.md` for the complete frontend conventions, `docs/api-contract.md` for API generation/validation rules, and `docs/api-style.md` for HTTP resource design conventions.
+See `docs/frontend.md` for the complete frontend conventions, `docs/ui-design-system.md` for the design tokens, type scale, and interaction rules, `docs/api-contract.md` for API generation/validation rules, and `docs/api-style.md` for HTTP resource design conventions.
 
 ### Python exercises
 
