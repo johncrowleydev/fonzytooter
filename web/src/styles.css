@@ -149,4 +149,28 @@
   html {
     background-color: var(--ft-canvas);
   }
+
+  /*
+   * One global focus ring rather than a utility repeated per control. Only 8 of roughly 60
+   * interactive elements carried a focus style before this; the shared Button, every navigation
+   * link, and the curriculum search input had none. A base rule is the only version of this that
+   * a new component cannot forget, which is why it is not expressed as a utility.
+   */
+  :focus-visible {
+    outline: 2px solid var(--ft-accent-teal);
+    outline-offset: 2px;
+  }
+
+  /*
+   * Without this, repeatedly tapping a control -- the review rating buttons, the tutor mode pills
+   * -- is liable to register as double-tap-to-zoom. Scoped to controls so pinch and double-tap
+   * zoom still work normally on content.
+   */
+  button,
+  a,
+  label,
+  summary,
+  [role='button'] {
+    touch-action: manipulation;
+  }
 }

@@ -97,7 +97,7 @@ function CurriculumContent({
           <span aria-hidden="true">⌕</span>
           <span className="sr-only">Search curriculum</span>
           <input
-            className="w-full border-0 bg-transparent text-sm text-ink outline-0 placeholder:text-faint"
+            className="w-full border-0 bg-transparent text-sm text-ink placeholder:text-faint"
             value={query}
             onChange={(event) => onQueryChange(event.target.value)}
             placeholder="Search modules"

@@ -90,7 +90,7 @@ export function ProgressView({
         title="Progress"
         detail={`${progress.completedLessonCount} of ${progress.totalLessonCount} lessons complete`}
       />
-      <section className="grid grid-cols-4 gap-2.5 max-lg:grid-cols-2 max-sm:grid-cols-2">
+      <section className="grid grid-cols-4 gap-2.5 max-lg:grid-cols-2">
         <SummaryStat
           value={String(introducedCount)}
           label="Introduced"
@@ -129,7 +129,7 @@ export function ProgressView({
             type="button"
             key={value}
             onClick={() => setFilter(value)}
-            className={`rounded-full border px-3 py-2 text-sm font-semibold ${filter === value ? 'border-accent-teal bg-accent-teal/10 text-ink' : 'border-line bg-panel text-muted'}`}
+            className={`rounded-full border px-3 py-2 text-sm font-semibold pointer-coarse:min-h-11 pointer-coarse:px-4 ${filter === value ? 'border-accent-teal bg-accent-teal/10 text-ink' : 'border-line bg-panel text-muted'}`}
           >
             {label}
           </button>

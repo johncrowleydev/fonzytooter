@@ -54,10 +54,12 @@ export function Button({
 }>) {
   const variants = {
     primary:
-      'border-0 bg-brand-teal text-brand-ink hover:-translate-y-px hover:bg-brand-teal-light',
-    secondary: 'border border-line-strong bg-accent-slate/10 text-ink hover:bg-accent-slate/20',
-    quiet: 'border-0 bg-transparent text-muted',
-    outline: 'border border-line bg-transparent text-ink hover:bg-accent-slate/20',
+      'border-0 bg-brand-teal text-brand-ink hover:-translate-y-px hover:bg-brand-teal-light active:translate-y-0 active:bg-brand-teal-light',
+    secondary:
+      'border border-line-strong bg-accent-slate/10 text-ink hover:bg-accent-slate/20 active:bg-accent-slate/30',
+    quiet: 'border-0 bg-transparent text-muted active:bg-accent-slate/20',
+    outline:
+      'border border-line bg-transparent text-ink hover:bg-accent-slate/20 active:bg-accent-slate/30',
   }
 
   return (
@@ -65,7 +67,12 @@ export function Button({
       type={type}
       onClick={onClick}
       disabled={disabled}
-      className={`inline-flex items-center justify-center gap-2.5 rounded-lg px-4 py-2.5 text-sm font-bold transition ${variants[variant]} ${className}`}
+      /*
+       * `pointer-coarse:min-h-11` reaches the 44px touch target without loosening the layout for a
+       * mouse, where 40px is comfortable. `active:` matters more on touch than hover does: a
+       * finger never hovers, so the press state is the only feedback a tap gets.
+       */
+      className={`inline-flex items-center justify-center gap-2.5 rounded-lg px-4 py-2.5 text-sm font-bold transition pointer-coarse:min-h-11 ${variants[variant]} ${className}`}
     >
       {children}
     </button>

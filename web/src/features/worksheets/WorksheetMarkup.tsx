@@ -66,7 +66,7 @@ function WorksheetPreformatted({ className, ...props }: ComponentPropsWithoutRef
   return (
     <pre
       className={withClassName(
-        'my-5 max-w-full overflow-x-auto rounded-lg border border-line bg-code-surface px-4 py-3 text-sm leading-6 text-code-ink',
+        'my-5 max-w-full overflow-x-auto overscroll-x-contain rounded-lg border border-line bg-code-surface px-4 py-3 text-sm leading-6 text-code-ink',
         className,
       )}
       {...props}

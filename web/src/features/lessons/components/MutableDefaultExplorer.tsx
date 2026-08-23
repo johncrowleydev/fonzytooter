@@ -9,7 +9,7 @@ const callStatusClasses = {
   waiting: 'border-line bg-raised text-muted',
 } as const
 const buttonClass =
-  'inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-teal disabled:cursor-not-allowed disabled:opacity-50'
+  'inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50'
 
 function formatValues(values: readonly number[]) {
   return `[${values.join(', ')}]`
@@ -45,7 +45,7 @@ export function MutableDefaultExplorer() {
           </p>
           <span className="text-sm font-semibold text-ink">created once</span>
         </div>
-        <pre className="mt-3 overflow-x-auto font-mono text-sm leading-relaxed text-ink">
+        <pre className="mt-3 overflow-x-auto overscroll-x-contain font-mono text-sm leading-relaxed text-ink">
           <code>{`def record(value, values=[]):\n    values.append(value)\n    return values`}</code>
         </pre>
         <div className="mt-4 flex flex-wrap items-center gap-3 rounded-md border border-accent-coral/30 bg-panel px-3 py-2">
@@ -112,7 +112,7 @@ export function MutableDefaultExplorer() {
 
       <div className="rounded-lg border border-accent-teal/30 bg-accent-teal/10 p-4">
         <p className="text-xs font-bold uppercase tracking-widest text-faint">Safe contrast</p>
-        <pre className="mt-3 overflow-x-auto font-mono text-sm leading-relaxed text-ink">
+        <pre className="mt-3 overflow-x-auto overscroll-x-contain font-mono text-sm leading-relaxed text-ink">
           <code>{`def record(value, values=None):\n    if values is None:\n        values = []\n    values.append(value)\n    return values`}</code>
         </pre>
         <p className="mt-3 text-sm leading-relaxed text-muted">

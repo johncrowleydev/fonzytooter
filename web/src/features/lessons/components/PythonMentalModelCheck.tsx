@@ -176,7 +176,7 @@ export function PythonMentalModelCheck() {
                   return (
                     <button
                       key={option.id}
-                      className={`rounded-lg border px-3 py-2.5 text-left text-sm leading-relaxed transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-teal ${getOptionClass(response, option.id)}`}
+                      className={`rounded-lg border px-3 py-2.5 text-left text-sm leading-relaxed transition ${getOptionClass(response, option.id)}`}
                       type="button"
                       onClick={() => chooseAnswer(questionIndex, option.id)}
                       disabled={response.checked}

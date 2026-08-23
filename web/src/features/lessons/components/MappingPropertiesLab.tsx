@@ -92,7 +92,7 @@ const feedbackClasses = {
   error: 'border-accent-coral/30 bg-accent-coral/10',
 } as const
 const evidenceButtonClass =
-  'rounded-lg border px-3 py-2 text-left text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-teal disabled:cursor-not-allowed disabled:opacity-50'
+  'rounded-lg border px-3 py-2 text-left text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50'
 
 export function MappingPropertiesLab() {
   const [stage, setStage] = useState(0)
@@ -591,7 +591,7 @@ function StageContent({
               <label className="grid gap-1.5 text-sm text-muted">
                 Classification
                 <select
-                  className="rounded-md border border-line-strong bg-panel px-3 py-2 text-sm text-ink outline-0 focus-visible:border-accent-teal focus-visible:ring-2 focus-visible:ring-accent-teal/30"
+                  className="rounded-md border border-line-strong bg-panel px-3 py-2 text-sm text-ink focus-visible:border-accent-teal"
                   value={classifications[mapping.id] ?? ''}
                   onChange={(event) => onClassify(mapping.id, event.target.value)}
                 >

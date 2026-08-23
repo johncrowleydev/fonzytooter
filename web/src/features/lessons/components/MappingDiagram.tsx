@@ -59,8 +59,7 @@ type MappingDiagramProps = {
   singleOutput?: boolean
 }
 
-const nodeButtonClass =
-  'rounded-lg border px-3 py-2 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-teal'
+const nodeButtonClass = 'rounded-lg border px-3 py-2 text-sm font-semibold transition'
 
 export function MappingDiagram({
   domain,
