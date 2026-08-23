@@ -1,0 +1,35 @@
+id: numpy.axis-reduction
+title: Reduce Along the Intended Axis
+lessonId: 04-vectorized-thinking
+order: 2
+objectiveIds:
+  - numpy.vectorization
+prompt: |
+  Implement `column_means(x)` so it returns the mean of each column in a
+  two-dimensional NumPy array. Express the operation as one NumPy reduction.
+starterCode: |
+  import numpy as np
+
+  def column_means(x):
+      pass
+tests:
+  - id: basic-columns
+    title: Computes column means
+    visibility: visible
+    code: |
+      x = np.array([[1.0, 10.0, 100.0], [3.0, 30.0, 300.0]])
+      result = column_means(x)
+      assert np.allclose(result, np.array([2.0, 20.0, 200.0]))
+  - id: result-shape
+    title: Collapses axis zero
+    visibility: visible
+    code: |
+      x = np.arange(20, dtype=float).reshape(4, 5)
+      result = column_means(x)
+      assert result.shape == (5,)
+  - id: unseen-shape
+    title: Works for another two-dimensional shape
+    visibility: hidden
+    code: |
+      x = np.arange(18, dtype=float).reshape(6, 3)
+      assert np.allclose(column_means(x), x.mean(axis=0))

@@ -1,0 +1,247 @@
+id: broadcasting-and-shape-reasoning
+title: Broadcasting and Shape Reasoning
+lessonId: 05-broadcasting
+order: 1
+objectiveIds:
+  - numpy.broadcasting
+instructions: |
+  For every broadcasting problem, write the shapes right-aligned before deciding
+  whether the operation works. Do not rely on row/column intuition alone. Show
+  the first incompatible axis when broadcasting fails and the resulting shape
+  when it succeeds.
+problems:
+  - id: scalar-broadcast
+    prompt: |
+      Explain why a scalar can participate in an element-wise operation with an
+      array of shape `(3, 4)`. What result shape should you expect?
+    objectiveIds:
+      - numpy.broadcasting
+    expectedAnswer: |
+      A scalar has no explicit axes, so broadcasting treats missing leading axes
+      as size 1. It can therefore be reused at every position of the `(3, 4)`
+      array. The result shape is `(3, 4)`.
+    requiresWork: true
+    responseLines: 5
+    rubric:
+      - Connects a scalar to implicit size-1 axes.
+      - Gives result shape `(3, 4)`.
+
+  - id: vector-with-matrix
+    prompt: |
+      Determine whether these shapes broadcast and give the result shape:
+
+      ```text
+      (5, 4)
+         (4,)
+      ```
+
+      Show the right-aligned comparison.
+    objectiveIds:
+      - numpy.broadcasting
+    expectedAnswer: |
+      Align as `(5, 4)` and `(1, 4)`. The `4`s match and `5` is compatible
+      with `1`, so broadcasting succeeds with result shape `(5, 4)`.
+    requiresWork: true
+    responseLines: 5
+    rubric:
+      - Right-aligns the shapes.
+      - Applies equal-or-1 compatibility correctly.
+      - Gives `(5, 4)`.
+
+  - id: incompatible-vector
+    prompt: |
+      Determine whether these shapes broadcast:
+
+      ```text
+      (8, 3)
+         (8,)
+      ```
+
+      Identify the first comparison that decides the answer.
+    objectiveIds:
+      - numpy.broadcasting
+    expectedAnswer: |
+      Right-aligning gives `(8, 3)` and `(1, 8)`. The rightmost dimensions are
+      `3` and `8`; they are unequal and neither is 1, so broadcasting fails.
+    requiresWork: true
+    responseLines: 5
+    rubric:
+      - Right-aligns the shorter shape.
+      - Identifies `3` versus `8` as incompatible.
+
+  - id: higher-dimensional-success
+    prompt: |
+      Determine the result shape:
+
+      ```text
+      (4, 1, 6)
+         (3, 6)
+      ```
+
+      Show all axis comparisons.
+    objectiveIds:
+      - numpy.broadcasting
+    expectedAnswer: |
+      Align as `(4, 1, 6)` and `(1, 3, 6)`. The comparisons are `6` with `6`,
+      `1` with `3`, and `4` with `1`; all are compatible. The result shape is
+      `(4, 3, 6)`.
+    requiresWork: true
+    responseLines: 7
+    rubric:
+      - Inserts the conceptual leading 1 correctly.
+      - Checks all three axes.
+      - Gives `(4, 3, 6)`.
+
+  - id: two-singleton-axes
+    prompt: |
+      Predict the result shape of an element-wise operation between arrays with
+      shapes `(3, 1)` and `(1, 7)`. Explain what each singleton axis does.
+    objectiveIds:
+      - numpy.broadcasting
+    expectedAnswer: |
+      The result shape is `(3, 7)`. The first array's size-1 second axis can
+      expand to 7; the second array's size-1 first axis can expand to 3.
+    requiresWork: true
+    responseLines: 5
+    rubric:
+      - Gives `(3, 7)`.
+      - Explains expansion along both singleton axes.
+
+  - id: missing-leading-dimensions
+    prompt: |
+      Determine whether `(2, 5, 4)` and `(5, 4)` broadcast. Why does the
+      shorter shape align with the final two axes rather than the first two?
+    objectiveIds:
+      - numpy.broadcasting
+    expectedAnswer: |
+      They broadcast to `(2, 5, 4)`. Broadcasting compares dimensions from the
+      right, so `(5, 4)` behaves like `(1, 5, 4)`, not `(5, 4, 1)`.
+    requiresWork: true
+    responseLines: 5
+    rubric:
+      - Applies right alignment.
+      - Gives `(2, 5, 4)`.
+      - Rejects left alignment as the rule.
+
+  - id: column-offsets
+    prompt: |
+      A dataset has shape `(120, 3)`: 120 observations and 3 features. A feature
+      offset array has shape `(3,)`.
+
+      Explain why `data - offsets` broadcasts in the intended direction and
+      give the result shape.
+    objectiveIds:
+      - numpy.broadcasting
+    expectedAnswer: |
+      `(3,)` aligns as `(1, 3)`, so each of the three offsets corresponds to the
+      three positions of axis 1 and is reused across all 120 positions of axis
+      0. The result shape is `(120, 3)`.
+    requiresWork: true
+    responseLines: 6
+    rubric:
+      - Connects the final axis to the three features.
+      - Gives result shape `(120, 3)`.
+
+  - id: row-means-fail
+    prompt: |
+      Let `x.shape == (4, 3)`. A reduction gives:
+
+      ```python
+      row_means = x.mean(axis=1)
+      ```
+
+      What is `row_means.shape`? Why does `x - row_means` fail even though there
+      is one mean for each of the four rows?
+    objectiveIds:
+      - numpy.broadcasting
+    expectedAnswer: |
+      `row_means.shape` is `(4,)`. Right-aligned against `(4, 3)`, that behaves
+      like `(1, 4)`, so the rightmost comparison is `3` versus `4` and fails.
+      Broadcasting follows shape position, not the human semantic fact that
+      there are four rows and four means.
+    requiresWork: true
+    responseLines: 7
+    rubric:
+      - Gives `(4,)` for the reduced shape.
+      - Shows the rightmost `3` versus `4` incompatibility.
+      - Distinguishes shape rules from semantic intent.
+
+  - id: keepdims-fix
+    prompt: |
+      Continue the previous problem. What shape does
+
+      ```python
+      x.mean(axis=1, keepdims=True)
+      ```
+
+      have, and why does that shape broadcast correctly against `(4, 3)`?
+    objectiveIds:
+      - numpy.broadcasting
+    expectedAnswer: |
+      The shape is `(4, 1)`. Against `(4, 3)`, the first dimensions match and
+      the size-1 final dimension expands to 3, producing result shape `(4, 3)`.
+    requiresWork: true
+    responseLines: 5
+    rubric:
+      - Gives `(4, 1)`.
+      - Explains how the retained singleton axis enables the intended broadcast.
+
+  - id: silent-grid-surprise
+    prompt: |
+      Predict the shape of:
+
+      ```python
+      left = np.zeros((3, 1))
+      right = np.zeros((3,))
+      result = left + right
+      ```
+
+      Why is this especially dangerous if the programmer expected three
+      pairwise results?
+    objectiveIds:
+      - numpy.broadcasting
+    expectedAnswer: |
+      `(3, 1)` and `(3,)` align as `(3, 1)` and `(1, 3)`, so the result shape is
+      `(3, 3)`. The operation is legal, so NumPy raises no error even though the
+      programmer may have intended pairwise addition. The values can look
+      plausible while the structure is wrong.
+    requiresWork: true
+    responseLines: 7
+    rubric:
+      - Gives `(3, 3)`.
+      - Shows the conceptual `(1, 3)` alignment.
+      - Identifies legal-but-unintended broadcasting as the danger.
+
+  - id: result-shape-rule
+    prompt: |
+      When two dimensions are broadcast-compatible but unequal because one is
+      `1`, how is the corresponding result dimension chosen? Use `(6, 1)` and
+      `(1, 9)` as an example.
+    objectiveIds:
+      - numpy.broadcasting
+    expectedAnswer: |
+      The result takes the larger compatible size at each position. Therefore
+      `(6, 1)` with `(1, 9)` produces `(6, 9)`.
+    requiresWork: true
+    responseLines: 4
+    rubric:
+      - States the larger-compatible-dimension rule.
+      - Gives `(6, 9)`.
+
+  - id: conceptual-not-physical-copy
+    prompt: |
+      Broadcasting is often explained as if a smaller array were repeated to
+      match a larger one. What is useful about that picture, and what should you
+      *not* infer about memory allocation from it?
+    objectiveIds:
+      - numpy.broadcasting
+    expectedAnswer: |
+      Imaginary repetition is a useful way to reason about the values produced.
+      It should not be interpreted as NumPy necessarily allocating a physically
+      repeated copy of the smaller array. Broadcasting commonly supplies those
+      semantics without materializing the expanded array.
+    requiresWork: true
+    responseLines: 5
+    rubric:
+      - Identifies repetition as a reasoning model.
+      - Avoids claiming that physical copies must be allocated.

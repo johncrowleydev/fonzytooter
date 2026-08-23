@@ -14,8 +14,8 @@ func TestLoadRealWorksheets(t *testing.T) {
 	if err != nil {
 		t.Fatalf("load real curriculum: %v", err)
 	}
-	if catalog.WorksheetCount() != 4 {
-		t.Fatalf("worksheet count = %d, want 4", catalog.WorksheetCount())
+	if catalog.WorksheetCount() != 6 {
+		t.Fatalf("worksheet count = %d, want 6", catalog.WorksheetCount())
 	}
 
 	worksheets := catalog.WorksheetsByModule("ai-ml", "scientific-python")
@@ -24,6 +24,8 @@ func TestLoadRealWorksheets(t *testing.T) {
 		"function-mappings-and-properties",
 		"inverses-and-composition",
 		"functions-in-machine-learning",
+		"array-shapes-and-indexing",
+		"broadcasting-and-shape-reasoning",
 	}
 	if len(worksheets) != len(wantIDs) {
 		t.Fatalf("module worksheets = %#v", worksheets)
