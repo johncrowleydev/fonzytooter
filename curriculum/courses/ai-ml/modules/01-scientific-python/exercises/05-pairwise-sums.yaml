@@ -1,0 +1,41 @@
+id: numpy.pairwise-sums
+title: Avoid the Silent Broadcast Grid
+lessonId: 05-broadcasting
+order: 3
+objectiveIds:
+  - numpy.broadcasting
+prompt: |
+  Implement `pairwise_sums(left, right)` for inputs where `left` may arrive with
+  shape `(n, 1)` and `right` with shape `(n,)`. Return the `n` pairwise sums as
+  a one-dimensional array with shape `(n,)`, not an `(n, n)` broadcast grid.
+
+  Reshape or index the data so the shapes express pairwise intent before adding.
+starterCode: |
+  import numpy as np
+
+  def pairwise_sums(left, right):
+      pass
+tests:
+  - id: basic-pairs
+    title: Returns pairwise sums instead of a grid
+    visibility: visible
+    code: |
+      left = np.array([[1], [2], [3]])
+      right = np.array([10, 20, 30])
+      result = pairwise_sums(left, right)
+      assert np.array_equal(result, np.array([11, 22, 33]))
+  - id: one-dimensional-result
+    title: Returns shape n rather than n by n
+    visibility: visible
+    code: |
+      left = np.arange(5).reshape(5, 1)
+      right = np.arange(10, 15)
+      result = pairwise_sums(left, right)
+      assert result.shape == (5,)
+  - id: unseen-values
+    title: Works for unseen pairwise values
+    visibility: hidden
+    code: |
+      left = np.array([[7], [-2], [4], [9]])
+      right = np.array([1, 5, -3, 2])
+      assert np.array_equal(pairwise_sums(left, right), np.array([8, 3, 1, 11]))
