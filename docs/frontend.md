@@ -2,6 +2,8 @@
 
 Fonzytooter's frontend should remain simple, explicit, and easy for a human developer to read and evolve. These rules are intentionally opinionated because the application will be worked on heavily by coding agents, and generated code must remain maintainable after the prototype phase.
 
+This document covers how frontend **code** should be written. `docs/ui-design-system.md` covers what the interface should **look like and how it should behave**: the design tokens, the type scale, theme handling, and the interaction rules that apply across touch, touchpad, mouse, and keyboard. Read both before styling work — the token rules in particular are load bearing, because choosing the wrong color family is the difference between 9:1 and 1.8:1 contrast in light mode.
+
 ## Stack
 
 The frontend stack is:
@@ -64,6 +66,8 @@ Values that are intentionally part of Fonzytooter's visual language should be de
 Prefer a small, explicit set of project design tokens over repeatedly writing utilities such as `text-[var(--teal)]`, `bg-[var(--panel)]`, or the same raw RGBA value throughout the component tree.
 
 Theme configuration is part of using Tailwind correctly. It is not considered a parallel handcrafted CSS design system.
+
+The tokens themselves — which families exist, what each is for, and which are theme-aware — are defined in `docs/ui-design-system.md`. Do not introduce a new color, surface, or font size without reading it: several of the tokens replaced a hardcoded value that measured below 3:1 in one of the two themes, and the guards described there will fail on a reintroduction.
 
 ### Arbitrary-value utilities are an escape hatch
 
@@ -239,4 +243,5 @@ Before considering frontend work complete, verify:
 - JSX is formatted for human readability;
 - feature components have understandable responsibilities;
 - navigation controls use correct link semantics;
-- no unnecessary global state or framework abstractions were introduced.
+- no unnecessary global state or framework abstractions were introduced;
+- the design-system checklist in `docs/ui-design-system.md` passes, including its automated guards.

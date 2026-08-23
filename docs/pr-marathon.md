@@ -141,6 +141,23 @@ Review and merge from the bottom of the dependency chain upward: PR 1 first, the
 
 After a predecessor is merged, the next PR should be retargeted to `main` and its branch updated/rebased if necessary so the PR shows only its intended incremental changes.
 
+**The retarget step is not optional, and skipping it silently loses work.** A pull request merges into its base branch. GitHub retargets a child to `main` only once its parent has actually merged, and that retarget does not reliably land if the stack is merged in quick succession. Every pull request whose base is still the parent branch then merges into a branch `main` never sees again — while reporting as merged, with no failing check, no conflict, and no broken build.
+
+This has happened twice in this repository, orphaning eight pull requests across two stacks. In both cases only the pull request whose base was already `main` actually landed.
+
+Two safe procedures, either of which avoids it:
+
+- **Merge only the top branch of the stack.** For a linear stack the top branch already contains every commit below it, so one merge integrates the whole marathon. The lower pull requests then close as merged on their own.
+- **Or retarget each pull request to `main` before merging it, one at a time**, confirming the retarget took effect before moving to the next.
+
+After any stack merge, confirm the work actually arrived:
+
+```bash
+git merge-base --is-ancestor "$(gh pr view <number> --json headRefOid --jq .headRefOid)" origin/main
+```
+
+The `Merge topology` workflow enforces both halves of this automatically: it fails a pull request whose base branch has already been merged, and audits `main` for merged work that is unreachable from it. Note that a branch force-pushed *after* its pull request merged has to be recorded in `.github/reconciled-pull-requests.txt`, because GitHub then reports a rebased tip that `main` has never seen even though the original commits landed.
+
 An agent may perform that branch maintenance if asked or if it remains active during the review phase, but it still may not perform the merge itself without explicit authorization.
 
 If stacking is impractical for a particular repository/tool limitation, the marathon must pause at the dependency boundary rather than silently merge a predecessor.
