@@ -1,0 +1,7 @@
+id: composition-order
+order: 14
+objectiveIds:
+  - python.functions
+sourceLessonId: 02-functions-code-and-mathematics
+prompt: In the composition `(f ∘ g)(x)`, which function is applied first?
+answer: `g` is applied first, then `f`: `(f ∘ g)(x) = f(g(x))`.
