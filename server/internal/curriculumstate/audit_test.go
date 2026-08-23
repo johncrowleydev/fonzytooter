@@ -79,7 +79,7 @@ func TestAuditReportsRemovedLessonExerciseTestAndReviewHistoryDeterministically(
 
 func TestAuditValidatesKnownActivityIdentityColumns(t *testing.T) {
 	db := openTestDatabase(t)
-	if _, err := db.Exec(`INSERT INTO activities (kind, course_id, module_id, occurred_at) VALUES ('exercise_checked', 'ai-ml', 'module', '2026-01-01')`); err != nil {
+	if _, err := db.Exec(`INSERT INTO activities (user_id, kind, course_id, module_id, occurred_at) VALUES ('00000000-0000-4000-8000-000000000001', 'exercise_checked', 'ai-ml', 'module', '2026-01-01')`); err != nil {
 		t.Fatal(err)
 	}
 	report, err := Audit(context.Background(), db, catalog(t, identitySet{"lesson", "exercise", "test", "review"}))
@@ -280,7 +280,7 @@ migrations:
 func TestApplyMigrationsRollsBackDatabaseIdentityCollision(t *testing.T) {
 	db := openTestDatabase(t)
 	seedHistory(t, db, identitySet{"lesson", "exercise", "test", "review"})
-	if _, err := db.Exec(`INSERT INTO lesson_progress (course_id, module_id, lesson_id, completed, updated_at) VALUES ('ai-ml', 'module', 'lesson-new', 0, '2026-01-02')`); err != nil {
+	if _, err := db.Exec(`INSERT INTO lesson_progress (user_id, course_id, module_id, lesson_id, completed, updated_at) VALUES ('00000000-0000-4000-8000-000000000001', 'ai-ml', 'module', 'lesson-new', 0, '2026-01-02')`); err != nil {
 		t.Fatal(err)
 	}
 	current := catalog(t, identitySet{"lesson-new", "exercise", "test", "review"})
@@ -366,15 +366,15 @@ func openTestDatabase(t *testing.T) *sql.DB {
 func seedHistory(t *testing.T, db *sql.DB, ids identitySet) {
 	t.Helper()
 	statements := []string{
-		`INSERT INTO lesson_progress (course_id, module_id, lesson_id, completed, completed_at, updated_at) VALUES ('ai-ml', 'module', '` + ids.lesson + `', 1, '2026-01-01', '2026-01-01')`,
-		`INSERT INTO activities (kind, course_id, module_id, lesson_id, occurred_at) VALUES ('lesson_completed', 'ai-ml', 'module', '` + ids.lesson + `', '2026-01-01')`,
-		`INSERT INTO activities (kind, course_id, module_id, exercise_id, occurred_at) VALUES ('exercise_checked', 'ai-ml', 'module', '` + ids.exercise + `', '2026-01-02')`,
-		`INSERT INTO activities (kind, course_id, module_id, review_item_id, occurred_at) VALUES ('review_completed', 'ai-ml', 'module', '` + ids.review + `', '2026-01-03')`,
-		`INSERT INTO exercise_workspaces (course_id, module_id, exercise_id, code, updated_at) VALUES ('ai-ml', 'module', '` + ids.exercise + `', 'saved code', '2026-01-01')`,
-		`INSERT INTO exercise_attempts (id, course_id, module_id, exercise_id, created_at, passed_count, failed_count, duration_ms, all_passed, code_snapshot) VALUES (1, 'ai-ml', 'module', '` + ids.exercise + `', '2026-01-01', 1, 0, 5, 1, 'attempt code')`,
-		`INSERT INTO exercise_test_results (attempt_id, test_id, status, message, duration_ms) VALUES (1, '` + ids.test + `', 'passed', 'history', 5)`,
-		`INSERT INTO review_cards (course_id, module_id, review_item_id, due_at, stability, difficulty, scheduled_days, reps, lapses, state, last_review_at, remaining_steps, updated_at) VALUES ('ai-ml', 'module', '` + ids.review + `', '2026-01-02', 1, 5, 1, 2, 0, 2, '2026-01-01', 0, '2026-01-01')`,
-		`INSERT INTO review_logs (id, course_id, module_id, review_item_id, reviewed_at, rating, previous_due, next_due, before_stability, after_stability, before_difficulty, after_difficulty, before_scheduled_days, after_scheduled_days, before_reps, after_reps, before_lapses, after_lapses, before_state, after_state, before_last_review_at, after_last_review_at, before_remaining_steps, after_remaining_steps) VALUES (1, 'ai-ml', 'module', '` + ids.review + `', '2026-01-01', 'good', '2026-01-01', '2026-01-02', 1, 2, 5, 5, 0, 1, 1, 2, 0, 0, 1, 2, NULL, '2026-01-01', 1, 0)`,
+		`INSERT INTO lesson_progress (user_id, course_id, module_id, lesson_id, completed, completed_at, updated_at) VALUES ('00000000-0000-4000-8000-000000000001', 'ai-ml', 'module', '` + ids.lesson + `', 1, '2026-01-01', '2026-01-01')`,
+		`INSERT INTO activities (user_id, kind, course_id, module_id, lesson_id, occurred_at) VALUES ('00000000-0000-4000-8000-000000000001', 'lesson_completed', 'ai-ml', 'module', '` + ids.lesson + `', '2026-01-01')`,
+		`INSERT INTO activities (user_id, kind, course_id, module_id, exercise_id, occurred_at) VALUES ('00000000-0000-4000-8000-000000000001', 'exercise_checked', 'ai-ml', 'module', '` + ids.exercise + `', '2026-01-02')`,
+		`INSERT INTO activities (user_id, kind, course_id, module_id, review_item_id, occurred_at) VALUES ('00000000-0000-4000-8000-000000000001', 'review_completed', 'ai-ml', 'module', '` + ids.review + `', '2026-01-03')`,
+		`INSERT INTO exercise_workspaces (user_id, course_id, module_id, exercise_id, code, updated_at) VALUES ('00000000-0000-4000-8000-000000000001', 'ai-ml', 'module', '` + ids.exercise + `', 'saved code', '2026-01-01')`,
+		`INSERT INTO exercise_attempts (id, user_id, course_id, module_id, exercise_id, created_at, passed_count, failed_count, duration_ms, all_passed, code_snapshot) VALUES (1, '00000000-0000-4000-8000-000000000001', 'ai-ml', 'module', '` + ids.exercise + `', '2026-01-01', 1, 0, 5, 1, 'attempt code')`,
+		`INSERT INTO exercise_test_results (user_id, attempt_id, test_id, status, message, duration_ms) VALUES ('00000000-0000-4000-8000-000000000001', 1, '` + ids.test + `', 'passed', 'history', 5)`,
+		`INSERT INTO review_cards (user_id, course_id, module_id, review_item_id, due_at, stability, difficulty, scheduled_days, reps, lapses, state, last_review_at, remaining_steps, updated_at) VALUES ('00000000-0000-4000-8000-000000000001', 'ai-ml', 'module', '` + ids.review + `', '2026-01-02', 1, 5, 1, 2, 0, 2, '2026-01-01', 0, '2026-01-01')`,
+		`INSERT INTO review_logs (id, user_id, course_id, module_id, review_item_id, reviewed_at, rating, previous_due, next_due, before_stability, after_stability, before_difficulty, after_difficulty, before_scheduled_days, after_scheduled_days, before_reps, after_reps, before_lapses, after_lapses, before_state, after_state, before_last_review_at, after_last_review_at, before_remaining_steps, after_remaining_steps) VALUES (1, '00000000-0000-4000-8000-000000000001', 'ai-ml', 'module', '` + ids.review + `', '2026-01-01', 'good', '2026-01-01', '2026-01-02', 1, 2, 5, 5, 0, 1, 1, 2, 0, 0, 1, 2, NULL, '2026-01-01', 1, 0)`,
 	}
 	for _, statement := range statements {
 		if _, err := db.Exec(statement); err != nil {

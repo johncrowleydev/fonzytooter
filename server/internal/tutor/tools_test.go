@@ -26,7 +26,7 @@ func TestTypedToolSchemaValidationAndExecution(t *testing.T) {
 			}
 			return nil
 		},
-		func(_ context.Context, arguments echoToolArguments) (echoToolResult, error) {
+		func(_ context.Context, _ testAuthUserID, arguments echoToolArguments) (echoToolResult, error) {
 			return echoToolResult{Echo: arguments.Text}, nil
 		},
 	)
@@ -37,7 +37,7 @@ func TestTypedToolSchemaValidationAndExecution(t *testing.T) {
 	if definition.Name != "echo" || !json.Valid(definition.InputSchema) || !strings.Contains(string(definition.InputSchema), `"text"`) {
 		t.Fatalf("unexpected tool definition: %#v", definition)
 	}
-	result, err := tool.Execute(context.Background(), json.RawMessage(`{"text":"hello"}`))
+	result, err := tool.Execute(context.Background(), testUserID, json.RawMessage(`{"text":"hello"}`))
 	if err != nil {
 		t.Fatalf("execute typed tool: %v", err)
 	}
@@ -45,20 +45,20 @@ func TestTypedToolSchemaValidationAndExecution(t *testing.T) {
 		t.Fatalf("unexpected tool result: %s", result)
 	}
 	for _, invalid := range []string{`{`, `{}`, `{"text":""}`, `{"text":"ok","extra":true}`, `{"text":"ok"} {}`} {
-		if _, err := tool.Execute(context.Background(), json.RawMessage(invalid)); !errors.Is(err, ErrToolArgumentsInvalid) {
+		if _, err := tool.Execute(context.Background(), testUserID, json.RawMessage(invalid)); !errors.Is(err, ErrToolArgumentsInvalid) {
 			t.Fatalf("expected invalid arguments for %s, got %v", invalid, err)
 		}
 	}
 }
 
 func TestToolRegistryRejectsDuplicatesUnknownAndDisallowedTools(t *testing.T) {
-	first, err := NewTypedTool[echoToolArguments, echoToolResult]("echo", "Echo text.", nil, func(_ context.Context, arguments echoToolArguments) (echoToolResult, error) {
+	first, err := NewTypedTool[echoToolArguments, echoToolResult]("echo", "Echo text.", nil, func(_ context.Context, _ testAuthUserID, arguments echoToolArguments) (echoToolResult, error) {
 		return echoToolResult{Echo: arguments.Text}, nil
 	})
 	if err != nil {
 		t.Fatalf("create first tool: %v", err)
 	}
-	second, err := NewTypedTool[echoToolArguments, echoToolResult]("second", "A second tool.", nil, func(_ context.Context, arguments echoToolArguments) (echoToolResult, error) {
+	second, err := NewTypedTool[echoToolArguments, echoToolResult]("second", "A second tool.", nil, func(_ context.Context, _ testAuthUserID, arguments echoToolArguments) (echoToolResult, error) {
 		return echoToolResult{Echo: arguments.Text}, nil
 	})
 	if err != nil {
@@ -81,23 +81,23 @@ func TestToolRegistryRejectsDuplicatesUnknownAndDisallowedTools(t *testing.T) {
 	if _, err := registry.Definitions([]string{"missing"}); !errors.Is(err, ErrUnknownTool) {
 		t.Fatalf("expected unknown definition error, got %v", err)
 	}
-	if _, err := registry.Execute(context.Background(), "missing", json.RawMessage(`{}`), nil); !errors.Is(err, ErrUnknownTool) {
+	if _, err := registry.Execute(context.Background(), testUserID, "missing", json.RawMessage(`{}`), nil); !errors.Is(err, ErrUnknownTool) {
 		t.Fatalf("expected unknown execution error, got %v", err)
 	}
-	if _, err := registry.Execute(context.Background(), "second", json.RawMessage(`{"text":"ok"}`), []string{"echo"}); !errors.Is(err, ErrToolNotAllowed) {
+	if _, err := registry.Execute(context.Background(), testUserID, "second", json.RawMessage(`{"text":"ok"}`), []string{"echo"}); !errors.Is(err, ErrToolNotAllowed) {
 		t.Fatalf("expected disallowed execution error, got %v", err)
 	}
 }
 
 func TestTypedToolPropagatesExecutionError(t *testing.T) {
 	executionError := errors.New("deterministic failure")
-	tool, err := NewTypedTool[echoToolArguments, echoToolResult]("echo", "Echo text.", nil, func(context.Context, echoToolArguments) (echoToolResult, error) {
+	tool, err := NewTypedTool[echoToolArguments, echoToolResult]("echo", "Echo text.", nil, func(context.Context, testAuthUserID, echoToolArguments) (echoToolResult, error) {
 		return echoToolResult{}, executionError
 	})
 	if err != nil {
 		t.Fatalf("create tool: %v", err)
 	}
-	if _, err := tool.Execute(context.Background(), json.RawMessage(`{"text":"ok"}`)); !errors.Is(err, executionError) {
+	if _, err := tool.Execute(context.Background(), testUserID, json.RawMessage(`{"text":"ok"}`)); !errors.Is(err, executionError) {
 		t.Fatalf("expected execution error, got %v", err)
 	}
 }

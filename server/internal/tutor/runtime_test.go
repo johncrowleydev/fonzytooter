@@ -50,7 +50,7 @@ type staticTurnContextBuilder struct {
 	err     error
 }
 
-func (b staticTurnContextBuilder) Build(context.Context, TurnRequest) (TurnContext, error) {
+func (b staticTurnContextBuilder) Build(context.Context, testAuthUserID, TurnRequest) (TurnContext, error) {
 	return b.context, b.err
 }
 
@@ -62,7 +62,7 @@ func TestRuntimeDirectResponsePersistsConversationAndEmitsNormalizedEvents(t *te
 	}}}}
 	service, store := newRuntimeForTest(t, provider, nil, DefaultMaxModelRounds)
 	conversation := createConversationWithMessages(t, store)
-	events, err := service.StreamTurn(context.Background(), TurnRequest{
+	events, err := service.StreamTurn(context.Background(), testUserID, TurnRequest{
 		ConversationID: conversation.ID,
 		Message:        "What does a gradient mean?",
 		PageContext:    &PageContext{Type: "lesson", CourseID: "ai-ml", LessonID: "gradients", LessonTitle: "Client-supplied stale title"},
@@ -75,7 +75,7 @@ func TestRuntimeDirectResponsePersistsConversationAndEmitsNormalizedEvents(t *te
 	if collected[0].ConversationID != conversation.ID || collected[0].Text != "A gradient points uphill." {
 		t.Fatalf("unexpected text event: %#v", collected[0])
 	}
-	messages, err := store.Messages(context.Background(), conversation.ID)
+	messages, err := store.Messages(context.Background(), testUserID, conversation.ID)
 	if err != nil {
 		t.Fatalf("load messages: %v", err)
 	}
@@ -111,13 +111,13 @@ func TestRuntimePersistsContinuationStateAcrossUserTurns(t *testing.T) {
 	}}
 	service, store := newRuntimeForTest(t, provider, nil, DefaultMaxModelRounds)
 	conversation := createConversationWithMessages(t, store)
-	first, err := service.StreamTurn(context.Background(), TurnRequest{ConversationID: conversation.ID, Message: "First question."})
+	first, err := service.StreamTurn(context.Background(), testUserID, TurnRequest{ConversationID: conversation.ID, Message: "First question."})
 	if err != nil {
 		t.Fatalf("start first turn: %v", err)
 	}
 	collectTutorEvents(t, first)
 
-	persisted, err := store.Messages(context.Background(), conversation.ID)
+	persisted, err := store.Messages(context.Background(), testUserID, conversation.ID)
 	if err != nil {
 		t.Fatalf("load persisted first turn: %v", err)
 	}
@@ -125,7 +125,7 @@ func TestRuntimePersistsContinuationStateAcrossUserTurns(t *testing.T) {
 		t.Fatalf("continuation state was not persisted: %#v", persisted)
 	}
 
-	second, err := service.StreamTurn(context.Background(), TurnRequest{ConversationID: conversation.ID, Message: "Second question."})
+	second, err := service.StreamTurn(context.Background(), testUserID, TurnRequest{ConversationID: conversation.ID, Message: "Second question."})
 	if err != nil {
 		t.Fatalf("start second turn: %v", err)
 	}
@@ -150,7 +150,7 @@ func TestRuntimeCreatesApplicationOwnedConversation(t *testing.T) {
 		{Type: ProviderEventCompleted},
 	}}}}
 	service, store := newRuntimeForTest(t, provider, nil, DefaultMaxModelRounds)
-	events, err := service.StreamTurn(context.Background(), TurnRequest{Message: "start", PageContext: &PageContext{CourseID: "ai-ml"}})
+	events, err := service.StreamTurn(context.Background(), testUserID, TurnRequest{Message: "start", PageContext: &PageContext{CourseID: "ai-ml"}})
 	if err != nil {
 		t.Fatalf("stream turn: %v", err)
 	}
@@ -159,7 +159,7 @@ func TestRuntimeCreatesApplicationOwnedConversation(t *testing.T) {
 	if conversationID == "" {
 		t.Fatal("created conversation ID was not emitted")
 	}
-	conversation, err := store.Conversation(context.Background(), conversationID)
+	conversation, err := store.Conversation(context.Background(), testUserID, conversationID)
 	if err != nil {
 		t.Fatalf("load created conversation: %v", err)
 	}
@@ -186,7 +186,7 @@ func TestRuntimeSingleToolRoundTripPersistsCorrelationAndResult(t *testing.T) {
 	}}
 	service, store := newRuntimeForTest(t, provider, []Tool{tool}, DefaultMaxModelRounds)
 	conversation := createConversationWithMessages(t, store)
-	events, err := service.StreamTurn(context.Background(), TurnRequest{ConversationID: conversation.ID, Message: "Check the evidence."})
+	events, err := service.StreamTurn(context.Background(), testUserID, TurnRequest{ConversationID: conversation.ID, Message: "Check the evidence."})
 	if err != nil {
 		t.Fatalf("stream turn: %v", err)
 	}
@@ -195,7 +195,7 @@ func TestRuntimeSingleToolRoundTripPersistsCorrelationAndResult(t *testing.T) {
 	if collected[0].ToolCallID != "call-1" || collected[1].Error != "" {
 		t.Fatalf("unexpected tool events: %#v", collected[:2])
 	}
-	toolCalls, err := store.ToolCalls(context.Background(), conversation.ID)
+	toolCalls, err := store.ToolCalls(context.Background(), testUserID, conversation.ID)
 	if err != nil {
 		t.Fatalf("load tool calls: %v", err)
 	}
@@ -218,7 +218,7 @@ func TestRuntimeRecoversInterruptedPendingCallsBeforeNextTurn(t *testing.T) {
 	}}}}
 	service, store := newRuntimeForTest(t, provider, nil, DefaultMaxModelRounds)
 	conversation := createConversationWithMessages(t, store)
-	response, err := store.AppendAssistantResponse(context.Background(), conversation.ID, nil, []ToolCallInput{{
+	response, err := store.AppendAssistantResponse(context.Background(), testUserID, conversation.ID, nil, []ToolCallInput{{
 		RequestID: "interrupted-call",
 		Name:      "echo",
 		Arguments: json.RawMessage(`{"text":"unfinished"}`),
@@ -227,14 +227,14 @@ func TestRuntimeRecoversInterruptedPendingCallsBeforeNextTurn(t *testing.T) {
 		t.Fatalf("persist interrupted assistant response: %v", err)
 	}
 
-	events, err := service.StreamTurn(context.Background(), TurnRequest{ConversationID: conversation.ID, Message: "Continue."})
+	events, err := service.StreamTurn(context.Background(), testUserID, TurnRequest{ConversationID: conversation.ID, Message: "Continue."})
 	if err != nil {
 		t.Fatalf("stream next turn: %v", err)
 	}
 	collected := collectTutorEvents(t, events)
 	assertEventTypes(t, collected, EventTextDelta, EventCompleted)
 
-	calls, err := store.ToolCalls(context.Background(), conversation.ID)
+	calls, err := store.ToolCalls(context.Background(), testUserID, conversation.ID)
 	if err != nil {
 		t.Fatalf("load recovered tool calls: %v", err)
 	}
@@ -263,7 +263,7 @@ func TestRuntimeSupportsMultipleToolsAndRounds(t *testing.T) {
 	}}
 	service, store := newRuntimeForTest(t, provider, []Tool{tool}, DefaultMaxModelRounds)
 	conversation := createConversationWithMessages(t, store)
-	events, err := service.StreamTurn(context.Background(), TurnRequest{ConversationID: conversation.ID, Message: "Use several tools."})
+	events, err := service.StreamTurn(context.Background(), testUserID, TurnRequest{ConversationID: conversation.ID, Message: "Use several tools."})
 	if err != nil {
 		t.Fatalf("stream turn: %v", err)
 	}
@@ -274,7 +274,7 @@ func TestRuntimeSupportsMultipleToolsAndRounds(t *testing.T) {
 	if collected[len(collected)-1].Type != EventCompleted {
 		t.Fatalf("expected completion, got %#v", collected)
 	}
-	toolCalls, err := store.ToolCalls(context.Background(), conversation.ID)
+	toolCalls, err := store.ToolCalls(context.Background(), testUserID, conversation.ID)
 	if err != nil || len(toolCalls) != 3 {
 		t.Fatalf("expected three persisted tool calls, got %#v, %v", toolCalls, err)
 	}
@@ -301,7 +301,7 @@ func TestRuntimeReturnsToolFailuresToModelAndPersistsThem(t *testing.T) {
 			}}
 			service, store := newRuntimeForTest(t, provider, test.tools, DefaultMaxModelRounds)
 			conversation := createConversationWithMessages(t, store)
-			events, err := service.StreamTurn(context.Background(), TurnRequest{ConversationID: conversation.ID, Message: "try"})
+			events, err := service.StreamTurn(context.Background(), testUserID, TurnRequest{ConversationID: conversation.ID, Message: "try"})
 			if err != nil {
 				t.Fatalf("stream turn: %v", err)
 			}
@@ -309,7 +309,7 @@ func TestRuntimeReturnsToolFailuresToModelAndPersistsThem(t *testing.T) {
 			if collected[1].Type != EventToolCompleted || !strings.Contains(collected[1].Error, test.errorPart) || collected[len(collected)-1].Type != EventCompleted {
 				t.Fatalf("unexpected failure/recovery events: %#v", collected)
 			}
-			calls, err := store.ToolCalls(context.Background(), conversation.ID)
+			calls, err := store.ToolCalls(context.Background(), testUserID, conversation.ID)
 			if err != nil || len(calls) != 1 || calls[0].Status != ToolCallFailed || !strings.Contains(calls[0].Error, test.errorPart) {
 				t.Fatalf("unexpected failed tool persistence: %#v, %v", calls, err)
 			}
@@ -329,7 +329,7 @@ func TestRuntimeEnforcesMaximumRounds(t *testing.T) {
 	}}
 	service, store := newRuntimeForTest(t, provider, []Tool{tool}, 2)
 	conversation := createConversationWithMessages(t, store)
-	events, err := service.StreamTurn(context.Background(), TurnRequest{ConversationID: conversation.ID, Message: "loop"})
+	events, err := service.StreamTurn(context.Background(), testUserID, TurnRequest{ConversationID: conversation.ID, Message: "loop"})
 	if err != nil {
 		t.Fatalf("stream turn: %v", err)
 	}
@@ -345,7 +345,7 @@ func TestRuntimeCancellationStopsStream(t *testing.T) {
 	service, store := newRuntimeForTest(t, provider, nil, DefaultMaxModelRounds)
 	conversation := createConversationWithMessages(t, store)
 	ctx, cancel := context.WithCancel(context.Background())
-	events, err := service.StreamTurn(ctx, TurnRequest{ConversationID: conversation.ID, Message: "wait"})
+	events, err := service.StreamTurn(ctx, testUserID, TurnRequest{ConversationID: conversation.ID, Message: "wait"})
 	if err != nil {
 		t.Fatalf("stream turn: %v", err)
 	}
@@ -359,7 +359,7 @@ func TestRuntimeCancellationStopsStream(t *testing.T) {
 	case <-time.After(2 * time.Second):
 		t.Fatal("cancelled tutor stream did not close")
 	}
-	messages, err := store.Messages(context.Background(), conversation.ID)
+	messages, err := store.Messages(context.Background(), testUserID, conversation.ID)
 	if err != nil || len(messages) != 1 || messages[0].Role != MessageRoleUser {
 		t.Fatalf("unexpected cancellation persistence: %#v, %v", messages, err)
 	}
@@ -370,7 +370,7 @@ func TestRuntimeProviderErrors(t *testing.T) {
 	initial := &scriptedProvider{scripts: []providerScript{{err: initialError}}}
 	service, store := newRuntimeForTest(t, initial, nil, DefaultMaxModelRounds)
 	conversation := createConversationWithMessages(t, store)
-	if _, err := service.StreamTurn(context.Background(), TurnRequest{ConversationID: conversation.ID, Message: "hello"}); !errors.Is(err, initialError) {
+	if _, err := service.StreamTurn(context.Background(), testUserID, TurnRequest{ConversationID: conversation.ID, Message: "hello"}); !errors.Is(err, initialError) {
 		t.Fatalf("expected initial provider error, got %v", err)
 	}
 
@@ -381,7 +381,7 @@ func TestRuntimeProviderErrors(t *testing.T) {
 	}}
 	service, store = newRuntimeForTest(t, later, []Tool{tool}, DefaultMaxModelRounds)
 	conversation = createConversationWithMessages(t, store)
-	events, err := service.StreamTurn(context.Background(), TurnRequest{ConversationID: conversation.ID, Message: "hello"})
+	events, err := service.StreamTurn(context.Background(), testUserID, TurnRequest{ConversationID: conversation.ID, Message: "hello"})
 	if err != nil {
 		t.Fatalf("start tool turn: %v", err)
 	}
@@ -416,7 +416,7 @@ func TestRuntimeRejectsMalformedProviderStreams(t *testing.T) {
 			provider := &scriptedProvider{scripts: []providerScript{{events: test.events}}}
 			service, store := newRuntimeForTest(t, provider, nil, DefaultMaxModelRounds)
 			conversation := createConversationWithMessages(t, store)
-			events, err := service.StreamTurn(context.Background(), TurnRequest{ConversationID: conversation.ID, Message: "hello"})
+			events, err := service.StreamTurn(context.Background(), testUserID, TurnRequest{ConversationID: conversation.ID, Message: "hello"})
 			if err != nil {
 				t.Fatalf("start turn: %v", err)
 			}
@@ -470,7 +470,7 @@ func mustEchoTool(t *testing.T, onExecute func()) Tool {
 			return errors.New("text must not be blank")
 		}
 		return nil
-	}, func(_ context.Context, arguments echoToolArguments) (echoToolResult, error) {
+	}, func(_ context.Context, _ testAuthUserID, arguments echoToolArguments) (echoToolResult, error) {
 		if onExecute != nil {
 			onExecute()
 		}
@@ -484,7 +484,7 @@ func mustEchoTool(t *testing.T, onExecute func()) Tool {
 
 func mustEchoToolWithError(t *testing.T, executionError error) Tool {
 	t.Helper()
-	tool, err := NewTypedTool[echoToolArguments, echoToolResult]("echo", "Echo text.", nil, func(context.Context, echoToolArguments) (echoToolResult, error) {
+	tool, err := NewTypedTool[echoToolArguments, echoToolResult]("echo", "Echo text.", nil, func(context.Context, testAuthUserID, echoToolArguments) (echoToolResult, error) {
 		return echoToolResult{}, executionError
 	})
 	if err != nil {

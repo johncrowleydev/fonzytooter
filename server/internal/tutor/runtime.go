@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+
+	"github.com/johncrowleydev/fonzytooter/server/internal/auth"
 )
 
 const (
@@ -25,14 +27,14 @@ type TurnContext struct {
 }
 
 type TurnContextBuilder interface {
-	Build(ctx context.Context, request TurnRequest) (TurnContext, error)
+	Build(ctx context.Context, userID auth.UserID, request TurnRequest) (TurnContext, error)
 }
 
 type BasicTurnContextBuilder struct {
 	SystemPolicy string
 }
 
-func (b BasicTurnContextBuilder) Build(_ context.Context, request TurnRequest) (TurnContext, error) {
+func (b BasicTurnContextBuilder) Build(_ context.Context, _ auth.UserID, request TurnRequest) (TurnContext, error) {
 	policy := b.SystemPolicy
 	if strings.TrimSpace(policy) == "" {
 		policy = DefaultSystemPolicy
@@ -137,15 +139,15 @@ func NewRuntimeService(config RuntimeConfig) (*Service, error) {
 	}, nil
 }
 
-func (s *Service) StreamTurn(ctx context.Context, request TurnRequest) (<-chan Event, error) {
+func (s *Service) StreamTurn(ctx context.Context, userID auth.UserID, request TurnRequest) (<-chan Event, error) {
 	if s.conversations == nil {
-		return s.streamUnpersisted(ctx, request)
+		return s.streamUnpersisted(ctx, userID, request)
 	}
-	turnContext, err := s.contextBuilder.Build(ctx, request)
+	turnContext, err := s.contextBuilder.Build(ctx, userID, request)
 	if err != nil {
 		return nil, err
 	}
-	conversationID, err := s.resolveConversation(ctx, request)
+	conversationID, err := s.resolveConversation(ctx, userID, request)
 	if err != nil {
 		return nil, err
 	}
@@ -159,17 +161,17 @@ func (s *Service) StreamTurn(ctx context.Context, request TurnRequest) (<-chan E
 			unlock()
 		}
 	}()
-	if _, err := s.conversations.RecoverPendingToolCalls(ctx, conversationID); err != nil {
+	if _, err := s.conversations.RecoverPendingToolCalls(ctx, userID, conversationID); err != nil {
 		return nil, err
 	}
-	if _, err := s.conversations.AppendTextMessage(ctx, conversationID, MessageRoleUser, request.Message); err != nil {
+	if _, err := s.conversations.AppendTextMessage(ctx, userID, conversationID, MessageRoleUser, request.Message); err != nil {
 		return nil, err
 	}
 	definitions, err := s.tools.Definitions(turnContext.AllowedTools)
 	if err != nil {
 		return nil, err
 	}
-	prepared, err := s.contextManager.Prepare(ctx, conversationID, ContextInput{
+	prepared, err := s.contextManager.Prepare(ctx, userID, conversationID, ContextInput{
 		SystemPolicy:         turnContext.SystemPolicy,
 		CurrentPageContext:   turnContext.CurrentPageContext,
 		DeterministicContext: turnContext.DeterministicContext,
@@ -196,7 +198,7 @@ func (s *Service) StreamTurn(ctx context.Context, request TurnRequest) (<-chan E
 	}
 	events := make(chan Event, 16)
 	releaseLock = false
-	go s.run(ctx, events, conversationID, turnContext.AllowedTools, modelRequest, providerEvents, unlock)
+	go s.run(ctx, events, userID, conversationID, turnContext.AllowedTools, modelRequest, providerEvents, unlock)
 	return events, nil
 }
 
@@ -213,8 +215,8 @@ func (s *Service) lockConversation(ctx context.Context, conversationID string) (
 	}
 }
 
-func (s *Service) streamUnpersisted(ctx context.Context, request TurnRequest) (<-chan Event, error) {
-	turnContext, err := s.contextBuilder.Build(ctx, request)
+func (s *Service) streamUnpersisted(ctx context.Context, userID auth.UserID, request TurnRequest) (<-chan Event, error) {
+	turnContext, err := s.contextBuilder.Build(ctx, userID, request)
 	if err != nil {
 		return nil, err
 	}
@@ -243,19 +245,19 @@ func (s *Service) streamUnpersisted(ctx context.Context, request TurnRequest) (<
 	return events, nil
 }
 
-func (s *Service) resolveConversation(ctx context.Context, request TurnRequest) (string, error) {
+func (s *Service) resolveConversation(ctx context.Context, userID auth.UserID, request TurnRequest) (string, error) {
 	if request.ConversationID == "" {
 		courseID := ""
 		if request.PageContext != nil {
 			courseID = request.PageContext.CourseID
 		}
-		conversation, err := s.conversations.CreateConversation(ctx, CreateConversationParams{CourseID: courseID})
+		conversation, err := s.conversations.CreateConversation(ctx, userID, CreateConversationParams{CourseID: courseID})
 		if err != nil {
 			return "", err
 		}
 		return conversation.ID, nil
 	}
-	conversation, err := s.conversations.Conversation(ctx, request.ConversationID)
+	conversation, err := s.conversations.Conversation(ctx, userID, request.ConversationID)
 	if err != nil {
 		return "", err
 	}
@@ -268,6 +270,7 @@ func (s *Service) resolveConversation(ctx context.Context, request TurnRequest) 
 func (s *Service) run(
 	ctx context.Context,
 	events chan<- Event,
+	userID auth.UserID,
 	conversationID string,
 	allowedTools []string,
 	request ModelRequest,
@@ -290,7 +293,7 @@ func (s *Service) run(
 				return
 			}
 			if _, err := s.conversations.AppendAssistantResponseWithContinuation(
-				ctx, conversationID, []ContentPart{{Kind: ContentKindText, Text: text}}, nil, continuation,
+				ctx, userID, conversationID, []ContentPart{{Kind: ContentKindText, Text: text}}, nil, continuation,
 			); err != nil {
 				sendTutorEvent(ctx, events, Event{Type: EventError, ConversationID: conversationID, Error: err.Error()})
 				return
@@ -311,7 +314,7 @@ func (s *Service) run(
 		for index, call := range toolCalls {
 			callInputs[index] = ToolCallInput{RequestID: call.ID, Name: call.Name, Arguments: call.Arguments}
 		}
-		assistant, err := s.conversations.AppendAssistantResponseWithContinuation(ctx, conversationID, parts, callInputs, continuation)
+		assistant, err := s.conversations.AppendAssistantResponseWithContinuation(ctx, userID, conversationID, parts, callInputs, continuation)
 		if err != nil {
 			sendTutorEvent(ctx, events, Event{Type: EventError, ConversationID: conversationID, Error: err.Error()})
 			return
@@ -328,15 +331,15 @@ func (s *Service) run(
 			if !sendTutorEvent(ctx, events, Event{Type: EventToolStarted, ConversationID: conversationID, Tool: call.Name, ToolCallID: call.ID}) {
 				return
 			}
-			result, toolErr := s.tools.Execute(ctx, call.Name, call.Arguments, allowedTools)
+			result, toolErr := s.tools.Execute(ctx, userID, call.Name, call.Arguments, allowedTools)
 			resultForModel := result
 			if toolErr != nil {
 				resultForModel, _ = json.Marshal(map[string]string{"error": toolErr.Error()})
-				if _, err := s.conversations.CompleteToolCall(ctx, stored.ID, nil, toolErr.Error()); err != nil {
+				if _, err := s.conversations.CompleteToolCall(ctx, userID, stored.ID, nil, toolErr.Error()); err != nil {
 					sendTutorEvent(ctx, events, Event{Type: EventError, ConversationID: conversationID, Error: err.Error()})
 					return
 				}
-			} else if _, err := s.conversations.CompleteToolCall(ctx, stored.ID, result, ""); err != nil {
+			} else if _, err := s.conversations.CompleteToolCall(ctx, userID, stored.ID, result, ""); err != nil {
 				sendTutorEvent(ctx, events, Event{Type: EventError, ConversationID: conversationID, Error: err.Error()})
 				return
 			}

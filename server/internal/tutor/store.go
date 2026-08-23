@@ -11,6 +11,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/johncrowleydev/fonzytooter/server/internal/auth"
 )
 
 const (
@@ -149,7 +151,7 @@ func NewConversationStore(db *sql.DB) *ConversationStore {
 	return &ConversationStore{db: db, now: time.Now, newID: randomID}
 }
 
-func (s *ConversationStore) CreateConversation(ctx context.Context, params CreateConversationParams) (Conversation, error) {
+func (s *ConversationStore) CreateConversation(ctx context.Context, userID auth.UserID, params CreateConversationParams) (Conversation, error) {
 	if strings.TrimSpace(params.CourseID) != params.CourseID {
 		return Conversation{}, errors.New("course ID must not contain surrounding whitespace")
 	}
@@ -165,27 +167,28 @@ func (s *ConversationStore) CreateConversation(ctx context.Context, params Creat
 		courseID = params.CourseID
 	}
 	if _, err := s.db.ExecContext(ctx, `
-		INSERT INTO tutor_conversations (id, course_id, title, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?)
-	`, id, courseID, params.Title, formatTime(now), formatTime(now)); err != nil {
+		INSERT INTO tutor_conversations (id, user_id, course_id, title, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?)
+	`, id, userID, courseID, params.Title, formatTime(now), formatTime(now)); err != nil {
 		return Conversation{}, fmt.Errorf("create tutor conversation: %w", err)
 	}
 	return conversation, nil
 }
 
-func (s *ConversationStore) Conversation(ctx context.Context, id string) (Conversation, error) {
+func (s *ConversationStore) Conversation(ctx context.Context, userID auth.UserID, id string) (Conversation, error) {
 	return scanConversation(s.db.QueryRowContext(ctx, `
 		SELECT id, course_id, title, created_at, updated_at
 		FROM tutor_conversations
-		WHERE id = ?
-	`, id))
+		WHERE user_id = ? AND id = ?
+	`, userID, id))
 }
 
-func (s *ConversationStore) ListConversations(ctx context.Context) ([]Conversation, error) {
+func (s *ConversationStore) ListConversations(ctx context.Context, userID auth.UserID) ([]Conversation, error) {
 	rows, err := s.db.QueryContext(ctx, `
 		SELECT id, course_id, title, created_at, updated_at
 		FROM tutor_conversations
-	`)
+		WHERE user_id = ?
+	`, userID)
 	if err != nil {
 		return nil, fmt.Errorf("list tutor conversations: %w", err)
 	}
@@ -211,26 +214,26 @@ func (s *ConversationStore) ListConversations(ctx context.Context) ([]Conversati
 	return conversations, nil
 }
 
-func (s *ConversationStore) AppendTextMessage(ctx context.Context, conversationID string, role MessageRole, text string) (Message, error) {
-	return s.AppendMessage(ctx, conversationID, role, []ContentPart{{Kind: ContentKindText, Text: text}})
+func (s *ConversationStore) AppendTextMessage(ctx context.Context, userID auth.UserID, conversationID string, role MessageRole, text string) (Message, error) {
+	return s.AppendMessage(ctx, userID, conversationID, role, []ContentPart{{Kind: ContentKindText, Text: text}})
 }
 
-func (s *ConversationStore) AppendMessage(ctx context.Context, conversationID string, role MessageRole, parts []ContentPart) (Message, error) {
-	response, err := s.appendMessage(ctx, conversationID, role, parts, nil, nil)
+func (s *ConversationStore) AppendMessage(ctx context.Context, userID auth.UserID, conversationID string, role MessageRole, parts []ContentPart) (Message, error) {
+	response, err := s.appendMessage(ctx, userID, conversationID, role, parts, nil, nil)
 	return response.Message, err
 }
 
 // AppendAssistantResponse atomically persists one canonical assistant message
 // and the complete ordered set of tool calls requested by that model response.
-func (s *ConversationStore) AppendAssistantResponse(ctx context.Context, conversationID string, parts []ContentPart, calls []ToolCallInput) (AssistantResponse, error) {
-	return s.AppendAssistantResponseWithContinuation(ctx, conversationID, parts, calls, nil)
+func (s *ConversationStore) AppendAssistantResponse(ctx context.Context, userID auth.UserID, conversationID string, parts []ContentPart, calls []ToolCallInput) (AssistantResponse, error) {
+	return s.AppendAssistantResponseWithContinuation(ctx, userID, conversationID, parts, calls, nil)
 }
 
-func (s *ConversationStore) AppendAssistantResponseWithContinuation(ctx context.Context, conversationID string, parts []ContentPart, calls []ToolCallInput, continuation *ProviderContinuation) (AssistantResponse, error) {
-	return s.appendMessage(ctx, conversationID, MessageRoleAssistant, parts, calls, continuation)
+func (s *ConversationStore) AppendAssistantResponseWithContinuation(ctx context.Context, userID auth.UserID, conversationID string, parts []ContentPart, calls []ToolCallInput, continuation *ProviderContinuation) (AssistantResponse, error) {
+	return s.appendMessage(ctx, userID, conversationID, MessageRoleAssistant, parts, calls, continuation)
 }
 
-func (s *ConversationStore) appendMessage(ctx context.Context, conversationID string, role MessageRole, parts []ContentPart, calls []ToolCallInput, continuation *ProviderContinuation) (AssistantResponse, error) {
+func (s *ConversationStore) appendMessage(ctx context.Context, userID auth.UserID, conversationID string, role MessageRole, parts []ContentPart, calls []ToolCallInput, continuation *ProviderContinuation) (AssistantResponse, error) {
 	if !validMessageRole(role) {
 		return AssistantResponse{}, ErrInvalidMessageRole
 	}
@@ -286,8 +289,8 @@ func (s *ConversationStore) appendMessage(ctx context.Context, conversationID st
 	if err := tx.QueryRowContext(ctx, `
 		SELECT COALESCE(MAX(sequence), 0) + 1
 		FROM tutor_messages
-		WHERE conversation_id = ?
-	`, conversationID).Scan(&sequence); err != nil {
+		WHERE user_id = ? AND conversation_id = ?
+	`, userID, conversationID).Scan(&sequence); err != nil {
 		return AssistantResponse{}, fmt.Errorf("choose tutor message sequence: %w", err)
 	}
 	var continuationProvider, continuationModel, continuationState any
@@ -298,11 +301,11 @@ func (s *ConversationStore) appendMessage(ctx context.Context, conversationID st
 	}
 	result, err := tx.ExecContext(ctx, `
 		INSERT INTO tutor_messages (
-			id, conversation_id, sequence, role, created_at,
+			id, user_id, conversation_id, sequence, role, created_at,
 			continuation_provider, continuation_model, continuation_state_json
 		)
-		SELECT ?, id, ?, ?, ?, ?, ?, ? FROM tutor_conversations WHERE id = ?
-	`, id, sequence, role, formatTime(now), continuationProvider, continuationModel, continuationState, conversationID)
+		SELECT ?, user_id, id, ?, ?, ?, ?, ?, ? FROM tutor_conversations WHERE user_id = ? AND id = ?
+	`, id, sequence, role, formatTime(now), continuationProvider, continuationModel, continuationState, userID, conversationID)
 	if err != nil {
 		return AssistantResponse{}, fmt.Errorf("append tutor message: %w", err)
 	}
@@ -315,9 +318,9 @@ func (s *ConversationStore) appendMessage(ctx context.Context, conversationID st
 	}
 	for index, part := range parts {
 		if _, err := tx.ExecContext(ctx, `
-			INSERT INTO tutor_message_parts (message_id, sequence, kind, text_content)
-			VALUES (?, ?, ?, ?)
-		`, id, index+1, part.Kind, part.Text); err != nil {
+			INSERT INTO tutor_message_parts (user_id, message_id, sequence, kind, text_content)
+			VALUES (?, ?, ?, ?, ?)
+		`, userID, id, index+1, part.Kind, part.Text); err != nil {
 			return AssistantResponse{}, fmt.Errorf("append tutor message part: %w", err)
 		}
 	}
@@ -325,9 +328,9 @@ func (s *ConversationStore) appendMessage(ctx context.Context, conversationID st
 	for index, call := range validatedCalls {
 		if _, err := tx.ExecContext(ctx, `
 			INSERT INTO tutor_tool_calls (
-				id, conversation_id, message_id, sequence, request_id, name, arguments_json, status, created_at
-			) VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?)
-		`, toolCallIDs[index], conversationID, id, index+1, call.RequestID, call.Name, string(call.Arguments), formatTime(now)); err != nil {
+				id, user_id, conversation_id, message_id, sequence, request_id, name, arguments_json, status, created_at
+			) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)
+		`, toolCallIDs[index], userID, conversationID, id, index+1, call.RequestID, call.Name, string(call.Arguments), formatTime(now)); err != nil {
 			return AssistantResponse{}, fmt.Errorf("append assistant tutor tool call: %w", err)
 		}
 		storedCalls[index] = ToolCall{
@@ -335,7 +338,7 @@ func (s *ConversationStore) appendMessage(ctx context.Context, conversationID st
 			RequestID: call.RequestID, Name: call.Name, Arguments: cloneJSON(call.Arguments), Status: ToolCallPending, CreatedAt: now,
 		}
 	}
-	if _, err := tx.ExecContext(ctx, `UPDATE tutor_conversations SET updated_at = ? WHERE id = ?`, formatTime(now), conversationID); err != nil {
+	if _, err := tx.ExecContext(ctx, `UPDATE tutor_conversations SET updated_at = ? WHERE user_id = ? AND id = ?`, formatTime(now), userID, conversationID); err != nil {
 		return AssistantResponse{}, fmt.Errorf("update tutor conversation: %w", err)
 	}
 	if err := tx.Commit(); err != nil {
@@ -351,18 +354,18 @@ func (s *ConversationStore) appendMessage(ctx context.Context, conversationID st
 	}, nil
 }
 
-func (s *ConversationStore) Messages(ctx context.Context, conversationID string) ([]Message, error) {
-	return s.messages(ctx, conversationID, 0)
+func (s *ConversationStore) Messages(ctx context.Context, userID auth.UserID, conversationID string) ([]Message, error) {
+	return s.messages(ctx, userID, conversationID, 0)
 }
 
-func (s *ConversationStore) RecentMessages(ctx context.Context, conversationID string, limit int) ([]Message, error) {
+func (s *ConversationStore) RecentMessages(ctx context.Context, userID auth.UserID, conversationID string, limit int) ([]Message, error) {
 	if limit <= 0 || limit > MaxRecentMessageLimit {
 		return nil, fmt.Errorf("recent tutor message limit must be between 1 and %d", MaxRecentMessageLimit)
 	}
-	return s.messages(ctx, conversationID, limit)
+	return s.messages(ctx, userID, conversationID, limit)
 }
 
-func (s *ConversationStore) RecordToolCall(ctx context.Context, params RecordToolCallParams) (ToolCall, error) {
+func (s *ConversationStore) RecordToolCall(ctx context.Context, userID auth.UserID, params RecordToolCallParams) (ToolCall, error) {
 	requestID, name, err := validateToolCallInput(params.RequestID, params.Name, params.Arguments)
 	if err != nil {
 		return ToolCall{}, err
@@ -382,18 +385,18 @@ func (s *ConversationStore) RecordToolCall(ctx context.Context, params RecordToo
 	if err := tx.QueryRowContext(ctx, `
 		SELECT COALESCE(MAX(sequence), 0) + 1
 		FROM tutor_tool_calls
-		WHERE message_id = ?
-	`, params.MessageID).Scan(&sequence); err != nil {
+		WHERE user_id = ? AND message_id = ?
+	`, userID, params.MessageID).Scan(&sequence); err != nil {
 		return ToolCall{}, fmt.Errorf("choose tutor tool call sequence: %w", err)
 	}
 	result, err := tx.ExecContext(ctx, `
 		INSERT INTO tutor_tool_calls (
-			id, conversation_id, message_id, sequence, request_id, name, arguments_json, status, created_at
+			id, user_id, conversation_id, message_id, sequence, request_id, name, arguments_json, status, created_at
 		)
-		SELECT ?, conversation_id, id, ?, ?, ?, ?, 'pending', ?
+		SELECT ?, user_id, conversation_id, id, ?, ?, ?, ?, 'pending', ?
 		FROM tutor_messages
-		WHERE id = ? AND conversation_id = ?
-	`, id, sequence, requestID, name, string(params.Arguments), formatTime(now), params.MessageID, params.ConversationID)
+		WHERE user_id = ? AND id = ? AND conversation_id = ?
+	`, id, sequence, requestID, name, string(params.Arguments), formatTime(now), userID, params.MessageID, params.ConversationID)
 	if err != nil {
 		return ToolCall{}, fmt.Errorf("record tutor tool call: %w", err)
 	}
@@ -404,7 +407,7 @@ func (s *ConversationStore) RecordToolCall(ctx context.Context, params RecordToo
 	if inserted == 0 {
 		return ToolCall{}, ErrMessageNotFound
 	}
-	if _, err := tx.ExecContext(ctx, `UPDATE tutor_conversations SET updated_at = ? WHERE id = ?`, formatTime(now), params.ConversationID); err != nil {
+	if _, err := tx.ExecContext(ctx, `UPDATE tutor_conversations SET updated_at = ? WHERE user_id = ? AND id = ?`, formatTime(now), userID, params.ConversationID); err != nil {
 		return ToolCall{}, fmt.Errorf("update tutor conversation for tool call: %w", err)
 	}
 	if err := tx.Commit(); err != nil {
@@ -414,7 +417,7 @@ func (s *ConversationStore) RecordToolCall(ctx context.Context, params RecordToo
 	return ToolCall{ID: id, ConversationID: params.ConversationID, MessageID: params.MessageID, Sequence: sequence, RequestID: requestID, Name: name, Arguments: cloneJSON(params.Arguments), Status: ToolCallPending, CreatedAt: now}, nil
 }
 
-func (s *ConversationStore) CompleteToolCall(ctx context.Context, id string, result json.RawMessage, executionError string) (ToolCall, error) {
+func (s *ConversationStore) CompleteToolCall(ctx context.Context, userID auth.UserID, id string, result json.RawMessage, executionError string) (ToolCall, error) {
 	if executionError != "" && len(result) != 0 {
 		return ToolCall{}, errors.New("failed tutor tool call cannot have a result")
 	}
@@ -439,8 +442,8 @@ func (s *ConversationStore) CompleteToolCall(ctx context.Context, id string, res
 	update, err := tx.ExecContext(ctx, `
 		UPDATE tutor_tool_calls
 		SET status = ?, result_json = ?, error = ?, completed_at = ?
-		WHERE id = ? AND status = 'pending'
-	`, status, storedResult, storedError, formatTime(now), id)
+		WHERE user_id = ? AND id = ? AND status = 'pending'
+	`, status, storedResult, storedError, formatTime(now), userID, id)
 	if err != nil {
 		return ToolCall{}, fmt.Errorf("complete tutor tool call: %w", err)
 	}
@@ -450,7 +453,7 @@ func (s *ConversationStore) CompleteToolCall(ctx context.Context, id string, res
 	}
 	if changed == 0 {
 		var existingStatus string
-		err := tx.QueryRowContext(ctx, `SELECT status FROM tutor_tool_calls WHERE id = ?`, id).Scan(&existingStatus)
+		err := tx.QueryRowContext(ctx, `SELECT status FROM tutor_tool_calls WHERE user_id = ? AND id = ?`, userID, id).Scan(&existingStatus)
 		if errors.Is(err, sql.ErrNoRows) {
 			return ToolCall{}, ErrToolCallNotFound
 		}
@@ -463,12 +466,12 @@ func (s *ConversationStore) CompleteToolCall(ctx context.Context, id string, res
 		SELECT id, conversation_id, message_id, sequence, request_id, name, arguments_json,
 		       status, result_json, error, created_at, completed_at
 		FROM tutor_tool_calls
-		WHERE id = ?
-	`, id))
+		WHERE user_id = ? AND id = ?
+	`, userID, id))
 	if err != nil {
 		return ToolCall{}, fmt.Errorf("read completed tutor tool call: %w", err)
 	}
-	if _, err := tx.ExecContext(ctx, `UPDATE tutor_conversations SET updated_at = ? WHERE id = ?`, formatTime(now), toolCall.ConversationID); err != nil {
+	if _, err := tx.ExecContext(ctx, `UPDATE tutor_conversations SET updated_at = ? WHERE user_id = ? AND id = ?`, formatTime(now), userID, toolCall.ConversationID); err != nil {
 		return ToolCall{}, fmt.Errorf("update tutor conversation for tool result: %w", err)
 	}
 	if err := tx.Commit(); err != nil {
@@ -481,7 +484,7 @@ func (s *ConversationStore) CompleteToolCall(ctx context.Context, id string, res
 // RecoverPendingToolCalls marks every still-pending call in a conversation as
 // failed. The runtime invokes this before accepting a new turn so a process
 // interruption is represented explicitly and canonical history is replayable.
-func (s *ConversationStore) RecoverPendingToolCalls(ctx context.Context, conversationID string) (int64, error) {
+func (s *ConversationStore) RecoverPendingToolCalls(ctx context.Context, userID auth.UserID, conversationID string) (int64, error) {
 	now := s.now().UTC()
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -489,7 +492,7 @@ func (s *ConversationStore) RecoverPendingToolCalls(ctx context.Context, convers
 	}
 	defer tx.Rollback()
 	var exists int
-	if err := tx.QueryRowContext(ctx, `SELECT 1 FROM tutor_conversations WHERE id = ?`, conversationID).Scan(&exists); errors.Is(err, sql.ErrNoRows) {
+	if err := tx.QueryRowContext(ctx, `SELECT 1 FROM tutor_conversations WHERE user_id = ? AND id = ?`, userID, conversationID).Scan(&exists); errors.Is(err, sql.ErrNoRows) {
 		return 0, ErrConversationNotFound
 	} else if err != nil {
 		return 0, fmt.Errorf("read tutor conversation for recovery: %w", err)
@@ -497,8 +500,8 @@ func (s *ConversationStore) RecoverPendingToolCalls(ctx context.Context, convers
 	result, err := tx.ExecContext(ctx, `
 		UPDATE tutor_tool_calls
 		SET status = 'failed', error = ?, completed_at = ?
-		WHERE conversation_id = ? AND status = 'pending'
-	`, InterruptedToolCallError, formatTime(now), conversationID)
+		WHERE user_id = ? AND conversation_id = ? AND status = 'pending'
+	`, InterruptedToolCallError, formatTime(now), userID, conversationID)
 	if err != nil {
 		return 0, fmt.Errorf("recover pending tutor tool calls: %w", err)
 	}
@@ -507,7 +510,7 @@ func (s *ConversationStore) RecoverPendingToolCalls(ctx context.Context, convers
 		return 0, fmt.Errorf("inspect recovered tutor tool calls: %w", err)
 	}
 	if changed > 0 {
-		if _, err := tx.ExecContext(ctx, `UPDATE tutor_conversations SET updated_at = ? WHERE id = ?`, formatTime(now), conversationID); err != nil {
+		if _, err := tx.ExecContext(ctx, `UPDATE tutor_conversations SET updated_at = ? WHERE user_id = ? AND id = ?`, formatTime(now), userID, conversationID); err != nil {
 			return 0, fmt.Errorf("update tutor conversation for recovery: %w", err)
 		}
 	}
@@ -517,8 +520,8 @@ func (s *ConversationStore) RecoverPendingToolCalls(ctx context.Context, convers
 	return changed, nil
 }
 
-func (s *ConversationStore) ToolCalls(ctx context.Context, conversationID string) ([]ToolCall, error) {
-	if _, err := s.Conversation(ctx, conversationID); err != nil {
+func (s *ConversationStore) ToolCalls(ctx context.Context, userID auth.UserID, conversationID string) ([]ToolCall, error) {
+	if _, err := s.Conversation(ctx, userID, conversationID); err != nil {
 		return nil, err
 	}
 	rows, err := s.db.QueryContext(ctx, `
@@ -526,10 +529,10 @@ func (s *ConversationStore) ToolCalls(ctx context.Context, conversationID string
 		       tc.arguments_json, tc.status, tc.result_json, tc.error,
 		       tc.created_at, tc.completed_at
 		FROM tutor_tool_calls tc
-		JOIN tutor_messages m ON m.id = tc.message_id
-		WHERE tc.conversation_id = ?
+		JOIN tutor_messages m ON m.user_id = tc.user_id AND m.id = tc.message_id
+		WHERE tc.user_id = ? AND tc.conversation_id = ?
 		ORDER BY m.sequence, tc.sequence
-	`, conversationID)
+	`, userID, conversationID)
 	if err != nil {
 		return nil, fmt.Errorf("list tutor tool calls: %w", err)
 	}
@@ -549,8 +552,8 @@ func (s *ConversationStore) ToolCalls(ctx context.Context, conversationID string
 	return toolCalls, nil
 }
 
-func (s *ConversationStore) ConversationMemory(ctx context.Context, conversationID string) (ConversationMemory, error) {
-	if _, err := s.Conversation(ctx, conversationID); err != nil {
+func (s *ConversationStore) ConversationMemory(ctx context.Context, userID auth.UserID, conversationID string) (ConversationMemory, error) {
+	if _, err := s.Conversation(ctx, userID, conversationID); err != nil {
 		return ConversationMemory{}, err
 	}
 	var memory ConversationMemory
@@ -559,8 +562,8 @@ func (s *ConversationStore) ConversationMemory(ctx context.Context, conversation
 		SELECT conversation_id, summary, structured_json, summarized_through_sequence,
 		       format_version, created_at, updated_at
 		FROM tutor_conversation_memory
-		WHERE conversation_id = ?
-	`, conversationID).Scan(
+		WHERE user_id = ? AND conversation_id = ?
+	`, userID, conversationID).Scan(
 		&memory.ConversationID, &memory.Summary, &structuredJSON,
 		&memory.SummarizedThroughSequence, &memory.FormatVersion, &createdAt, &updatedAt,
 	)
@@ -584,7 +587,7 @@ func (s *ConversationStore) ConversationMemory(ctx context.Context, conversation
 	return memory, nil
 }
 
-func (s *ConversationStore) SaveConversationMemory(ctx context.Context, memory ConversationMemory) (ConversationMemory, error) {
+func (s *ConversationStore) SaveConversationMemory(ctx context.Context, userID auth.UserID, memory ConversationMemory) (ConversationMemory, error) {
 	if memory.SummarizedThroughSequence <= 0 {
 		return ConversationMemory{}, errors.New("tutor compaction marker must be positive")
 	}
@@ -605,13 +608,13 @@ func (s *ConversationStore) SaveConversationMemory(ctx context.Context, memory C
 	if err := tx.QueryRowContext(ctx, `
 		SELECT COUNT(*)
 		FROM tutor_messages
-		WHERE conversation_id = ? AND sequence = ?
-	`, memory.ConversationID, memory.SummarizedThroughSequence).Scan(&markerExists); err != nil {
+		WHERE user_id = ? AND conversation_id = ? AND sequence = ?
+	`, userID, memory.ConversationID, memory.SummarizedThroughSequence).Scan(&markerExists); err != nil {
 		return ConversationMemory{}, fmt.Errorf("validate tutor compaction marker: %w", err)
 	}
 	if markerExists == 0 {
 		var conversationExists int
-		if err := tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM tutor_conversations WHERE id = ?`, memory.ConversationID).Scan(&conversationExists); err != nil {
+		if err := tx.QueryRowContext(ctx, `SELECT COUNT(*) FROM tutor_conversations WHERE user_id = ? AND id = ?`, userID, memory.ConversationID).Scan(&conversationExists); err != nil {
 			return ConversationMemory{}, fmt.Errorf("validate tutor compaction conversation: %w", err)
 		}
 		if conversationExists == 0 {
@@ -624,8 +627,8 @@ func (s *ConversationStore) SaveConversationMemory(ctx context.Context, memory C
 	err = tx.QueryRowContext(ctx, `
 		SELECT summarized_through_sequence
 		FROM tutor_conversation_memory
-		WHERE conversation_id = ?
-	`, memory.ConversationID).Scan(&currentMarker)
+		WHERE user_id = ? AND conversation_id = ?
+	`, userID, memory.ConversationID).Scan(&currentMarker)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return ConversationMemory{}, fmt.Errorf("read tutor compaction marker: %w", err)
 	}
@@ -634,20 +637,20 @@ func (s *ConversationStore) SaveConversationMemory(ctx context.Context, memory C
 	}
 	result, err := tx.ExecContext(ctx, `
 		INSERT INTO tutor_conversation_memory (
-			conversation_id, summary, structured_json, summarized_through_sequence,
+			user_id, conversation_id, summary, structured_json, summarized_through_sequence,
 			format_version, created_at, updated_at
 		)
-		SELECT id, ?, ?, ?, ?, ?, ?
+		SELECT user_id, id, ?, ?, ?, ?, ?, ?
 		FROM tutor_conversations
-		WHERE id = ?
-		ON CONFLICT (conversation_id) DO UPDATE SET
+		WHERE user_id = ? AND id = ?
+		ON CONFLICT (user_id, conversation_id) DO UPDATE SET
 			summary = excluded.summary,
 			structured_json = excluded.structured_json,
 			summarized_through_sequence = excluded.summarized_through_sequence,
 			format_version = excluded.format_version,
 			updated_at = excluded.updated_at
 	`, memory.Summary, string(structuredJSON), memory.SummarizedThroughSequence,
-		memory.FormatVersion, formatTime(now), formatTime(now), memory.ConversationID)
+		memory.FormatVersion, formatTime(now), formatTime(now), userID, memory.ConversationID)
 	if err != nil {
 		return ConversationMemory{}, fmt.Errorf("save tutor conversation memory: %w", err)
 	}
@@ -658,17 +661,17 @@ func (s *ConversationStore) SaveConversationMemory(ctx context.Context, memory C
 	if changed == 0 {
 		return ConversationMemory{}, ErrConversationNotFound
 	}
-	if _, err := tx.ExecContext(ctx, `UPDATE tutor_conversations SET updated_at = ? WHERE id = ?`, formatTime(now), memory.ConversationID); err != nil {
+	if _, err := tx.ExecContext(ctx, `UPDATE tutor_conversations SET updated_at = ? WHERE user_id = ? AND id = ?`, formatTime(now), userID, memory.ConversationID); err != nil {
 		return ConversationMemory{}, fmt.Errorf("update tutor conversation for compaction: %w", err)
 	}
 	if err := tx.Commit(); err != nil {
 		return ConversationMemory{}, fmt.Errorf("commit tutor conversation memory: %w", err)
 	}
-	return s.ConversationMemory(ctx, memory.ConversationID)
+	return s.ConversationMemory(ctx, userID, memory.ConversationID)
 }
 
-func (s *ConversationStore) messages(ctx context.Context, conversationID string, limit int) ([]Message, error) {
-	if _, err := s.Conversation(ctx, conversationID); err != nil {
+func (s *ConversationStore) messages(ctx context.Context, userID auth.UserID, conversationID string, limit int) ([]Message, error) {
+	if _, err := s.Conversation(ctx, userID, conversationID); err != nil {
 		return nil, err
 	}
 	query := `
@@ -676,17 +679,17 @@ func (s *ConversationStore) messages(ctx context.Context, conversationID string,
 		       m.continuation_provider, m.continuation_model, m.continuation_state_json,
 		       p.kind, p.text_content
 		FROM tutor_messages m
-		LEFT JOIN tutor_message_parts p ON p.message_id = m.id
-		WHERE m.conversation_id = ?
+		LEFT JOIN tutor_message_parts p ON p.user_id = m.user_id AND p.message_id = m.id
+		WHERE m.user_id = ? AND m.conversation_id = ?
 		ORDER BY m.sequence, p.sequence`
-	args := []any{conversationID}
+	args := []any{userID, conversationID}
 	if limit > 0 {
 		query = `
 			WITH recent_messages AS (
 				SELECT id, conversation_id, sequence, role, created_at,
 				       continuation_provider, continuation_model, continuation_state_json
 				FROM tutor_messages
-				WHERE conversation_id = ?
+				WHERE user_id = ? AND conversation_id = ?
 				ORDER BY sequence DESC
 				LIMIT ?
 			)
@@ -694,9 +697,9 @@ func (s *ConversationStore) messages(ctx context.Context, conversationID string,
 			       m.continuation_provider, m.continuation_model, m.continuation_state_json,
 			       p.kind, p.text_content
 			FROM recent_messages m
-			LEFT JOIN tutor_message_parts p ON p.message_id = m.id
+			LEFT JOIN tutor_message_parts p ON p.user_id = ? AND p.message_id = m.id
 			ORDER BY m.sequence, p.sequence`
-		args = append(args, limit)
+		args = []any{userID, conversationID, limit, userID}
 	}
 	rows, err := s.db.QueryContext(ctx, query, args...)
 	if err != nil {
@@ -747,13 +750,13 @@ func (s *ConversationStore) messages(ctx context.Context, conversationID string,
 	return messages, nil
 }
 
-func (s *ConversationStore) toolCall(ctx context.Context, id string) (ToolCall, error) {
+func (s *ConversationStore) toolCall(ctx context.Context, userID auth.UserID, id string) (ToolCall, error) {
 	return scanToolCall(s.db.QueryRowContext(ctx, `
 		SELECT id, conversation_id, message_id, sequence, request_id, name, arguments_json,
 		       status, result_json, error, created_at, completed_at
 		FROM tutor_tool_calls
-		WHERE id = ?
-	`, id))
+		WHERE user_id = ? AND id = ?
+	`, userID, id))
 }
 
 type rowScanner interface {

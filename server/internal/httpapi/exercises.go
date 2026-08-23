@@ -118,7 +118,11 @@ func registerExercises(api huma.API, catalog *curriculum.Catalog, service *learn
 		if service == nil {
 			return nil, huma.Error500InternalServerError("learner service is unavailable")
 		}
-		workspace, err := service.ExerciseWorkspace(ctx, input.CourseID, input.ModuleID, input.ExerciseID)
+		userID, err := requireUserID(ctx)
+		if err != nil {
+			return nil, err
+		}
+		workspace, err := service.ExerciseWorkspace(ctx, userID, input.CourseID, input.ModuleID, input.ExerciseID)
 		if err != nil {
 			return nil, exerciseError("get exercise workspace", err)
 		}
@@ -136,7 +140,11 @@ func registerExercises(api huma.API, catalog *curriculum.Catalog, service *learn
 		if service == nil {
 			return nil, huma.Error500InternalServerError("learner service is unavailable")
 		}
-		workspace, err := service.SetExerciseWorkspace(ctx, input.CourseID, input.ModuleID, input.ExerciseID, input.Body.Code)
+		userID, err := requireUserID(ctx)
+		if err != nil {
+			return nil, err
+		}
+		workspace, err := service.SetExerciseWorkspace(ctx, userID, input.CourseID, input.ModuleID, input.ExerciseID, input.Body.Code)
 		if err != nil {
 			return nil, exerciseError("put exercise workspace", err)
 		}
@@ -161,7 +169,11 @@ func registerExercises(api huma.API, catalog *curriculum.Catalog, service *learn
 				TestID: result.TestID, Status: result.Status, Message: result.Message, DurationMS: result.DurationMS,
 			})
 		}
-		attempt, err := service.CreateExerciseAttempt(ctx, input.CourseID, input.ModuleID, input.ExerciseID, input.Body.CodeSnapshot, input.Body.DurationMS, results)
+		userID, err := requireUserID(ctx)
+		if err != nil {
+			return nil, err
+		}
+		attempt, err := service.CreateExerciseAttempt(ctx, userID, input.CourseID, input.ModuleID, input.ExerciseID, input.Body.CodeSnapshot, input.Body.DurationMS, results)
 		if err != nil {
 			return nil, exerciseError("create exercise attempt", err)
 		}

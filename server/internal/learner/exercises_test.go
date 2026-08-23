@@ -15,7 +15,7 @@ import (
 
 func TestExerciseWorkspaceDefaultsAndPersists(t *testing.T) {
 	service, db := exerciseTestService(t)
-	workspace, err := service.ExerciseWorkspace(context.Background(), "course", "module", "double")
+	workspace, err := service.ExerciseWorkspace(context.Background(), testUserID, "course", "module", "double")
 	if err != nil {
 		t.Fatalf("get default workspace: %v", err)
 	}
@@ -24,18 +24,18 @@ func TestExerciseWorkspaceDefaultsAndPersists(t *testing.T) {
 	}
 	now := time.Date(2026, time.August, 20, 12, 0, 0, 0, time.UTC)
 	service.now = func() time.Time { return now }
-	saved, err := service.SetExerciseWorkspace(context.Background(), "course", "module", "double", "def double(x): return x * 2")
+	saved, err := service.SetExerciseWorkspace(context.Background(), testUserID, "course", "module", "double", "def double(x): return x * 2")
 	if err != nil {
 		t.Fatalf("save workspace: %v", err)
 	}
 	if saved.UpdatedAt == nil || !saved.UpdatedAt.Equal(now) {
 		t.Fatalf("unexpected saved workspace: %#v", saved)
 	}
-	if _, err := service.SetExerciseWorkspace(context.Background(), "course", "module", "double", "updated"); err != nil {
+	if _, err := service.SetExerciseWorkspace(context.Background(), testUserID, "course", "module", "double", "updated"); err != nil {
 		t.Fatalf("replace workspace: %v", err)
 	}
 	assertRowCount(t, db, "exercise_workspaces", 1)
-	if _, err := service.ExerciseWorkspace(context.Background(), "course", "wrong", "double"); !errors.Is(err, ErrExerciseNotFound) {
+	if _, err := service.ExerciseWorkspace(context.Background(), testUserID, "course", "wrong", "double"); !errors.Is(err, ErrExerciseNotFound) {
 		t.Fatalf("expected ownership validation, got %v", err)
 	}
 }
@@ -48,7 +48,7 @@ func TestCreateExerciseAttemptDerivesAggregatesAndActivity(t *testing.T) {
 		{TestID: "hidden", Status: "failed", Message: "expected 0", DurationMS: 5},
 		{TestID: "visible", Status: "passed", DurationMS: 4},
 	}
-	attempt, err := service.CreateExerciseAttempt(context.Background(), "course", "module", "double", "code", 14, results)
+	attempt, err := service.CreateExerciseAttempt(context.Background(), testUserID, "course", "module", "double", "code", 14, results)
 	if err != nil {
 		t.Fatalf("create attempt: %v", err)
 	}
@@ -83,7 +83,7 @@ func TestRecentExerciseAttemptsAndActivitiesUseChronologicalFixedWidthTimestamps
 	}
 	created := make([]ExerciseAttempt, 0, len(times))
 	for range times {
-		attempt, err := service.CreateExerciseAttempt(context.Background(), "course", "module", "double", "code", 1, results)
+		attempt, err := service.CreateExerciseAttempt(context.Background(), testUserID, "course", "module", "double", "code", 1, results)
 		if err != nil {
 			t.Fatalf("create exercise attempt: %v", err)
 		}
@@ -96,14 +96,14 @@ func TestRecentExerciseAttemptsAndActivitiesUseChronologicalFixedWidthTimestamps
 	if stored != "2026-08-20T12:30:00.100000000Z" {
 		t.Fatalf("expected fixed-width exercise timestamp, got %q", stored)
 	}
-	attempts, err := service.ExerciseAttempts(context.Background(), "course", "module", "double", 1)
+	attempts, err := service.ExerciseAttempts(context.Background(), testUserID, "course", "module", "double", 1)
 	if err != nil {
 		t.Fatalf("read recent exercise attempts: %v", err)
 	}
 	if len(attempts) != 1 || attempts[0].ID != created[2].ID {
 		t.Fatalf("expected 110ms exercise attempt, got %#v", attempts)
 	}
-	activities, err := service.Activities(context.Background(), "course", 1)
+	activities, err := service.Activities(context.Background(), testUserID, "course", 1)
 	if err != nil {
 		t.Fatalf("read recent activities: %v", err)
 	}
@@ -125,7 +125,7 @@ func TestCreateExerciseAttemptRejectsUnknownDuplicateAndIncompleteTests(t *testi
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			if _, err := service.CreateExerciseAttempt(context.Background(), "course", "module", "double", "code", 1, test.results); !errors.Is(err, ErrInvalidExerciseAttempt) {
+			if _, err := service.CreateExerciseAttempt(context.Background(), testUserID, "course", "module", "double", "code", 1, test.results); !errors.Is(err, ErrInvalidExerciseAttempt) {
 				t.Fatalf("expected invalid attempt, got %v", err)
 			}
 		})

@@ -10,6 +10,7 @@ import (
 
 	fsrs "github.com/open-spaced-repetition/go-fsrs/v4"
 
+	"github.com/johncrowleydev/fonzytooter/server/internal/auth"
 	"github.com/johncrowleydev/fonzytooter/server/internal/curriculum"
 	"github.com/johncrowleydev/fonzytooter/server/internal/learner"
 )
@@ -107,17 +108,17 @@ func NewService(db *sql.DB, catalog *curriculum.Catalog, clock Clock) *Service {
 	}
 }
 
-func (s *Service) Cards(ctx context.Context, courseID string, dueOnly bool) ([]Card, error) {
+func (s *Service) Cards(ctx context.Context, userID auth.UserID, courseID string, dueOnly bool) ([]Card, error) {
 	course, ok := s.catalog.CourseByID(courseID)
 	if !ok {
 		return nil, ErrCourseNotFound
 	}
 
-	stored, err := s.loadCourseCards(ctx, courseID)
+	stored, err := s.loadCourseCards(ctx, userID, courseID)
 	if err != nil {
 		return nil, err
 	}
-	eligibility, err := learner.LoadSourceLessonEligibility(ctx, s.db, courseID)
+	eligibility, err := learner.LoadSourceLessonEligibility(ctx, s.db, userID, courseID)
 	if err != nil {
 		return nil, err
 	}
@@ -186,7 +187,7 @@ func (s *Service) Cards(ctx context.Context, courseID string, dueOnly bool) ([]C
 	return result, nil
 }
 
-func (s *Service) Submit(ctx context.Context, courseID, moduleID, reviewItemID string, rating Rating) (SubmittedReview, error) {
+func (s *Service) Submit(ctx context.Context, userID auth.UserID, courseID, moduleID, reviewItemID string, rating Rating) (SubmittedReview, error) {
 	item, err := s.findReviewItem(courseID, moduleID, reviewItemID)
 	if err != nil {
 		return SubmittedReview{}, err
@@ -203,12 +204,12 @@ func (s *Service) Submit(ctx context.Context, courseID, moduleID, reviewItemID s
 	}
 	defer func() { _ = tx.Rollback() }()
 
-	before, found, err := loadCard(ctx, tx, courseID, item.ModuleID, item.ID)
+	before, found, err := loadCard(ctx, tx, userID, courseID, item.ModuleID, item.ID)
 	if err != nil {
 		return SubmittedReview{}, err
 	}
 	if !found {
-		eligibility, err := learner.LoadSourceLessonEligibility(ctx, tx, courseID)
+		eligibility, err := learner.LoadSourceLessonEligibility(ctx, tx, userID, courseID)
 		if err != nil {
 			return SubmittedReview{}, err
 		}
@@ -221,17 +222,17 @@ func (s *Service) Submit(ctx context.Context, courseID, moduleID, reviewItemID s
 	if err != nil {
 		return SubmittedReview{}, fmt.Errorf("schedule review: %w", err)
 	}
-	if err := storeCard(ctx, tx, courseID, item.ModuleID, item.ID, after.Card, now); err != nil {
+	if err := storeCard(ctx, tx, userID, courseID, item.ModuleID, item.ID, after.Card, now); err != nil {
 		return SubmittedReview{}, err
 	}
-	reviewID, err := insertReviewLog(ctx, tx, courseID, item.ModuleID, item.ID, rating, now, before, after.Card)
+	reviewID, err := insertReviewLog(ctx, tx, userID, courseID, item.ModuleID, item.ID, rating, now, before, after.Card)
 	if err != nil {
 		return SubmittedReview{}, err
 	}
 	if _, err := tx.ExecContext(ctx, `
-		INSERT INTO activities (kind, course_id, module_id, review_item_id, occurred_at)
-		VALUES (?, ?, ?, ?, ?)
-	`, ActivityReviewCompleted, courseID, item.ModuleID, item.ID, formatTime(now)); err != nil {
+		INSERT INTO activities (user_id, kind, course_id, module_id, review_item_id, occurred_at)
+		VALUES (?, ?, ?, ?, ?, ?)
+	`, userID, ActivityReviewCompleted, courseID, item.ModuleID, item.ID, formatTime(now)); err != nil {
 		return SubmittedReview{}, fmt.Errorf("record review activity: %w", err)
 	}
 	if err := tx.Commit(); err != nil {
@@ -252,7 +253,7 @@ func (s *Service) Submit(ctx context.Context, courseID, moduleID, reviewItemID s
 	}, nil
 }
 
-func (s *Service) History(ctx context.Context, courseID, moduleID, reviewItemID string, limit int) ([]HistoryEntry, error) {
+func (s *Service) History(ctx context.Context, userID auth.UserID, courseID, moduleID, reviewItemID string, limit int) ([]HistoryEntry, error) {
 	if _, err := s.findReviewItem(courseID, moduleID, reviewItemID); err != nil {
 		return nil, err
 	}
@@ -266,10 +267,10 @@ func (s *Service) History(ctx context.Context, courseID, moduleID, reviewItemID 
 		SELECT id, reviewed_at, rating, previous_due, next_due,
 			after_stability, after_difficulty, after_reps, after_lapses
 		FROM review_logs
-		WHERE course_id = ? AND module_id = ? AND review_item_id = ?
+		WHERE user_id = ? AND course_id = ? AND module_id = ? AND review_item_id = ?
 		ORDER BY reviewed_at DESC, id DESC
 		LIMIT ?
-	`, courseID, moduleID, reviewItemID, limit)
+	`, userID, courseID, moduleID, reviewItemID, limit)
 	if err != nil {
 		return nil, fmt.Errorf("read review history: %w", err)
 	}
@@ -346,13 +347,13 @@ type cardKey struct {
 	reviewItemID string
 }
 
-func (s *Service) loadCourseCards(ctx context.Context, courseID string) (map[cardKey]fsrs.Card, error) {
+func (s *Service) loadCourseCards(ctx context.Context, userID auth.UserID, courseID string) (map[cardKey]fsrs.Card, error) {
 	rows, err := s.db.QueryContext(ctx, `
 		SELECT module_id, review_item_id, due_at, stability, difficulty,
 			scheduled_days, reps, lapses, state, last_review_at, remaining_steps
 		FROM review_cards
-		WHERE course_id = ?
-	`, courseID)
+		WHERE user_id = ? AND course_id = ?
+	`, userID, courseID)
 	if err != nil {
 		return nil, fmt.Errorf("read review cards: %w", err)
 	}
@@ -405,13 +406,13 @@ func scanCard(scanner rowScanner, prefix ...any) (fsrs.Card, error) {
 	}, nil
 }
 
-func loadCard(ctx context.Context, tx *sql.Tx, courseID, moduleID, reviewItemID string) (fsrs.Card, bool, error) {
+func loadCard(ctx context.Context, tx *sql.Tx, userID auth.UserID, courseID, moduleID, reviewItemID string) (fsrs.Card, bool, error) {
 	row := tx.QueryRowContext(ctx, `
 		SELECT due_at, stability, difficulty, scheduled_days, reps, lapses,
 			state, last_review_at, remaining_steps
 		FROM review_cards
-		WHERE course_id = ? AND module_id = ? AND review_item_id = ?
-	`, courseID, moduleID, reviewItemID)
+		WHERE user_id = ? AND course_id = ? AND module_id = ? AND review_item_id = ?
+	`, userID, courseID, moduleID, reviewItemID)
 	card, err := scanCard(row)
 	if errors.Is(err, sql.ErrNoRows) {
 		return fsrs.Card{}, false, nil
@@ -422,13 +423,13 @@ func loadCard(ctx context.Context, tx *sql.Tx, courseID, moduleID, reviewItemID 
 	return card, true, nil
 }
 
-func storeCard(ctx context.Context, tx *sql.Tx, courseID, moduleID, reviewItemID string, card fsrs.Card, now time.Time) error {
+func storeCard(ctx context.Context, tx *sql.Tx, userID auth.UserID, courseID, moduleID, reviewItemID string, card fsrs.Card, now time.Time) error {
 	_, err := tx.ExecContext(ctx, `
 		INSERT INTO review_cards (
-			course_id, module_id, review_item_id, due_at, stability, difficulty,
+			user_id, course_id, module_id, review_item_id, due_at, stability, difficulty,
 			scheduled_days, reps, lapses, state, last_review_at, remaining_steps, updated_at
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-		ON CONFLICT (course_id, module_id, review_item_id) DO UPDATE SET
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		ON CONFLICT (user_id, course_id, module_id, review_item_id) DO UPDATE SET
 			due_at = excluded.due_at,
 			stability = excluded.stability,
 			difficulty = excluded.difficulty,
@@ -439,7 +440,7 @@ func storeCard(ctx context.Context, tx *sql.Tx, courseID, moduleID, reviewItemID
 			last_review_at = excluded.last_review_at,
 			remaining_steps = excluded.remaining_steps,
 			updated_at = excluded.updated_at
-	`, courseID, moduleID, reviewItemID, formatTime(card.Due), card.Stability, card.Difficulty,
+	`, userID, courseID, moduleID, reviewItemID, formatTime(card.Due), card.Stability, card.Difficulty,
 		card.ScheduledDays, card.Reps, card.Lapses, int(card.State), nullableTime(card.LastReview),
 		card.RemainingSteps, formatTime(now))
 	if err != nil {
@@ -448,17 +449,17 @@ func storeCard(ctx context.Context, tx *sql.Tx, courseID, moduleID, reviewItemID
 	return nil
 }
 
-func insertReviewLog(ctx context.Context, tx *sql.Tx, courseID, moduleID, reviewItemID string, rating Rating, now time.Time, before, after fsrs.Card) (int64, error) {
+func insertReviewLog(ctx context.Context, tx *sql.Tx, userID auth.UserID, courseID, moduleID, reviewItemID string, rating Rating, now time.Time, before, after fsrs.Card) (int64, error) {
 	result, err := tx.ExecContext(ctx, `
 		INSERT INTO review_logs (
-			course_id, module_id, review_item_id, reviewed_at, rating, previous_due, next_due,
+			user_id, course_id, module_id, review_item_id, reviewed_at, rating, previous_due, next_due,
 			before_stability, after_stability, before_difficulty, after_difficulty,
 			before_scheduled_days, after_scheduled_days, before_reps, after_reps,
 			before_lapses, after_lapses, before_state, after_state,
 			before_last_review_at, after_last_review_at,
 			before_remaining_steps, after_remaining_steps
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-	`, courseID, moduleID, reviewItemID, formatTime(now), rating,
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`, userID, courseID, moduleID, reviewItemID, formatTime(now), rating,
 		formatTime(before.Due), formatTime(after.Due), before.Stability, after.Stability,
 		before.Difficulty, after.Difficulty, before.ScheduledDays, after.ScheduledDays,
 		before.Reps, after.Reps, before.Lapses, after.Lapses, int(before.State), int(after.State),

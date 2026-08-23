@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 
+	"github.com/johncrowleydev/fonzytooter/server/internal/auth"
 	"github.com/johncrowleydev/fonzytooter/server/internal/curriculum"
 )
 
@@ -19,12 +20,12 @@ type SourceLessonEligibility struct {
 	completedLessons map[string]struct{}
 }
 
-func LoadSourceLessonEligibility(ctx context.Context, db queryer, courseID string) (SourceLessonEligibility, error) {
+func LoadSourceLessonEligibility(ctx context.Context, db queryer, userID auth.UserID, courseID string) (SourceLessonEligibility, error) {
 	rows, err := db.QueryContext(ctx, `
 		SELECT module_id, lesson_id
 		FROM lesson_progress
-		WHERE course_id = ? AND completed = 1
-	`, courseID)
+		WHERE user_id = ? AND course_id = ? AND completed = 1
+	`, userID, courseID)
 	if err != nil {
 		return SourceLessonEligibility{}, fmt.Errorf("read source lesson eligibility: %w", err)
 	}

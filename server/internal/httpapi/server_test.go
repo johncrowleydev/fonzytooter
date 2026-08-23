@@ -26,7 +26,7 @@ func TestNewAPIRejectsNilCatalog(t *testing.T) {
 }
 
 func TestHealthReturnsTypedRepresentation(t *testing.T) {
-	app := NewAPI(tutor.NewService(tutor.NewUnavailableProvider()), curriculum.NewEmptyCatalog(), nil, nil)
+	app := newAuthenticatedTestAPI(t, tutor.NewService(tutor.NewUnavailableProvider()), curriculum.NewEmptyCatalog(), nil, nil)
 	req := httptest.NewRequest(http.MethodGet, "/api/health", nil)
 	response := httptest.NewRecorder()
 
@@ -46,7 +46,7 @@ func TestHealthReturnsTypedRepresentation(t *testing.T) {
 }
 
 func TestTutorTurnRouteUsesResourcePathAndStreamsEvents(t *testing.T) {
-	app := NewAPI(tutor.NewService(tutor.NewUnavailableProvider()), curriculum.NewEmptyCatalog(), nil, nil)
+	app := newAuthenticatedTestAPI(t, tutor.NewService(tutor.NewUnavailableProvider()), curriculum.NewEmptyCatalog(), nil, nil)
 	req := httptest.NewRequest(http.MethodPost, "/api/tutor/turns", strings.NewReader(`{"message":"hello"}`))
 	req.Header.Set("Content-Type", "application/json")
 	response := httptest.NewRecorder()
@@ -79,7 +79,7 @@ func TestTutorTurnRouteUsesResourcePathAndStreamsEvents(t *testing.T) {
 }
 
 func TestTutorTurnInvalidInputUsesCommonError(t *testing.T) {
-	app := NewAPI(tutor.NewService(tutor.NewUnavailableProvider()), curriculum.NewEmptyCatalog(), nil, nil)
+	app := newAuthenticatedTestAPI(t, tutor.NewService(tutor.NewUnavailableProvider()), curriculum.NewEmptyCatalog(), nil, nil)
 	for _, message := range []string{" ", "   "} {
 		t.Run(fmt.Sprintf("message %q", message), func(t *testing.T) {
 			req := httptest.NewRequest(http.MethodPost, "/api/tutor/turns", strings.NewReader(fmt.Sprintf(`{"message":%q}`, message)))
@@ -126,7 +126,7 @@ func TestTutorTurnMalformedJSONUsesBadRequestProblem(t *testing.T) {
 }
 
 func TestTutorTurnProviderFailureUsesBadGatewayProblem(t *testing.T) {
-	app := NewAPI(tutor.NewService(failingProvider{}), curriculum.NewEmptyCatalog(), nil, nil)
+	app := newAuthenticatedTestAPI(t, tutor.NewService(failingProvider{}), curriculum.NewEmptyCatalog(), nil, nil)
 	req := httptest.NewRequest(http.MethodPost, "/api/tutor/turns", strings.NewReader(`{"message":"hello"}`))
 	req.Header.Set("Content-Type", "application/json")
 	response := httptest.NewRecorder()

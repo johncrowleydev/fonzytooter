@@ -129,7 +129,11 @@ func registerLearning(api huma.API, service *learner.Service) {
 		if service == nil {
 			return nil, huma.Error500InternalServerError("learner service is unavailable")
 		}
-		progress, err := service.LessonProgress(ctx, input.CourseID, input.ModuleID, input.LessonID)
+		userID, err := requireUserID(ctx)
+		if err != nil {
+			return nil, err
+		}
+		progress, err := service.LessonProgress(ctx, userID, input.CourseID, input.ModuleID, input.LessonID)
 		if err != nil {
 			return nil, learningError("get lesson progress", err)
 		}
@@ -147,7 +151,11 @@ func registerLearning(api huma.API, service *learner.Service) {
 		if service == nil {
 			return nil, huma.Error500InternalServerError("learner service is unavailable")
 		}
-		progress, err := service.SetLessonProgress(ctx, input.CourseID, input.ModuleID, input.LessonID, input.Body.Completed)
+		userID, err := requireUserID(ctx)
+		if err != nil {
+			return nil, err
+		}
+		progress, err := service.SetLessonProgress(ctx, userID, input.CourseID, input.ModuleID, input.LessonID, input.Body.Completed)
 		if err != nil {
 			return nil, learningError("put lesson progress", err)
 		}
@@ -165,7 +173,11 @@ func registerLearning(api huma.API, service *learner.Service) {
 		if service == nil {
 			return nil, huma.Error500InternalServerError("learner service is unavailable")
 		}
-		progress, err := service.CourseProgress(ctx, input.CourseID)
+		userID, err := requireUserID(ctx)
+		if err != nil {
+			return nil, err
+		}
+		progress, err := service.CourseProgress(ctx, userID, input.CourseID)
 		if err != nil {
 			return nil, learningError("get course progress", err)
 		}
@@ -222,7 +234,11 @@ func registerLearning(api huma.API, service *learner.Service) {
 		if service == nil {
 			return nil, huma.Error500InternalServerError("learner service is unavailable")
 		}
-		activities, err := service.Activities(ctx, input.CourseID, input.Limit)
+		userID, err := requireUserID(ctx)
+		if err != nil {
+			return nil, err
+		}
+		activities, err := service.Activities(ctx, userID, input.CourseID, input.Limit)
 		if err != nil {
 			return nil, learningError("list learner activities", err)
 		}
