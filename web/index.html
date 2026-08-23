@@ -4,8 +4,31 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#0f172a" />
+    <meta name="theme-color" content="#08111e" />
     <title>Fonzytooter</title>
+    <!--
+      Resolves the theme before first paint so a saved choice never flashes the other theme.
+      Deliberately inline and dependency-free: a module script would run too late. Keep the storage
+      key in step with THEME_STORAGE_KEY in src/app/theme.ts.
+    -->
+    <script>
+      ;(function () {
+        try {
+          var stored = localStorage.getItem('fonzytooter.theme')
+          var theme =
+            stored === 'light' || stored === 'dark'
+              ? stored
+              : window.matchMedia('(prefers-color-scheme: light)').matches
+                ? 'light'
+                : 'dark'
+          document.documentElement.dataset.theme = theme
+          // Set eagerly so native UI is correct even before the stylesheet parses.
+          document.documentElement.style.colorScheme = theme
+        } catch (error) {
+          document.documentElement.dataset.theme = 'dark'
+        }
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>

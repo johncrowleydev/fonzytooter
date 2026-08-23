@@ -1,6 +1,8 @@
-import { useState, type PropsWithChildren } from 'react'
+import type { PropsWithChildren } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
 import { navItems, type NavItem } from './navigation'
+import { useTheme } from './ThemeContext'
+import type { Theme } from './theme'
 import { TutorButton } from '../features/tutor/TutorButton'
 import { TutorOverlay } from '../features/tutor/TutorOverlay'
 
@@ -21,17 +23,10 @@ const navIconStyles = {
 } as const
 
 export function AppShell({ children }: PropsWithChildren) {
-  const [theme, setTheme] = useState<'dark' | 'light'>(() =>
-    window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark',
-  )
-
-  const toggleTheme = () => setTheme((current) => (current === 'dark' ? 'light' : 'dark'))
+  const { theme, toggleTheme } = useTheme()
 
   return (
-    <div
-      data-theme={theme}
-      className="flex min-h-screen bg-canvas font-sans text-ink [background-image:radial-gradient(circle_at_80%_-10%,rgba(53,83,107,0.13),transparent_32rem)]"
-    >
+    <div className="flex min-h-screen bg-canvas font-sans text-ink [background-image:radial-gradient(circle_at_80%_-10%,rgba(53,83,107,0.13),transparent_32rem)]">
       <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col overflow-hidden border-r border-line bg-shell px-4 py-6 lg:flex">
         <Link className="mb-14 flex items-center gap-3 px-2 text-left text-ink no-underline" to="/">
           <BrandMark />
@@ -107,18 +102,18 @@ function BrandMark() {
   )
 }
 
-function ThemeToggle({ theme, onClick }: { theme: 'dark' | 'light'; onClick: () => void }) {
+function ThemeToggle({ theme, onClick }: { theme: Theme; onClick: () => void }) {
   return (
     <button
       className="mt-2 flex w-full items-center gap-2 rounded-lg border border-line px-3 py-2.5 text-left text-xs text-muted transition hover:bg-brand-teal/10 hover:text-ink"
       type="button"
       onClick={onClick}
+      aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
     >
-      <span className="text-base leading-none text-brand-gold">{theme === 'dark' ? '☼' : '☾'}</span>
-      <span>{theme === 'dark' ? 'Light theme' : 'Dark theme'}</span>
-      <kbd className="ml-auto rounded border border-line px-1.5 py-0.5 text-2xs text-faint">
+      <span className="text-base leading-none text-brand-gold" aria-hidden="true">
         {theme === 'dark' ? '☼' : '☾'}
-      </kbd>
+      </span>
+      <span>{theme === 'dark' ? 'Light theme' : 'Dark theme'}</span>
     </button>
   )
 }
