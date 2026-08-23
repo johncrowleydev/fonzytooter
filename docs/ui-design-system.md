@@ -33,21 +33,27 @@ what theme is active.
 This is the distinction that matters most, because getting it wrong is the difference between 9:1
 and 1.8:1.
 
-**`brand-*`** is the vivid palette. It is theme-invariant, and it is used **only as a solid fill
-beneath `text-brand-ink`** — primary buttons, the brand mark, filled status dots. Dark ink on a
-vivid fill measures 7.4–12.2:1 in either theme, which is why these values never need to change.
+**`brand-*`** is the vivid palette, and it is theme-invariant. There are exactly two uses:
 
-**`accent-*`** is the same hues used as **content**: text, borders, focus outlines, SVG strokes, and
-low-alpha tints. These sit on canvas or panel, so they are theme-aware. The vivid values measure
-1.4–2.5:1 against a white panel, nowhere near the 4.5:1 that body text needs.
+- a **solid fill beneath `text-brand-ink`** — primary buttons and the brand mark. Dark ink on a
+  vivid fill measures 7.4–12.2:1 in either theme, which is why these values never need to change.
+- the **fill of a small shape that takes its edge from an accent rim**, such as a completed or
+  in-progress status dot. The fill alone measures under 2:1 on a white panel, so the rim is what
+  makes the dot perceivable; the fill only carries the hue.
 
-The test: **if something sits on a surface, it is `accent`. If text sits on it, it is `brand`.**
+**`accent-*`** is the same hues used as **content**: text, borders, focus outlines, SVG strokes,
+status dot rims, low-alpha tints, and bare meter fills. These sit on canvas or panel, so they are
+theme-aware. The vivid values measure 1.4–2.5:1 against a white panel, nowhere near the 4.5:1 that
+body text needs.
+
+The test: **if text sits on it, it is `brand`. Otherwise it is `accent`.**
 
 Two consequences that are easy to miss:
 
-- A progress bar or meter fill is `accent`, not `brand`. It carries no text, so it has to contrast
-  with its *track* rather than with a label. The vivid fill measures about 1.4:1 against the
-  light-mode track, which reads as an empty bar.
+- A progress bar or meter fill is `accent`, not `brand`, even though it is a fill. It carries no
+  text, so it has to contrast with its *track* rather than with a label, and the vivid fill
+  measures about 1.4:1 against the light-mode track — an apparently empty bar. Reclassifying a bare
+  meter as `brand` because "it is a fill" is the specific regression to avoid.
 - A solid 2px accent border or a status-dot rim is `accent`. It is a meaningful graphic, and the
   vivid hue is close to invisible on a white panel.
 
@@ -232,7 +238,8 @@ screen, write a check rather than a convention.
 
 Alongside the checklist in `docs/frontend.md`, verify that:
 
-- brand hues are `accent-*` unless they are a solid fill under `text-brand-ink`;
+- brand hues are `accent-*` unless text sits on them, or they are a small shape given its edge by
+  an accent rim — a bare meter fill is `accent`;
 - no Tailwind default palette color is hardcoded;
 - nothing renders below 12px, and 12px is a label rather than a sentence;
 - no `outline-0`, and no per-component focus styles;
