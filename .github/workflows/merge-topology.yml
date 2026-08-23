@@ -1,0 +1,145 @@
+name: Merge topology
+
+# Guards against stacked pull requests being merged into a branch instead of into main.
+#
+# GitHub merges a pull request into its base branch. For a stacked pull request the base is the
+# parent branch, and GitHub only retargets a child to main once the parent has actually merged.
+# Merging a stack in quick succession therefore lands only the pull request whose base was already
+# main -- every other one merges into a branch that main never sees again, and reports as merged.
+#
+# This has happened twice in this repository, orphaning eight pull requests: #68-#70 and #72-#76.
+# Neither incident produced a failing check, a conflict, or a broken build.
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  schedule:
+    # Backstop, since neither of the two incidents involved a push to main at the point of loss.
+    - cron: "17 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  stacked-base:
+    name: Stacked base is still open
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check that the base branch has not already been merged
+        shell: bash
+        env:
+          # Passed through the environment rather than interpolated into the script, so a branch
+          # name can never be treated as shell syntax.
+          GH_TOKEN: ${{ github.token }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+
+          if [ "$BASE_REF" = "main" ]; then
+            echo "Base is main. Nothing to check."
+            exit 0
+          fi
+
+          echo "::notice::This pull request targets '${BASE_REF}' rather than main. When the stack is ready, merge only its top branch, or retarget each pull request to main first. Merging bottom-up in quick succession is what orphans the middle of a stack."
+
+          merged_parent="$(gh pr list --state merged --head "$BASE_REF" --json number --jq '.[0].number // empty')"
+
+          if [ -n "$merged_parent" ]; then
+            echo "::error::Base branch '${BASE_REF}' was already merged in #${merged_parent}, so it is a dead branch. Merging #${PR_NUMBER} into it would leave this work unreachable from main even though the pull request would report as merged. Retarget #${PR_NUMBER} to main."
+            exit 1
+          fi
+
+          echo "Base branch '${BASE_REF}' has not been merged yet, so this stack is still intact."
+
+  orphaned-merges:
+    name: No merged work missing from main
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Check every merged pull request is reachable from main
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          RECONCILED_FILE: .github/reconciled-pull-requests.txt
+        run: |
+          set -euo pipefail
+
+          # Recorded exceptions, for branches force-pushed after merging. See the file's own
+          # header for why they cannot be detected automatically.
+          reconciled=" "
+          if [ -f "$RECONCILED_FILE" ]; then
+            while read -r number _rest; do
+              case "$number" in
+                ''|'#'*) continue ;;
+              esac
+              reconciled="${reconciled}${number} "
+            done < "$RECONCILED_FILE"
+          fi
+
+          # Containment is resolved through the compare API rather than locally, because an
+          # orphaned branch may have been deleted and its commits are then unreachable from any
+          # local ref -- which is the very state being detected.
+          gh api --paginate \
+            "repos/${REPOSITORY}/pulls?state=closed&per_page=100" \
+            --jq '.[] | select(.merged_at != null) | [.number, .head.sha, .title] | @tsv' \
+            > merged.tsv
+
+          orphaned=0
+          checked=0
+          stale_exceptions=0
+
+          while IFS=$'\t' read -r number sha title; do
+            [ -n "$number" ] || continue
+            checked=$((checked + 1))
+
+            status="$(gh api "repos/${REPOSITORY}/compare/main...${sha}" --jq '.status' 2>/dev/null || echo 'unknown')"
+            contained=no
+            case "$status" in
+              identical|behind) contained=yes ;;
+            esac
+
+            case "$reconciled" in
+              *" ${number} "*) known=yes ;;
+              *) known=no ;;
+            esac
+
+            if [ "$contained" = yes ]; then
+              if [ "$known" = yes ]; then
+                stale_exceptions=$((stale_exceptions + 1))
+                echo "::warning::#${number} is reachable from main on its own, so its line in ${RECONCILED_FILE} is stale and should be deleted."
+              fi
+              continue
+            fi
+
+            if [ "$known" = yes ]; then
+              echo "::notice::#${number} is not reachable from main but is recorded in ${RECONCILED_FILE}. ${title}"
+              continue
+            fi
+
+            orphaned=$((orphaned + 1))
+            echo "::error::#${number} reports as merged but its head is not reachable from main (compare status: ${status}). ${title}"
+          done < merged.tsv
+
+          echo "Checked ${checked} merged pull requests; ${stale_exceptions} stale exception(s)."
+
+          if [ "$orphaned" -ne 0 ]; then
+            echo "::error::${orphaned} merged pull request(s) are missing from main. Recover them by merging the top branch of each affected stack, then record any branch that was force-pushed after merging in ${RECONCILED_FILE}."
+            exit 1
+          fi
+
+          echo "All merged pull requests are accounted for."

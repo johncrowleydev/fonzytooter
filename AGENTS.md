@@ -33,6 +33,7 @@ Read the relevant files in `docs/` before making architectural changes. Multi-co
 - **Use Git worktrees for agent tasks.** Each agent/task should normally work in its own worktree and branch, especially when work may happen in parallel. Multiple agents must not mutate the same working tree and risk overwriting or interleaving each other's changes.
 - **Use purpose-based branch and commit prefixes.** Names should describe the reason for the change, such as `docs/`, `fix/`, or `feat/`, rather than the agent or author identity.
 - **Inspect the working tree before committing.** Review `git status` and the relevant diff so temporary files, extracted artifacts, or another agent's work are not accidentally included.
+- **Merge only the top branch of a stacked pull request, or retarget each pull request to `main` first.** A pull request merges into its base branch, and GitHub retargets a child to `main` only once the parent has actually merged. Merging a stack bottom-up in quick succession therefore lands only the pull request whose base was already `main`; the rest merge into branches `main` never sees again, and still report as merged. This has orphaned eight pull requests across two incidents, in both cases with no failing check, conflict, or broken build. The `Merge topology` workflow now guards both halves of this: it fails a pull request whose base branch has already been merged, and audits `main` for merged work that is unreachable from it.
 
 ## Pull request authority and integration
 
