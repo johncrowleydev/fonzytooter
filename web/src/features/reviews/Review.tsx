@@ -12,6 +12,8 @@ import type { ReviewSubmission } from '../../api/generated/schemas/reviewSubmiss
 import { DEFAULT_COURSE_ID } from '../../app/routes'
 import { Badge, Button, Card, PageIntro, ProgressBar } from '../../components/ui'
 import { useTutor } from '../tutor/TutorContext'
+import { useAuth } from '../authentication/AuthContext'
+import { SignInRequired } from '../authentication/SignInRequired'
 
 const ratingStyles: Record<ReviewSubmission['rating'], string> = {
   again:
@@ -29,9 +31,14 @@ const ratingLabels: Record<ReviewSubmission['rating'], string> = {
 }
 
 export function Review() {
+  const auth = useAuth()
   const queryClient = useQueryClient()
   const { setPageContext } = useTutor()
-  const dueCards = useListReviewCards(DEFAULT_COURSE_ID, { due: true })
+  const dueCards = useListReviewCards(
+    DEFAULT_COURSE_ID,
+    { due: true },
+    { query: { enabled: auth.isAuthenticated } },
+  )
   const createReview = useCreateReviewCardReview()
   const [sessionCards, setSessionCards] = useState<ReviewCardResource[] | null>(null)
 
@@ -44,6 +51,19 @@ export function Review() {
       setSessionCards(dueCards.data.data)
     }
   }, [dueCards.data?.data, sessionCards])
+
+  if (auth.isPending) {
+    return <ReviewStatus title="Checking learner access…" detail="Loading your session." />
+  }
+  if (!auth.isAuthenticated) {
+    return (
+      <SignInRequired
+        title="Review is part of your learner record"
+        detail="Sign in to load your scheduled review cards and record recall history."
+        returnTo="/review"
+      />
+    )
+  }
 
   if (dueCards.isError) {
     return (

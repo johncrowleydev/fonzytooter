@@ -13,41 +13,46 @@ import { Projects } from './features/projects/Projects'
 import { Review } from './features/reviews/Review'
 import { TutorProvider } from './features/tutor/TutorContext'
 import { Worksheet } from './features/worksheets/Worksheet'
+import { AuthProvider } from './features/authentication/AuthContext'
+import { SignIn } from './features/authentication/SignIn'
 
 export function App() {
   return (
     <ThemeProvider>
-      <TutorProvider>
-        <AppShell>
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route
-              path="/curriculum"
-              element={<Navigate to={coursePath(DEFAULT_COURSE_ID)} replace />}
-            />
-            <Route path="/courses/:courseId" element={<Curriculum />} />
-            <Route path="/courses/:courseId/modules/:moduleId" element={<ModuleDetail />} />
-            <Route
-              path="/courses/:courseId/modules/:moduleId/lessons/:lessonId"
-              element={<Lesson />}
-            />
-            <Route
-              path="/courses/:courseId/modules/:moduleId/worksheets/:worksheetId"
-              element={<Worksheet />}
-            />
-            <Route path="/review" element={<Review />} />
-            <Route
-              path="/courses/:courseId/modules/:moduleId/exercises/:exerciseId"
-              element={<Exercise />}
-            />
-            <Route path="/exercise/:exerciseId" element={<Navigate to="/curriculum" replace />} />
-            <Route path="/progress" element={<Progress />} />
-            <Route path="/projects" element={<Projects />} />
-            <Route path="/projects/:projectId" element={<ProjectDetail />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </AppShell>
-      </TutorProvider>
+      <AuthProvider>
+        <TutorProvider>
+          <AppShell>
+            <Routes>
+              <Route path="/" element={<Dashboard />} />
+              <Route
+                path="/curriculum"
+                element={<Navigate to={coursePath(DEFAULT_COURSE_ID)} replace />}
+              />
+              <Route path="/courses/:courseId" element={<Curriculum />} />
+              <Route path="/courses/:courseId/modules/:moduleId" element={<ModuleDetail />} />
+              <Route
+                path="/courses/:courseId/modules/:moduleId/lessons/:lessonId"
+                element={<Lesson />}
+              />
+              <Route
+                path="/courses/:courseId/modules/:moduleId/worksheets/:worksheetId"
+                element={<Worksheet />}
+              />
+              <Route path="/review" element={<Review />} />
+              <Route
+                path="/courses/:courseId/modules/:moduleId/exercises/:exerciseId"
+                element={<Exercise />}
+              />
+              <Route path="/exercise/:exerciseId" element={<Navigate to="/curriculum" replace />} />
+              <Route path="/progress" element={<Progress />} />
+              <Route path="/sign-in" element={<SignIn />} />
+              <Route path="/projects" element={<Projects />} />
+              <Route path="/projects/:projectId" element={<ProjectDetail />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </AppShell>
+        </TutorProvider>
+      </AuthProvider>
     </ThemeProvider>
   )
 }

@@ -1,10 +1,17 @@
 import type { PropsWithChildren } from 'react'
-import { Link, NavLink, useLocation } from 'react-router-dom'
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import { navItems, type NavItem } from './navigation'
 import { useTheme } from './ThemeContext'
 import type { Theme } from './theme'
 import { TutorButton } from '../features/tutor/TutorButton'
 import { TutorOverlay } from '../features/tutor/TutorOverlay'
+import {
+  getGetCurrentAuthenticationSessionQueryKey,
+  useDeleteCurrentAuthenticationSession,
+} from '../api/generated/endpoints'
+import { useAuth } from '../features/authentication/AuthContext'
+import { SignInLink } from '../features/authentication/SignInLink'
 
 const navLinkStyles = {
   compact: {
@@ -44,17 +51,7 @@ export function AppShell({ children }: PropsWithChildren) {
 
         <div className="min-h-24 flex-1" />
         <ThemeToggle theme={theme} onClick={toggleTheme} />
-        <div className="mt-4 flex items-center gap-2 border-t border-line px-2 pt-3">
-          {/* A single initial inside a 28px circle, so it stays on the label tier. */}
-          <span className="grid size-7 place-items-center rounded-full bg-avatar text-xs font-bold">
-            F
-          </span>
-          <span>
-            <strong className="block text-sm">Fonzy</strong>
-            <small className="mt-0.5 block text-sm text-faint">Learning mode</small>
-          </span>
-          <span className="ml-auto text-faint">···</span>
-        </div>
+        <AccountControl />
       </aside>
 
       <div className="min-w-0 flex-1">
@@ -64,6 +61,7 @@ export function AppShell({ children }: PropsWithChildren) {
             <strong className="text-base tracking-tight">Fonzytooter</strong>
           </Link>
           <div className="flex items-center gap-2">
+            <MobileAccountControl />
             <button
               className="grid size-8 place-items-center rounded-full border border-line-strong bg-accent-gold/10 text-accent-gold pointer-coarse:size-11"
               onClick={toggleTheme}
@@ -92,6 +90,69 @@ export function AppShell({ children }: PropsWithChildren) {
       <TutorButton />
       <TutorOverlay />
     </div>
+  )
+}
+
+function AccountControl() {
+  const auth = useAuth()
+  const navigate = useNavigate()
+  const queryClient = useQueryClient()
+  const signOut = useDeleteCurrentAuthenticationSession()
+
+  if (auth.isPending)
+    return (
+      <div className="mt-4 border-t border-line px-2 pt-3 text-sm text-faint">
+        Checking session…
+      </div>
+    )
+  if (!auth.isAuthenticated) {
+    return (
+      <SignInLink className="mt-4 border-t border-line px-2 pt-3 text-sm font-bold text-accent-teal no-underline hover:text-ink">
+        Sign in
+      </SignInLink>
+    )
+  }
+
+  return (
+    <div className="mt-4 flex items-center gap-2 border-t border-line px-2 pt-3">
+      <span className="grid size-7 place-items-center rounded-full bg-avatar text-xs font-bold">
+        {auth.user?.displayName.slice(0, 1).toUpperCase() ?? 'L'}
+      </span>
+      <span className="min-w-0 flex-1">
+        <strong className="block truncate text-sm">{auth.user?.displayName ?? 'Learner'}</strong>
+        <small className="mt-0.5 block text-sm text-faint">Learning mode</small>
+      </span>
+      <button
+        className="text-sm text-faint hover:text-ink"
+        disabled={signOut.isPending}
+        onClick={async () => {
+          await signOut.mutateAsync()
+          const sessionKey = getGetCurrentAuthenticationSessionQueryKey()
+          queryClient.removeQueries({
+            predicate: (query) => query.queryKey[0] !== sessionKey[0],
+          })
+          queryClient.setQueryData(sessionKey, {
+            data: { authenticated: false },
+            status: 200,
+            headers: {},
+          })
+          void navigate('/')
+        }}
+        type="button"
+      >
+        Sign out
+      </button>
+    </div>
+  )
+}
+
+function MobileAccountControl() {
+  const auth = useAuth()
+  if (auth.isPending || auth.isAuthenticated) return null
+  return (
+    <SignInLink className="px-2 py-2 text-sm font-bold text-accent-teal no-underline">
+      Sign in
+    </SignInLink>
   )
 }
 

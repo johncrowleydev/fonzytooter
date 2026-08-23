@@ -3,6 +3,8 @@ import { getMockTutorResponse } from './api'
 import { useTutor } from './TutorContext'
 import type { TutorMessage, TutorMode } from './types'
 import { Button } from '../../components/ui'
+import { useAuth } from '../authentication/AuthContext'
+import { SignInLink } from '../authentication/SignInLink'
 
 const FOCUSABLE_SELECTOR =
   'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
@@ -24,6 +26,7 @@ const messageLabelStyles = {
 } as const
 
 export function TutorOverlay() {
+  const auth = useAuth()
   const { isOpen, closeTutor, pageContext } = useTutor()
   const [input, setInput] = useState('')
   const [mode, setMode] = useState<TutorMode>('explain')
@@ -100,6 +103,8 @@ export function TutorOverlay() {
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
 
+    if (!auth.isAuthenticated) return
+
     const message = input.trim()
     if (!message || isThinking) return
 
@@ -171,29 +176,43 @@ export function TutorOverlay() {
           </button>
         </header>
 
-        <div className="flex flex-wrap gap-1.5 px-5 pb-3.5 pt-4 max-sm:px-4">
-          {(
-            [
-              ['explain', 'Explain'],
-              ['socratic', 'Socratic'],
-              ['exercise', 'Exercise help'],
-              ['quiz', 'Quiz'],
-              ['explore', 'Explore'],
-            ] as const
-          ).map(([value, label]) => (
-            <button
-              key={value}
-              type="button"
-              onClick={() => setMode(value)}
-              className={`rounded-full border px-3 py-2 text-sm pointer-coarse:min-h-11 pointer-coarse:px-4 ${mode === value ? modeButtonStyles.active : modeButtonStyles.inactive}`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+        {auth.isAuthenticated ? (
+          <div className="flex flex-wrap gap-1.5 px-5 pb-3.5 pt-4 max-sm:px-4">
+            {(
+              [
+                ['explain', 'Explain'],
+                ['socratic', 'Socratic'],
+                ['exercise', 'Exercise help'],
+                ['quiz', 'Quiz'],
+                ['explore', 'Explore'],
+              ] as const
+            ).map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setMode(value)}
+                className={`rounded-full border px-3 py-2 text-sm pointer-coarse:min-h-11 pointer-coarse:px-4 ${mode === value ? modeButtonStyles.active : modeButtonStyles.inactive}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        ) : null}
 
         <div className="flex-1 overflow-y-auto px-5 py-2 max-sm:px-4">
-          {messages.length === 0 ? (
+          {!auth.isAuthenticated ? (
+            <div className="grid min-h-full place-items-center content-center p-8 text-center">
+              <span className="text-2xl text-accent-gold">✦</span>
+              <h3 className="mt-4 text-xl tracking-tight">Sign in to ask the tutor</h3>
+              <p className="mt-3 max-w-sm text-sm leading-relaxed text-muted">
+                The curriculum is public. Tutor conversations use your private learner context and
+                require a learner session.
+              </p>
+              <SignInLink className="mt-5 rounded-lg bg-brand-teal px-4 py-2.5 text-sm font-bold text-brand-ink no-underline hover:bg-brand-teal-light">
+                Sign in and return here
+              </SignInLink>
+            </div>
+          ) : messages.length === 0 ? (
             <div className="p-10 text-center">
               <span className="block text-2xl text-accent-gold">✦</span>
               <p className="text-sm leading-relaxed text-muted">
@@ -236,24 +255,26 @@ export function TutorOverlay() {
           ))}
         </div>
 
-        <form onSubmit={handleSubmit} className="border-t border-line px-5 pb-5 pt-4 max-sm:px-4">
-          <textarea
-            ref={promptRef}
-            value={input}
-            onChange={(event) => setInput(event.target.value)}
-            placeholder="Ask anything about this screen…"
-            rows={3}
-            className="block min-h-20 w-full resize-none rounded-lg border border-line-strong bg-panel-soft p-3 text-sm leading-normal text-ink placeholder:text-faint focus-visible:border-accent-teal"
-          />
-          <div className="mt-2 flex items-center justify-between gap-2.5">
-            <span className="text-sm text-faint">
-              {mode === 'exercise' ? 'Hints, not solutions' : 'Ask a question'}
-            </span>
-            <Button type="submit" disabled={isThinking || !input.trim()}>
-              {isThinking ? 'Thinking…' : 'Send'} <span>↗</span>
-            </Button>
-          </div>
-        </form>
+        {auth.isAuthenticated ? (
+          <form onSubmit={handleSubmit} className="border-t border-line px-5 pb-5 pt-4 max-sm:px-4">
+            <textarea
+              ref={promptRef}
+              value={input}
+              onChange={(event) => setInput(event.target.value)}
+              placeholder="Ask anything about this screen…"
+              rows={3}
+              className="block min-h-20 w-full resize-none rounded-lg border border-line-strong bg-panel-soft p-3 text-sm leading-normal text-ink placeholder:text-faint focus-visible:border-accent-teal"
+            />
+            <div className="mt-2 flex items-center justify-between gap-2.5">
+              <span className="text-sm text-faint">
+                {mode === 'exercise' ? 'Hints, not solutions' : 'Ask a question'}
+              </span>
+              <Button type="submit" disabled={isThinking || !input.trim()}>
+                {isThinking ? 'Thinking…' : 'Send'} <span>↗</span>
+              </Button>
+            </div>
+          </form>
+        ) : null}
       </section>
     </div>
   )
