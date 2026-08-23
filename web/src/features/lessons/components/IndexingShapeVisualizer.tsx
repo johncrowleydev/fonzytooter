@@ -79,6 +79,7 @@ export function IndexingShapeVisualizer() {
           <Button
             key={candidate.expression}
             variant={index === selectedIndex ? 'primary' : 'outline'}
+            pressed={index === selectedIndex}
             onClick={() => setSelectedIndex(index)}
           >
             <code>{candidate.expression}</code>
@@ -93,20 +94,20 @@ export function IndexingShapeVisualizer() {
           label={`Source x; values selected by ${selection.expression} are marked`}
         />
         <div
-          className="grid content-start gap-3 rounded-lg border border-brand-violet/30 bg-brand-violet/10 p-4"
+          className="grid content-start gap-3 rounded-lg border border-accent-violet/30 bg-accent-violet/10 p-4"
           role="status"
           aria-live="polite"
         >
           <p className="font-mono text-sm text-ink">
             {selection.expression} → {selection.values}
           </p>
-          <p className="font-mono text-sm text-brand-violet">
+          <p className="font-mono text-sm text-accent-violet">
             result shape: {formatShape(selection.shape)}
           </p>
-          <p className="text-xs leading-relaxed text-muted">{selection.reason}</p>
+          <p className="text-sm leading-relaxed text-muted">{selection.reason}</p>
         </div>
       </div>
-      <p className="rounded-lg border border-brand-gold/30 bg-brand-gold/10 p-4 text-xs leading-relaxed text-ink">
+      <p className="rounded-lg border border-accent-gold/30 bg-accent-gold/10 p-4 text-sm leading-relaxed text-ink">
         Compare <code>x[0]</code> with <code>x[0:1]</code>: they select the same values, but only
         the slice keeps axis 0.
       </p>

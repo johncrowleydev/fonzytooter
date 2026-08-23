@@ -105,6 +105,7 @@ export function BroadcastShapeLab() {
           <Button
             key={`${formatShape(candidate.left)}-${formatShape(candidate.right)}`}
             variant={index === caseIndex ? 'secondary' : 'outline'}
+            pressed={index === caseIndex}
             onClick={() => {
               setCaseIndex(index)
               setCompatibilityPrediction(null)
@@ -116,7 +117,7 @@ export function BroadcastShapeLab() {
         ))}
       </div>
       <div
-        className="overflow-x-auto rounded-lg border border-line bg-brand-ink p-4 font-mono text-sm text-slate-100"
+        className="overflow-x-auto overscroll-x-contain rounded-lg border border-line bg-code-surface p-4 font-mono text-sm text-code-ink"
         aria-label="Right-aligned shapes"
       >
         <div
@@ -159,17 +160,20 @@ export function BroadcastShapeLab() {
         </Button>
       </div>
       {compatibilityPrediction !== null && !compatibilityCorrect ? (
-        <div className="rounded-lg border border-brand-coral/30 bg-brand-coral/10 p-4" role="alert">
-          <p className="text-xs text-ink">
+        <div
+          className="rounded-lg border border-accent-coral/30 bg-accent-coral/10 p-4"
+          role="alert"
+        >
+          <p className="text-sm text-ink">
             <strong>Not yet.</strong> Compare from the right; missing leading dimensions are shown
             as 1.
           </p>
         </div>
       ) : null}
       {compatibilityCorrect && result.compatible ? (
-        <fieldset className="grid gap-3 rounded-lg border border-brand-blue/30 bg-brand-blue/10 p-4">
-          <legend className="px-1 text-xs font-semibold text-ink">Predict the result shape</legend>
-          <p className="text-xs leading-relaxed text-muted">
+        <fieldset className="grid gap-3 rounded-lg border border-accent-blue/30 bg-accent-blue/10 p-4">
+          <legend className="px-1 text-sm font-semibold text-ink">Predict the result shape</legend>
+          <p className="text-sm leading-relaxed text-muted">
             Compatible. For each aligned position, take the larger compatible dimension.
           </p>
           <div className="flex flex-wrap gap-2">
@@ -179,6 +183,7 @@ export function BroadcastShapeLab() {
                 <Button
                   key={label}
                   variant={shapePrediction === label ? 'secondary' : 'outline'}
+                  pressed={shapePrediction === label}
                   onClick={() => setShapePrediction(label)}
                   disabled={shapeCorrect}
                 >
@@ -189,7 +194,7 @@ export function BroadcastShapeLab() {
           </div>
           {shapePrediction !== null && !shapeCorrect ? (
             <p
-              className="rounded-md border border-brand-coral/30 bg-brand-coral/10 p-3 text-xs text-ink"
+              className="rounded-md border border-accent-coral/30 bg-accent-coral/10 p-3 text-sm text-ink"
               role="alert"
             >
               <strong>Not yet.</strong> Build the result from the larger compatible dimension at
@@ -200,10 +205,10 @@ export function BroadcastShapeLab() {
       ) : null}
       {terminal ? (
         <div
-          className="grid gap-3 rounded-lg border border-brand-teal/30 bg-brand-teal/10 p-4"
+          className="grid gap-3 rounded-lg border border-accent-teal/30 bg-accent-teal/10 p-4"
           role="status"
         >
-          <p className="text-xs text-ink">
+          <p className="text-sm text-ink">
             <strong>Correct.</strong>{' '}
             {result.compatible
               ? 'The compatibility decision and result-shape prediction both follow the right-aligned rule.'
@@ -213,7 +218,7 @@ export function BroadcastShapeLab() {
             {result.comparisons.map((comparison, index) => (
               <p
                 key={index}
-                className="rounded-md border border-line bg-panel p-3 text-xs text-muted"
+                className="rounded-md border border-line bg-panel p-3 text-sm text-muted"
               >
                 aligned axis {index}: {comparison.left} vs {comparison.right} —{' '}
                 {comparison.compatible ? 'compatible' : 'incompatible'}

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Badge, Button, Card } from '../../../components/ui'
 import { InteractiveHeader, ValueGrid } from './ArrayVisual'
+import { HighlightedCode } from '../../../components/HighlightedCode'
 
 const inputs = [0, 10, 20, 30]
 
@@ -49,7 +50,7 @@ export function LoopVectorizationExplorer() {
         </Button>
       </div>
       <p
-        className="rounded-lg border border-brand-teal/30 bg-brand-teal/10 p-4 text-xs leading-relaxed text-ink"
+        className="rounded-lg border border-accent-teal/30 bg-accent-teal/10 p-4 text-sm leading-relaxed text-ink"
         role="status"
         aria-live="polite"
       >
@@ -63,12 +64,14 @@ export function LoopVectorizationExplorer() {
 
 function CodePanel({ title, code, detail }: { title: string; code: string; detail: string }) {
   return (
-    <section className="rounded-lg border border-line bg-white/5 p-4">
+    <section className="rounded-lg border border-line bg-raised p-4">
       <h3 className="text-sm font-semibold text-ink">{title}</h3>
-      <pre className="mt-3 overflow-x-auto rounded-md bg-brand-ink p-3 font-mono text-xs leading-relaxed text-slate-100">
-        <code>{code}</code>
+      <pre className="mt-3 overflow-x-auto overscroll-x-contain rounded-md bg-code-surface p-3 font-mono text-sm leading-relaxed text-code-ink">
+        <code>
+          <HighlightedCode code={code} language="python" />
+        </code>
       </pre>
-      <p className="mt-3 text-xs leading-relaxed text-muted">{detail}</p>
+      <p className="mt-3 text-sm leading-relaxed text-muted">{detail}</p>
     </section>
   )
 }

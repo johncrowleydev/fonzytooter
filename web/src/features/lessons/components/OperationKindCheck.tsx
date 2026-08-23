@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Badge, Button, Card } from '../../../components/ui'
 import { InteractiveHeader } from './ArrayVisual'
+import { HighlightedCode } from '../../../components/HighlightedCode'
 
 type Kind = 'element-wise transformation' | 'reduction' | 'vectorized comparison' | 'composition'
 
@@ -73,6 +74,7 @@ export function OperationKindCheck() {
           <Button
             key={candidate.expression}
             variant={candidateIndex === index ? 'secondary' : 'outline'}
+            pressed={candidateIndex === index}
             onClick={() => {
               setIndex(candidateIndex)
               setAnswer(null)
@@ -83,14 +85,15 @@ export function OperationKindCheck() {
           </Button>
         ))}
       </div>
-      <code className="rounded-lg border border-line bg-brand-ink p-4 text-sm text-slate-100">
-        {question.expression}
+      <code className="rounded-lg border border-line bg-code-surface p-4 text-sm text-code-ink">
+        <HighlightedCode code={question.expression} language="python" />
       </code>
       <div className="grid gap-2 sm:grid-cols-2" role="group" aria-label="Operation kinds">
         {kinds.map((kind) => (
           <Button
             key={kind}
             variant={answer === kind ? 'secondary' : 'outline'}
+            pressed={answer === kind}
             onClick={() => choose(kind)}
             disabled={correct}
           >
@@ -102,8 +105,8 @@ export function OperationKindCheck() {
         <p
           className={
             correct
-              ? 'rounded-md border border-brand-teal/30 bg-brand-teal/10 p-3 text-xs text-ink'
-              : 'rounded-md border border-brand-coral/30 bg-brand-coral/10 p-3 text-xs text-ink'
+              ? 'rounded-md border border-accent-teal/30 bg-accent-teal/10 p-3 text-sm text-ink'
+              : 'rounded-md border border-accent-coral/30 bg-accent-coral/10 p-3 text-sm text-ink'
           }
           role={correct ? 'status' : 'alert'}
         >

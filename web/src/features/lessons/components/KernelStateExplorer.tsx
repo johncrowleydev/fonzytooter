@@ -79,7 +79,7 @@ export function KernelStateExplorer() {
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(15rem,0.45fr)]">
         <div className="grid gap-3">
           <NotebookCell count={counts[0]} number={1} onRun={() => runCell(0)}>
-            <label className="grid gap-2 text-xs text-muted" htmlFor="kernel-rate-source">
+            <label className="grid gap-2 text-sm text-muted" htmlFor="kernel-rate-source">
               <span>Visible source (editing does not execute)</span>
               <span className="flex items-center gap-2 font-mono text-sm text-ink">
                 rate ={' '}
@@ -101,7 +101,7 @@ export function KernelStateExplorer() {
             <code>print(result)</code>
             {cell3Output ? (
               <pre
-                className="mt-3 rounded-md border border-line bg-panel-soft p-3 text-xs text-ink"
+                className="mt-3 rounded-md border border-line bg-panel-soft p-3 text-sm text-ink"
                 aria-label="Cell 3 output"
               >
                 {cell3Output}
@@ -109,19 +109,19 @@ export function KernelStateExplorer() {
             ) : null}
           </NotebookCell>
         </div>
-        <aside className="grid content-start gap-3 rounded-lg border border-brand-violet/30 bg-brand-violet/10 p-4">
+        <aside className="grid content-start gap-3 rounded-lg border border-accent-violet/30 bg-accent-violet/10 p-4">
           <h3 className="text-sm font-semibold text-ink">Remembered kernel state</h3>
-          <p className="font-mono text-xs text-muted">rate = {kernel.rate ?? 'undefined'}</p>
-          <p className="font-mono text-xs text-muted">result = {kernel.result ?? 'undefined'}</p>
+          <p className="font-mono text-sm text-muted">rate = {kernel.rate ?? 'undefined'}</p>
+          <p className="font-mono text-sm text-muted">result = {kernel.result ?? 'undefined'}</p>
           <h3 className="mt-2 text-sm font-semibold text-ink">Execution history</h3>
           {history.length ? (
-            <ol className="grid gap-1 text-2xs text-muted">
+            <ol className="grid gap-1 text-sm text-muted">
               {history.map((entry, index) => (
                 <li key={`${entry}-${index}`}>{entry}</li>
               ))}
             </ol>
           ) : (
-            <p className="text-xs text-muted">No cells executed.</p>
+            <p className="text-sm text-muted">No cells executed.</p>
           )}
         </aside>
       </div>
@@ -134,7 +134,7 @@ export function KernelStateExplorer() {
           Reset simulation
         </Button>
       </div>
-      <p className="rounded-lg border border-brand-teal/30 bg-brand-teal/10 p-4 text-xs leading-relaxed text-ink">
+      <p className="rounded-lg border border-accent-teal/30 bg-accent-teal/10 p-4 text-sm leading-relaxed text-ink">
         Try this: run Cells 1 and 2, edit Cell 1 without running it, then run Cell 3. The visible
         page suggests one result while the kernel remembers another. Restart-and-run-all makes
         document order and execution history agree.
@@ -155,9 +155,9 @@ function NotebookCell({
   children: React.ReactNode
 }) {
   return (
-    <section className="grid gap-3 rounded-lg border border-line bg-white/5 p-4">
+    <section className="grid gap-3 rounded-lg border border-line bg-raised p-4">
       <div className="flex items-center justify-between gap-3">
-        <span className="font-mono text-xs text-faint">
+        <span className="font-mono text-sm text-faint">
           In [{count ?? ' '}]: Cell {number}
         </span>
         <Button variant="outline" onClick={onRun}>

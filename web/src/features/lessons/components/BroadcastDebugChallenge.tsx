@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Badge, Button, Card } from '../../../components/ui'
 import { InteractiveHeader } from './ArrayVisual'
+import { HighlightedCode } from '../../../components/HighlightedCode'
 
 type Challenge = 'row-means' | 'silent-grid'
 
@@ -50,29 +51,32 @@ export function BroadcastDebugChallenge() {
       <div className="flex flex-wrap gap-2">
         <Button
           variant={challenge === 'row-means' ? 'secondary' : 'outline'}
+          pressed={challenge === 'row-means'}
           onClick={() => chooseChallenge('row-means')}
         >
           Row means failure
         </Button>
         <Button
           variant={challenge === 'silent-grid' ? 'secondary' : 'outline'}
+          pressed={challenge === 'silent-grid'}
           onClick={() => chooseChallenge('silent-grid')}
         >
           Legal but wrong
         </Button>
       </div>
-      <section className="grid gap-3 rounded-lg border border-line bg-white/5 p-4">
+      <section className="grid gap-3 rounded-lg border border-line bg-raised p-4">
         <h3 className="text-sm font-semibold text-ink">{content.title}</h3>
-        <code className="overflow-x-auto rounded-md bg-brand-ink p-3 text-xs text-slate-100">
-          {content.expression}
+        <code className="overflow-x-auto overscroll-x-contain rounded-md bg-code-surface p-3 text-sm text-code-ink">
+          <HighlightedCode code={content.expression} language="python" />
         </code>
-        <p className="font-mono text-xs text-muted">{content.shapes}</p>
+        <p className="font-mono text-sm text-muted">{content.shapes}</p>
       </section>
       <div className="grid gap-2" role="group" aria-label="Debugging fixes">
         {content.options.map((option, index) => (
           <Button
             key={option}
             variant={answer === index ? 'secondary' : 'outline'}
+            pressed={answer === index}
             onClick={() => setAnswer(index)}
             disabled={correct}
           >
@@ -84,8 +88,8 @@ export function BroadcastDebugChallenge() {
         <p
           className={
             correct
-              ? 'rounded-md border border-brand-teal/30 bg-brand-teal/10 p-3 text-xs leading-relaxed text-ink'
-              : 'rounded-md border border-brand-coral/30 bg-brand-coral/10 p-3 text-xs leading-relaxed text-ink'
+              ? 'rounded-md border border-accent-teal/30 bg-accent-teal/10 p-3 text-sm leading-relaxed text-ink'
+              : 'rounded-md border border-accent-coral/30 bg-accent-coral/10 p-3 text-sm leading-relaxed text-ink'
           }
           role={correct ? 'status' : 'alert'}
         >

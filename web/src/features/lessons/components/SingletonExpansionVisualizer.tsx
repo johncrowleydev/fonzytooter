@@ -30,7 +30,7 @@ export function SingletonExpansionVisualizer() {
           values={result}
         />
       </div>
-      <p className="rounded-lg border border-brand-gold/30 bg-brand-gold/10 p-4 text-xs leading-relaxed text-ink">
+      <p className="rounded-lg border border-accent-gold/30 bg-accent-gold/10 p-4 text-sm leading-relaxed text-ink">
         <strong>Conceptual, not physical:</strong> repeated values make the result easy to reason
         about. NumPy normally does not need to materialize these expanded operand arrays in memory.
       </p>
@@ -48,10 +48,10 @@ function ExpansionPanel({
   values: readonly number[]
 }) {
   return (
-    <section className="grid gap-3 rounded-lg border border-line bg-white/5 p-4">
-      <h3 className="font-mono text-xs text-ink">{title}</h3>
+    <section className="grid gap-3 rounded-lg border border-line bg-raised p-4">
+      <h3 className="font-mono text-sm text-ink">{title}</h3>
       <ValueGrid values={values} columns={4} label={`${title}; ${values.join(', ')}`} />
-      <p className="text-2xs font-bold uppercase tracking-widest text-faint">{direction}</p>
+      <p className="text-xs font-bold uppercase tracking-widest text-faint">{direction}</p>
     </section>
   )
 }

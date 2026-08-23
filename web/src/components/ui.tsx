@@ -45,12 +45,19 @@ export function Button({
   className = '',
   type = 'button',
   disabled = false,
+  pressed,
 }: PropsWithChildren<{
   onClick?: () => void
   variant?: 'primary' | 'secondary' | 'quiet' | 'outline'
   className?: string
   type?: 'button' | 'submit'
   disabled?: boolean
+  /**
+   * Marks a toggle button's selected state. Pass this whenever `variant` is chosen from state --
+   * otherwise the selection exists only as a color difference, which assistive technology and
+   * anyone who cannot distinguish the two variants never receives.
+   */
+  pressed?: boolean
 }>) {
   const variants = {
     primary:
@@ -67,12 +74,17 @@ export function Button({
       type={type}
       onClick={onClick}
       disabled={disabled}
+      aria-pressed={pressed}
       /*
        * `pointer-coarse:min-h-11` reaches the 44px touch target without loosening the layout for a
        * mouse, where 40px is comfortable. `active:` matters more on touch than hover does: a
        * finger never hovers, so the press state is the only feedback a tap gets.
+       *
+       * The disabled styles are on the shared button rather than per call site because without
+       * them a disabled button is indistinguishable from an enabled one: it keeps full contrast
+       * and the pointer cursor while silently ignoring clicks.
        */
-      className={`inline-flex items-center justify-center gap-2.5 rounded-lg px-4 py-2.5 text-sm font-bold transition pointer-coarse:min-h-11 ${variants[variant]} ${className}`}
+      className={`inline-flex items-center justify-center gap-2.5 rounded-lg px-4 py-2.5 text-sm font-bold transition pointer-coarse:min-h-11 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 ${variants[variant]} ${className}`}
     >
       {children}
     </button>

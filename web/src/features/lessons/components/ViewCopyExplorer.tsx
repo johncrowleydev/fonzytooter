@@ -50,7 +50,7 @@ export function ViewCopyExplorer() {
         </Button>
       </div>
       <div
-        className="rounded-lg border border-line bg-white/5 p-4 text-xs leading-relaxed text-muted"
+        className="rounded-lg border border-line bg-raised p-4 text-sm leading-relaxed text-muted"
         role="status"
         aria-live="polite"
       >
@@ -72,14 +72,14 @@ function StoragePanel({
   values: readonly number[]
 }) {
   return (
-    <section className="grid gap-3 rounded-lg border border-line bg-white/5 p-4">
-      <h3 className="break-words font-mono text-xs text-ink">{title}</h3>
+    <section className="grid gap-3 rounded-lg border border-line bg-raised p-4">
+      <h3 className="break-words font-mono text-sm text-ink">{title}</h3>
       <ValueGrid
         values={values}
         columns={values.length}
         label={`${title} contains ${values.join(', ')}`}
       />
-      <p className="text-2xs font-bold uppercase tracking-widest text-faint">
+      <p className="text-xs font-bold uppercase tracking-widest text-faint">
         array object → {storage}
       </p>
     </section>

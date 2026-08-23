@@ -193,7 +193,7 @@ function SquareGraph({ domain }: { domain: SquareDomain }) {
         {showPositive ? (
           <g>
             <circle className="fill-accent-gold" cx="480" cy="143" r="8" />
-            <text className="fill-ink text-xs" x="490" y="133">
+            <text className="fill-ink text-sm" x="490" y="133">
               (3, 9)
             </text>
           </g>
@@ -201,15 +201,15 @@ function SquareGraph({ domain }: { domain: SquareDomain }) {
         {showNegative ? (
           <g>
             <circle className="fill-accent-gold" cx="120" cy="143" r="8" />
-            <text className="fill-ink text-xs" x="52" y="133">
+            <text className="fill-ink text-sm" x="52" y="133">
               (-3, 9)
             </text>
           </g>
         ) : null}
-        <text className="fill-muted text-xs" x="548" y="280">
+        <text className="fill-muted text-sm" x="548" y="280">
           x
         </text>
-        <text className="fill-muted text-xs" x="315" y="28">
+        <text className="fill-muted text-sm" x="315" y="28">
           y
         </text>
       </svg>
@@ -269,6 +269,7 @@ function DomainStage({
           <Button
             key={option}
             variant={domain === option ? 'primary' : 'outline'}
+            pressed={domain === option}
             onClick={() => onChoose(option)}
           >
             {domainLabels[option]}

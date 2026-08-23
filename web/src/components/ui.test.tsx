@@ -1,8 +1,58 @@
 import { cleanup, render, screen } from '@testing-library/react'
-import { afterEach, describe, expect, it } from 'vitest'
-import { StatusDot } from './ui'
+import userEvent from '@testing-library/user-event'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { Button, StatusDot } from './ui'
 
 afterEach(cleanup)
+
+describe('Button', () => {
+  /**
+   * A disabled button that looks enabled is worse than no disabled state: the learner clicks it and
+   * nothing happens. The shared button had no disabled styling at all, while two lesson components
+   * had rolled their own, so the shared primitive was the weakest of the two standards.
+   */
+  it('looks disabled when it is disabled, and ignores clicks', async () => {
+    const onClick = vi.fn()
+    render(
+      <Button disabled onClick={onClick}>
+        Locked
+      </Button>,
+    )
+    const button = screen.getByRole<HTMLButtonElement>('button', { name: 'Locked' })
+
+    expect(button.disabled).toBe(true)
+    expect(button.className).toContain('disabled:opacity-50')
+    expect(button.className).toContain('disabled:cursor-not-allowed')
+
+    await userEvent.click(button)
+    expect(onClick).not.toHaveBeenCalled()
+  })
+
+  it('exposes toggle state so selection is not colour-only', () => {
+    render(
+      <>
+        <Button pressed variant="primary">
+          Active
+        </Button>
+        <Button pressed={false} variant="outline">
+          Inactive
+        </Button>
+      </>,
+    )
+
+    expect(screen.getByRole('button', { name: 'Active' }).getAttribute('aria-pressed')).toBe('true')
+    expect(screen.getByRole('button', { name: 'Inactive' }).getAttribute('aria-pressed')).toBe(
+      'false',
+    )
+  })
+
+  it('omits aria-pressed entirely for a plain action button', () => {
+    render(<Button>Run</Button>)
+
+    // A plain button must not claim to be a toggle.
+    expect(screen.getByRole('button', { name: 'Run' }).hasAttribute('aria-pressed')).toBe(false)
+  })
+})
 
 describe('StatusDot', () => {
   /**

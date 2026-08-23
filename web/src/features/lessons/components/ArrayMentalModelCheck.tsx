@@ -76,6 +76,7 @@ export function ArrayMentalModelCheck() {
           <Button
             key={index}
             variant={index === questionIndex ? 'secondary' : 'outline'}
+            pressed={index === questionIndex}
             onClick={() => goTo(index)}
           >
             Question {index + 1}
@@ -83,7 +84,7 @@ export function ArrayMentalModelCheck() {
           </Button>
         ))}
       </div>
-      <section className="grid gap-4 rounded-lg border border-line bg-white/5 p-4">
+      <section className="grid gap-4 rounded-lg border border-line bg-raised p-4">
         <h3 className="text-sm leading-relaxed text-ink">{question.prompt}</h3>
         <div
           className="grid gap-2"
@@ -94,6 +95,7 @@ export function ArrayMentalModelCheck() {
             <Button
               key={answerText}
               variant={selected === index ? 'secondary' : 'outline'}
+              pressed={selected === index}
               onClick={() => answer(index)}
               disabled={correct}
             >
@@ -105,8 +107,8 @@ export function ArrayMentalModelCheck() {
           <p
             className={
               correct
-                ? 'rounded-md border border-brand-teal/30 bg-brand-teal/10 p-3 text-xs text-ink'
-                : 'rounded-md border border-brand-coral/30 bg-brand-coral/10 p-3 text-xs text-ink'
+                ? 'rounded-md border border-accent-teal/30 bg-accent-teal/10 p-3 text-sm text-ink'
+                : 'rounded-md border border-accent-coral/30 bg-accent-coral/10 p-3 text-sm text-ink'
             }
             role={correct ? 'status' : 'alert'}
           >

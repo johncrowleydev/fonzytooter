@@ -69,6 +69,7 @@ export function ReductionAxisExplorer() {
           <Button
             key={candidate.label}
             variant={exampleIndex === index ? 'primary' : 'outline'}
+            pressed={exampleIndex === index}
             onClick={() => chooseExample(index)}
           >
             {candidate.label} {formatShape(candidate.shape)}
@@ -77,7 +78,7 @@ export function ReductionAxisExplorer() {
       </div>
       <ShapeChips shape={example.shape} activeAxis={axis} />
       <fieldset className="grid gap-3 rounded-lg border border-line p-4">
-        <legend className="px-1 text-xs font-semibold text-ink">
+        <legend className="px-1 text-sm font-semibold text-ink">
           Which axis should mean() collapse?
         </legend>
         <div className="flex flex-wrap gap-2">
@@ -85,6 +86,7 @@ export function ReductionAxisExplorer() {
             <Button
               key={candidateAxis}
               variant={axis === candidateAxis ? 'secondary' : 'outline'}
+              pressed={axis === candidateAxis}
               onClick={() => {
                 setAxis(candidateAxis)
                 setPrediction(null)
@@ -94,7 +96,7 @@ export function ReductionAxisExplorer() {
             </Button>
           ))}
         </div>
-        <p className="text-xs text-muted">Predict the result shape after axis {axis} is removed:</p>
+        <p className="text-sm text-muted">Predict the result shape after axis {axis} is removed:</p>
         <div className="flex flex-wrap gap-2">
           {Array.from(
             new Set(
@@ -113,12 +115,12 @@ export function ReductionAxisExplorer() {
         <div
           className={
             correct
-              ? 'grid gap-3 rounded-lg border border-brand-teal/30 bg-brand-teal/10 p-4'
-              : 'rounded-lg border border-brand-coral/30 bg-brand-coral/10 p-4'
+              ? 'grid gap-3 rounded-lg border border-accent-teal/30 bg-accent-teal/10 p-4'
+              : 'rounded-lg border border-accent-coral/30 bg-accent-coral/10 p-4'
           }
           role={correct ? 'status' : 'alert'}
         >
-          <p className="text-xs leading-relaxed text-ink">
+          <p className="text-sm leading-relaxed text-ink">
             <strong>{correct ? 'Correct.' : 'Not yet.'}</strong> axis {axis} is the dimension being
             collapsed; the other axes keep their order.
           </p>
@@ -131,14 +133,14 @@ export function ReductionAxisExplorer() {
                 {groups.slice(0, 6).map((group, index) => (
                   <div
                     key={index}
-                    className="rounded-md border border-line bg-panel px-3 py-2 text-xs text-muted"
+                    className="rounded-md border border-line bg-panel px-3 py-2 text-sm text-muted"
                   >
                     output {index}: mean({group.join(', ')})
                   </div>
                 ))}
               </div>
               {groups.length > 6 ? (
-                <p className="text-2xs text-muted">
+                <p className="text-sm text-muted">
                   Showing the first 6 of {groups.length} output groups.
                 </p>
               ) : null}
