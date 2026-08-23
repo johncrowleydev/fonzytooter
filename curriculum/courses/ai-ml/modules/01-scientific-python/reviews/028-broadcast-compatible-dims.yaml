@@ -1,0 +1,7 @@
+id: broadcast-compatible-dims
+order: 28
+objectiveIds:
+  - numpy.broadcasting
+sourceLessonId: 05-broadcasting
+prompt: Under NumPy broadcasting, when are two corresponding dimensions compatible?
+answer: When they are equal or when either dimension is `1`.

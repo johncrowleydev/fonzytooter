@@ -1,0 +1,7 @@
+id: keepdims
+order: 31
+objectiveIds:
+  - numpy.broadcasting
+sourceLessonId: 05-broadcasting
+prompt: Why is `keepdims=True` useful on reductions that will be broadcast back against the original array?
+answer: It preserves the reduced axis as size `1`, often leaving a shape that broadcasts in the intended direction.

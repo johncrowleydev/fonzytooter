@@ -1,0 +1,8 @@
+id: names-bind-objects
+order: 1
+objectiveIds:
+  - python.execution-model
+sourceLessonId: 01-python-for-a-programmer
+prompt: In Python, what does assignment usually do with a name and an object?
+answer: Assignment binds the name to an object; it does not normally copy the object.
+hint: Think references, not boxes containing copied values.

@@ -1,0 +1,7 @@
+id: vectorized-thinking
+order: 21
+objectiveIds:
+  - numpy.vectorization
+sourceLessonId: 04-vectorized-thinking
+prompt: What does vectorized thinking mean in scientific Python?
+answer: Express the computation as operations on whole arrays rather than spelling out element-by-element Python iteration when array operations fit naturally.

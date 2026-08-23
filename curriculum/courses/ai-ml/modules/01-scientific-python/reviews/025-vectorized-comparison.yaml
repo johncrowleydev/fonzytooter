@@ -1,0 +1,7 @@
+id: vectorized-comparison
+order: 25
+objectiveIds:
+  - numpy.vectorization
+sourceLessonId: 04-vectorized-thinking
+prompt: What does a comparison such as `x > 0` return when `x` is a NumPy array?
+answer: A boolean array with one comparison result for each element.

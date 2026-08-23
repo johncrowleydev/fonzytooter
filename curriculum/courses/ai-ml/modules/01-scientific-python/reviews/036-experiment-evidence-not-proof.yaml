@@ -1,0 +1,7 @@
+id: experiment-evidence-not-proof
+order: 36
+objectiveIds:
+  - python.numerical-experiments
+sourceLessonId: 06-jupyter-and-numerical-experiments
+prompt: Why does checking many numerical cases not usually prove a universal mathematical claim?
+answer: A finite experiment can provide evidence or find counterexamples, but it does not establish that the claim holds for every possible case.

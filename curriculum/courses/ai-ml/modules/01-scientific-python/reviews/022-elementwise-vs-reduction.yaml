@@ -1,0 +1,7 @@
+id: elementwise-vs-reduction
+order: 22
+objectiveIds:
+  - numpy.vectorization
+sourceLessonId: 04-vectorized-thinking
+prompt: What is the difference between an element-wise transformation and a reduction?
+answer: An element-wise transformation produces corresponding values across the array; a reduction combines many values into fewer summary values.

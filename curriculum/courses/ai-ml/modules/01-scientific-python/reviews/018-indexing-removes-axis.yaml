@@ -1,0 +1,7 @@
+id: indexing-removes-axis
+order: 18
+objectiveIds:
+  - numpy.arrays
+sourceLessonId: 03-numpy-arrays-shape-dimension-and-dtype
+prompt: What usually happens to an axis when integer indexing fixes that axis to one coordinate?
+answer: That axis is removed from the result shape.
