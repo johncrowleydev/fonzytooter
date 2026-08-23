@@ -7,10 +7,10 @@ afterEach(cleanup)
 
 describe('Jupyter experiment interactives', () => {
   it('keeps visible source separate from executed kernel memory', () => {
-    let memory = executeNotebookCell({ output: '' }, 0, 2)
+    let memory = executeNotebookCell({}, 0, 2)
     memory = executeNotebookCell(memory, 1, 2)
     memory = executeNotebookCell(memory, 2, 5)
-    expect(memory).toMatchObject({ rate: 2, result: 20, output: '20' })
+    expect(memory).toEqual({ rate: 2, result: 20 })
   })
 
   it('restart-and-run-all recovers a clean top-to-bottom result', () => {
@@ -21,6 +21,21 @@ describe('Jupyter experiment interactives', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Restart and run all top to bottom' }))
     expect(screen.getByLabelText('Cell 3 output').textContent).toBe('50')
     expect(screen.getByText('rate = 5')).not.toBeNull()
+  })
+
+  it('keeps Cell 3 output when Cells 1 and 2 run afterward', () => {
+    render(<KernelStateExplorer />)
+    fireEvent.click(screen.getByRole('button', { name: 'Restart and run all top to bottom' }))
+    expect(screen.getByLabelText('Cell 3 output').textContent).toBe('20')
+
+    fireEvent.change(screen.getByLabelText('Visible rate source'), {
+      target: { value: '5' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Run cell 1' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Run cell 2' }))
+
+    expect(screen.getByLabelText('Cell 3 output').textContent).toBe('20')
+    expect(screen.getByText('result = 50')).not.toBeNull()
   })
 
   it('repeats a sequence only from the same starting state', () => {

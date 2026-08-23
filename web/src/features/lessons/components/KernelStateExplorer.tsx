@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Badge, Button, Card } from '../../../components/ui'
 import { InteractiveHeader } from './ArrayVisual'
 
-export type KernelMemory = { rate?: number; result?: number; output: string }
+export type KernelMemory = { rate?: number; result?: number }
 
 export function executeNotebookCell(
   memory: KernelMemory,
@@ -11,20 +11,23 @@ export function executeNotebookCell(
 ): KernelMemory {
   if (cell === 0) return { ...memory, rate: visibleRate }
   if (cell === 1) {
-    return memory.rate === undefined
-      ? { ...memory, output: "NameError: name 'rate' is not defined" }
-      : { ...memory, result: memory.rate * 10, output: '' }
+    return memory.rate === undefined ? memory : { ...memory, result: memory.rate * 10 }
   }
-  return memory.result === undefined
-    ? { ...memory, output: "NameError: name 'result' is not defined" }
-    : { ...memory, output: String(memory.result) }
+  return memory
 }
 
-const emptyKernel: KernelMemory = { output: '' }
+function cellThreeOutput(memory: KernelMemory) {
+  return memory.result === undefined
+    ? "NameError: name 'result' is not defined"
+    : String(memory.result)
+}
+
+const emptyKernel: KernelMemory = {}
 
 export function KernelStateExplorer() {
   const [rateSource, setRateSource] = useState('2')
   const [kernel, setKernel] = useState<KernelMemory>(emptyKernel)
+  const [cell3Output, setCell3Output] = useState('')
   const [counts, setCounts] = useState<(number | null)[]>([null, null, null])
   const [nextCount, setNextCount] = useState(1)
   const [history, setHistory] = useState<string[]>([])
@@ -33,7 +36,9 @@ export function KernelStateExplorer() {
   const sources = [`rate = ${rateSource}`, 'result = rate * 10', 'print(result)']
 
   function runCell(cell: number) {
-    setKernel((current) => executeNotebookCell(current, cell, visibleRate))
+    const nextKernel = executeNotebookCell(kernel, cell, visibleRate)
+    setKernel(nextKernel)
+    if (cell === 2) setCell3Output(cellThreeOutput(nextKernel))
     setCounts((current) => current.map((count, index) => (index === cell ? nextCount : count)))
     setHistory((current) => [...current, `[${nextCount}] Cell ${cell + 1}: ${sources[cell]}`])
     setNextCount((current) => current + 1)
@@ -52,6 +57,7 @@ export function KernelStateExplorer() {
     memory = executeNotebookCell(memory, 1, visibleRate)
     memory = executeNotebookCell(memory, 2, visibleRate)
     setKernel(memory)
+    setCell3Output(cellThreeOutput(memory))
     setCounts([1, 2, 3])
     setNextCount(4)
     setHistory(sources.map((source, index) => `[${index + 1}] Cell ${index + 1}: ${source}`))
@@ -60,6 +66,7 @@ export function KernelStateExplorer() {
   function resetSimulation() {
     setRateSource('2')
     restartKernel()
+    setCell3Output('')
   }
 
   return (
@@ -92,12 +99,12 @@ export function KernelStateExplorer() {
           </NotebookCell>
           <NotebookCell count={counts[2]} number={3} onRun={() => runCell(2)}>
             <code>print(result)</code>
-            {kernel.output ? (
+            {cell3Output ? (
               <pre
                 className="mt-3 rounded-md border border-line bg-panel-soft p-3 text-xs text-ink"
                 aria-label="Cell 3 output"
               >
-                {kernel.output}
+                {cell3Output}
               </pre>
             ) : null}
           </NotebookCell>
