@@ -1,0 +1,37 @@
+id: numpy.independent-slice
+title: Make an Independent Slice
+lessonId: 03-numpy-arrays-shape-dimension-and-dtype
+order: 2
+objectiveIds:
+  - numpy.arrays
+prompt: |
+  Implement `middle_copy(values)` so it returns elements 1 through 3 as an
+  independent NumPy array. Mutating the returned array must not mutate the input.
+starterCode: |
+  import numpy as np
+
+  def middle_copy(values):
+      pass
+tests:
+  - id: selects-middle
+    title: Selects elements 1 through 3
+    visibility: visible
+    code: |
+      source = np.array([10, 20, 30, 40, 50])
+      result = middle_copy(source)
+      assert np.array_equal(result, np.array([20, 30, 40]))
+  - id: independent-storage
+    title: Returned data is independent from the source
+    visibility: visible
+    code: |
+      source = np.array([10, 20, 30, 40, 50])
+      result = middle_copy(source)
+      result[:] = 0
+      assert np.array_equal(source, np.array([10, 20, 30, 40, 50]))
+  - id: works-for-other-values
+    title: Uses slicing rather than hard-coded values
+    visibility: hidden
+    code: |
+      source = np.array([3, 6, 9, 12, 15, 18])
+      result = middle_copy(source)
+      assert np.array_equal(result, np.array([6, 9, 12]))
