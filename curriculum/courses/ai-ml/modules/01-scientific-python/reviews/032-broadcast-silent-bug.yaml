@@ -1,0 +1,7 @@
+id: broadcast-silent-bug
+order: 32
+objectiveIds:
+  - numpy.broadcasting
+sourceLessonId: 05-broadcasting
+prompt: Why can a broadcasting bug be dangerous even when NumPy raises no error?
+answer: Different shapes can be legally broadcast into a result that is structurally valid but semantically not what the programmer intended.
