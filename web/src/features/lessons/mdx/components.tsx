@@ -2,6 +2,8 @@ import type { ComponentPropsWithoutRef } from 'react'
 import type { MDXComponents } from 'mdx/types'
 import { ArrayMentalModelCheck } from '../components/ArrayMentalModelCheck'
 import { ArrayStructureExplorer } from '../components/ArrayStructureExplorer'
+import { BroadcastDebugChallenge } from '../components/BroadcastDebugChallenge'
+import { BroadcastShapeLab } from '../components/BroadcastShapeLab'
 import { CompositionPipeline } from '../components/CompositionPipeline'
 import { IndexingShapeVisualizer } from '../components/IndexingShapeVisualizer'
 import { InverseExplorer } from '../components/InverseExplorer'
@@ -14,6 +16,7 @@ import { PythonMentalModelCheck } from '../components/PythonMentalModelCheck'
 import { ReferenceBindingExplorer } from '../components/ReferenceBindingExplorer'
 import { ReductionAxisExplorer } from '../components/ReductionAxisExplorer'
 import { SliceExplorer } from '../components/SliceExplorer'
+import { SingletonExpansionVisualizer } from '../components/SingletonExpansionVisualizer'
 import { ViewCopyExplorer } from '../components/ViewCopyExplorer'
 
 function withClassName(className: string, existingClassName?: string) {
@@ -158,6 +161,8 @@ export const lessonMdxComponents = {
   ul: LessonUnorderedList,
   ArrayMentalModelCheck,
   ArrayStructureExplorer,
+  BroadcastDebugChallenge,
+  BroadcastShapeLab,
   CompositionPipeline,
   IndexingShapeVisualizer,
   InverseExplorer,
@@ -170,5 +175,6 @@ export const lessonMdxComponents = {
   ReferenceBindingExplorer,
   ReductionAxisExplorer,
   SliceExplorer,
+  SingletonExpansionVisualizer,
   ViewCopyExplorer,
 } satisfies MDXComponents
