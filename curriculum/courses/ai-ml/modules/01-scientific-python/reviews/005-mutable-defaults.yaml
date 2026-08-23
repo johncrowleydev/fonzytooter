@@ -1,0 +1,7 @@
+id: mutable-defaults
+order: 5
+objectiveIds:
+  - python.execution-model
+sourceLessonId: 01-python-for-a-programmer
+prompt: Why can a mutable default argument such as `values=[]` cause surprising behavior across function calls?
+answer: The default object is created when the function is defined and reused on later calls that omit the argument, so mutations persist between calls.
