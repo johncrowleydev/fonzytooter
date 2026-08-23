@@ -7,6 +7,7 @@ import { BroadcastShapeLab } from '../components/BroadcastShapeLab'
 import { CompositionPipeline } from '../components/CompositionPipeline'
 import { IndexingShapeVisualizer } from '../components/IndexingShapeVisualizer'
 import { InverseExplorer } from '../components/InverseExplorer'
+import { KernelStateExplorer } from '../components/KernelStateExplorer'
 import { LoopVectorizationExplorer } from '../components/LoopVectorizationExplorer'
 import { MappingLab } from '../components/MappingLab'
 import { MappingPropertiesLab } from '../components/MappingPropertiesLab'
@@ -15,6 +16,7 @@ import { OperationKindCheck } from '../components/OperationKindCheck'
 import { PythonMentalModelCheck } from '../components/PythonMentalModelCheck'
 import { ReferenceBindingExplorer } from '../components/ReferenceBindingExplorer'
 import { ReductionAxisExplorer } from '../components/ReductionAxisExplorer'
+import { SeedReproducibilityExplorer } from '../components/SeedReproducibilityExplorer'
 import { SliceExplorer } from '../components/SliceExplorer'
 import { SingletonExpansionVisualizer } from '../components/SingletonExpansionVisualizer'
 import { ViewCopyExplorer } from '../components/ViewCopyExplorer'
@@ -166,6 +168,7 @@ export const lessonMdxComponents = {
   CompositionPipeline,
   IndexingShapeVisualizer,
   InverseExplorer,
+  KernelStateExplorer,
   LoopVectorizationExplorer,
   MappingLab,
   MappingPropertiesLab,
@@ -174,6 +177,7 @@ export const lessonMdxComponents = {
   PythonMentalModelCheck,
   ReferenceBindingExplorer,
   ReductionAxisExplorer,
+  SeedReproducibilityExplorer,
   SliceExplorer,
   SingletonExpansionVisualizer,
   ViewCopyExplorer,
