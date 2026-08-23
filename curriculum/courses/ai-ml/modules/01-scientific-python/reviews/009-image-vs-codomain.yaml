@@ -1,0 +1,7 @@
+id: image-vs-codomain
+order: 9
+objectiveIds:
+  - python.functions
+sourceLessonId: 02-functions-code-and-mathematics
+prompt: What is the difference between a function's image (range) and its codomain?
+answer: The image is the set of outputs the function actually produces; the codomain is the declared target set, which may contain values never produced.
