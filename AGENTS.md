@@ -70,7 +70,7 @@ Read the relevant files in `docs/` before making architectural changes. Multi-co
 - **Ordinary server-state/API access must use the generated TanStack Query client. Do not add feature-level raw `fetch`, Axios, or handwritten API DTOs.**
 - **Generated Zod schemas are the frontend runtime API contract and the source for inferred API types via `z.infer`, `z.input`, or `z.output`.**
 - MDX is the lesson-content format.
-- **Brand hues exist in two families split by role.** `brand-*` is a solid fill under `text-brand-ink`; `accent-*` is the same hues as content — text, borders, focus outlines, tints — and is theme-aware. Using the wrong one is the difference between 9:1 and 1.8:1 in light mode.
+- **Brand hues exist in two families split by role.** `brand-*` is a solid fill with text on it, or a small shape given its edge by an accent rim; `accent-*` is the same hues as content — text, borders, focus outlines, tints, and bare meter fills — and is theme-aware. If text sits on it, it is `brand`; otherwise it is `accent`. Using the wrong one is the difference between 9:1 and 1.8:1 in light mode.
 - **Nothing renders below 12px, and 12px is a label rather than a sentence.** There is no size below `text-xs`; a stray `text-2xs` generates no CSS at all.
 - **Focus styling is a single global `:focus-visible` rule.** Do not add per-component focus utilities, and do not use `outline-0`.
 - **A toggle button passes `pressed`, and a disabled control looks disabled.** Selection conveyed only by color reaches neither assistive technology nor anyone who cannot separate the two variants.
