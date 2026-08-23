@@ -1,0 +1,40 @@
+id: numpy.feature-offsets
+title: Apply Feature Offsets by Broadcasting
+lessonId: 05-broadcasting
+order: 1
+objectiveIds:
+  - numpy.broadcasting
+prompt: |
+  Implement `apply_offsets(data, offsets)` so `data` may have shape `(n, m)`
+  and `offsets` has shape `(m,)`. Subtract each offset from the corresponding
+  feature in every row using broadcasting.
+
+  Do not tile or manually repeat the offsets.
+starterCode: |
+  import numpy as np
+
+  def apply_offsets(data, offsets):
+      pass
+tests:
+  - id: basic-offsets
+    title: Applies each feature offset to every row
+    visibility: visible
+    code: |
+      data = np.array([[10, 100, 1000], [20, 200, 2000]])
+      offsets = np.array([1, 10, 100])
+      expected = np.array([[9, 90, 900], [19, 190, 1900]])
+      assert np.array_equal(apply_offsets(data, offsets), expected)
+  - id: preserves-data-shape
+    title: Preserves the dataset shape
+    visibility: visible
+    code: |
+      data = np.arange(20).reshape(4, 5)
+      offsets = np.arange(5)
+      assert apply_offsets(data, offsets).shape == (4, 5)
+  - id: unseen-shape
+    title: Works for another compatible shape
+    visibility: hidden
+    code: |
+      data = np.arange(24).reshape(6, 4)
+      offsets = np.array([2, 4, 6, 8])
+      assert np.array_equal(apply_offsets(data, offsets), data - offsets)
