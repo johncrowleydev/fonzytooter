@@ -1,0 +1,7 @@
+id: domain-codomain
+order: 8
+objectiveIds:
+  - python.functions
+sourceLessonId: 02-functions-code-and-mathematics
+prompt: What are a function's domain and codomain?
+answer: The domain is the set of allowed inputs; the codomain is the set the function declares its outputs to belong to.
