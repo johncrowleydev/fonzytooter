@@ -1,5 +1,6 @@
 import type { ComponentPropsWithoutRef } from 'react'
 import type { MDXComponents } from 'mdx/types'
+import { HighlightedCode, languageFromClassName } from '../../../components/HighlightedCode'
 import { CompositionPipeline } from '../components/CompositionPipeline'
 import { InverseExplorer } from '../components/InverseExplorer'
 import { MappingLab } from '../components/MappingLab'
@@ -98,12 +99,28 @@ function LessonHorizontalRule({ className, ...props }: ComponentPropsWithoutRef<
   )
 }
 
-function LessonCode({ className, ...props }: ComponentPropsWithoutRef<'code'>) {
+function LessonCode({ className, children, ...props }: ComponentPropsWithoutRef<'code'>) {
+  const language = languageFromClassName(className)
+
+  // A fenced block arrives as a `language-*` class with the source as a single string child.
+  // Inline code has neither, and is left as-is.
+  if (language !== undefined && typeof children === 'string') {
+    return (
+      <code className={withClassName('block font-mono text-sm leading-6', className)} {...props}>
+        <HighlightedCode code={children} language={language} />
+      </code>
+    )
+  }
+
   const codeClassName = className
     ? withClassName('block font-mono text-sm leading-6', className)
     : 'rounded bg-panel-soft px-1.5 py-0.5 font-mono text-[0.9em] text-accent-teal'
 
-  return <code className={codeClassName} {...props} />
+  return (
+    <code className={codeClassName} {...props}>
+      {children}
+    </code>
+  )
 }
 
 function LessonPreformatted({ className, ...props }: ComponentPropsWithoutRef<'pre'>) {

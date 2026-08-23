@@ -112,10 +112,31 @@ describe('role-specific pairings', () => {
     }
   })
 
-  it('keeps code text readable on the code surface', () => {
-    const ratio = contrastRatio(readRootToken('code-ink'), readRootToken('code-surface'))
+  it.each([
+    'code-ink',
+    'code-keyword',
+    'code-string',
+    'code-number',
+    'code-function',
+    'code-type',
+    'code-comment',
+    'code-punctuation',
+  ])('keeps %s readable on the code surface', (token) => {
+    const ratio = contrastRatio(readRootToken(token), readRootToken('code-surface'))
 
-    expect(ratio).toBeGreaterThanOrEqual(AA_NORMAL_TEXT)
+    expect(
+      ratio,
+      `--color-${token} on --color-code-surface is ${ratio.toFixed(2)}:1`,
+    ).toBeGreaterThanOrEqual(AA_NORMAL_TEXT)
+  })
+
+  it('keeps comments the dimmest syntax color without dropping them below AA', () => {
+    const surface = readRootToken('code-surface')
+    const comment = contrastRatio(readRootToken('code-comment'), surface)
+
+    for (const token of ['code-ink', 'code-keyword', 'code-string', 'code-number']) {
+      expect(contrastRatio(readRootToken(token), surface)).toBeGreaterThan(comment)
+    }
   })
 
   it('deepens the teal hover partner in light mode and lightens it in dark mode', () => {

@@ -3,6 +3,7 @@ import Markdown, { type Components } from 'react-markdown'
 import rehypeKatex from 'rehype-katex'
 import remarkMath from 'remark-math'
 import 'katex/dist/katex.min.css'
+import { HighlightedCode, languageFromClassName } from '../../components/HighlightedCode'
 
 function withClassName(className: string, existingClassName?: string) {
   return existingClassName ? `${className} ${existingClassName}` : className
@@ -54,12 +55,29 @@ function WorksheetBlockquote({ className, ...props }: ComponentPropsWithoutRef<'
   )
 }
 
-function WorksheetCode({ className, ...props }: ComponentPropsWithoutRef<'code'>) {
+function WorksheetCode({ className, children, ...props }: ComponentPropsWithoutRef<'code'>) {
+  const language = languageFromClassName(className)
+
+  if (language !== undefined && typeof children === 'string') {
+    return (
+      <code
+        className={withClassName('font-mono text-sm leading-6 text-code-ink', className)}
+        {...props}
+      >
+        <HighlightedCode code={children} language={language} />
+      </code>
+    )
+  }
+
   const codeClassName = className
     ? withClassName('font-mono text-sm leading-6 text-code-ink', className)
     : 'rounded bg-panel-soft px-1.5 py-0.5 font-mono text-sm text-accent-teal'
 
-  return <code className={codeClassName} {...props} />
+  return (
+    <code className={codeClassName} {...props}>
+      {children}
+    </code>
+  )
 }
 
 function WorksheetPreformatted({ className, ...props }: ComponentPropsWithoutRef<'pre'>) {
