@@ -12,6 +12,7 @@ import (
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/danielgtaylor/huma/v2/adapters/humago"
+	"github.com/johncrowleydev/fonzytooter/server/internal/auth"
 	"github.com/johncrowleydev/fonzytooter/server/internal/curriculum"
 	"github.com/johncrowleydev/fonzytooter/server/internal/learner"
 	"github.com/johncrowleydev/fonzytooter/server/internal/review"
@@ -252,7 +253,11 @@ type GetCourseReviewItemResponse struct {
 // NewAPI constructs the application handler and registers every documented
 // operation on the same Huma API used by the OpenAPI command.
 func NewAPI(tutorService *tutor.Service, catalog *curriculum.Catalog, learnerService *learner.Service, reviewService *review.Service) *API {
-	return newAPI(tutorService, catalog, learnerService, reviewService, worksheetpdf.NewRenderer())
+	return newAPIWithAuth(tutorService, catalog, learnerService, reviewService, worksheetpdf.NewRenderer(), nil)
+}
+
+func NewAPIWithAuth(tutorService *tutor.Service, catalog *curriculum.Catalog, learnerService *learner.Service, reviewService *review.Service, authService *auth.Service) *API {
+	return newAPIWithAuth(tutorService, catalog, learnerService, reviewService, worksheetpdf.NewRenderer(), authService)
 }
 
 type worksheetDocumentRenderer interface {
@@ -261,6 +266,10 @@ type worksheetDocumentRenderer interface {
 }
 
 func newAPI(tutorService *tutor.Service, catalog *curriculum.Catalog, learnerService *learner.Service, reviewService *review.Service, documentRenderer worksheetDocumentRenderer) *API {
+	return newAPIWithAuth(tutorService, catalog, learnerService, reviewService, documentRenderer, nil)
+}
+
+func newAPIWithAuth(tutorService *tutor.Service, catalog *curriculum.Catalog, learnerService *learner.Service, reviewService *review.Service, documentRenderer worksheetDocumentRenderer, authService *auth.Service) *API {
 	if catalog == nil {
 		panic("httpapi.NewAPI: nil curriculum catalog")
 	}
@@ -271,6 +280,7 @@ func newAPI(tutorService *tutor.Service, catalog *curriculum.Catalog, learnerSer
 	config.SchemasPath = ""
 
 	humaAPI := humago.New(mux, config)
+	registerAuthentication(humaAPI, authService)
 	registerHealth(humaAPI)
 	registerTutorTurn(humaAPI, tutorService)
 	registerCurriculum(humaAPI, catalog, documentRenderer)
@@ -278,11 +288,15 @@ func newAPI(tutorService *tutor.Service, catalog *curriculum.Catalog, learnerSer
 	registerExercises(humaAPI, catalog, learnerService)
 	registerReviews(humaAPI, reviewService)
 
-	return &API{Handler: mux, Spec: humaAPI.OpenAPI()}
+	handler := http.Handler(mux)
+	if authService != nil {
+		handler = authService.Middleware(handler)
+	}
+	return &API{Handler: handler, Spec: humaAPI.OpenAPI()}
 }
 
-func NewServer(address string, tutorService *tutor.Service, catalog *curriculum.Catalog, learnerService *learner.Service, reviewService *review.Service) *http.Server {
-	application := NewAPI(tutorService, catalog, learnerService, reviewService)
+func NewServer(address string, tutorService *tutor.Service, catalog *curriculum.Catalog, learnerService *learner.Service, reviewService *review.Service, authService *auth.Service) *http.Server {
+	application := NewAPIWithAuth(tutorService, catalog, learnerService, reviewService, authService)
 
 	return &http.Server{
 		Addr:              address,

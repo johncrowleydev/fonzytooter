@@ -36,10 +36,12 @@ import {
   ReviewCardList,
   ReviewCardResource,
   ReviewItemResource,
+  SessionResource,
   WorksheetResource,
 } from './schemas'
 import type {
   CreateExerciseAttemptInputBody,
+  CreateSessionRequest,
   ErrorModel,
   LessonProgressUpdate,
   ListActivitiesParams,
@@ -291,6 +293,455 @@ export function useListActivities<
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
   const queryOptions = getListActivitiesQueryOptions(params, options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+export type createAuthenticationSessionResponse201 = {
+  data: SessionResource
+  status: 201
+}
+
+export type createAuthenticationSessionResponse401 = {
+  data: ErrorModel
+  status: 401
+}
+
+export type createAuthenticationSessionResponse422 = {
+  data: ErrorModel
+  status: 422
+}
+
+export type createAuthenticationSessionResponse500 = {
+  data: ErrorModel
+  status: 500
+}
+
+export type createAuthenticationSessionResponse503 = {
+  data: ErrorModel
+  status: 503
+}
+
+export type createAuthenticationSessionResponseSuccess = createAuthenticationSessionResponse201 & {
+  headers: Record<string, string>
+}
+export type createAuthenticationSessionResponseError = (
+  | createAuthenticationSessionResponse401
+  | createAuthenticationSessionResponse422
+  | createAuthenticationSessionResponse500
+  | createAuthenticationSessionResponse503
+) & {
+  headers: Record<string, string>
+}
+
+export const getCreateAuthenticationSessionUrl = () => {
+  return `/api/authentication-sessions`
+}
+
+/**
+ * @summary Sign in and create an authentication session
+ */
+export const createAuthenticationSession = async (
+  createSessionRequest: NonReadonly<CreateSessionRequest>,
+  options?: RequestInit,
+): Promise<createAuthenticationSessionResponseSuccess> => {
+  const res = await fetch(getCreateAuthenticationSessionUrl(), {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(createSessionRequest),
+  })
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text()
+  if (!res.ok) {
+    const err: globalThis.Error & {
+      info?: createAuthenticationSessionResponseError['data']
+      status?: number
+    } = new globalThis.Error()
+    const data: createAuthenticationSessionResponseError['data'] = body ? JSON.parse(body) : {}
+    err.info = data
+    err.status = res.status
+    throw err
+  }
+  const data = SessionResource.parse(body ? JSON.parse(body) : {})
+  return {
+    data,
+    status: res.status,
+    headers: Object.fromEntries(
+      [...res.headers.entries()].filter(([name]) => name !== 'set-cookie'),
+    ),
+  } as createAuthenticationSessionResponseSuccess
+}
+
+export const getCreateAuthenticationSessionMutationOptions = <
+  TError = globalThis.Error & { info?: ErrorModel; status?: number },
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createAuthenticationSession>>,
+    TError,
+    { data: NonReadonly<CreateSessionRequest> },
+    TContext
+  >
+  fetch?: RequestInit
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createAuthenticationSession>>,
+  TError,
+  { data: NonReadonly<CreateSessionRequest> },
+  TContext
+> => {
+  const mutationKey = ['createAuthenticationSession']
+  const { mutation: mutationOptions, fetch: fetchOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, fetch: undefined }
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createAuthenticationSession>>,
+    { data: NonReadonly<CreateSessionRequest> }
+  > = (props) => {
+    const { data } = props ?? {}
+
+    return createAuthenticationSession(data, fetchOptions)
+  }
+
+  return { mutationFn, ...mutationOptions }
+}
+
+export type CreateAuthenticationSessionMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createAuthenticationSession>>
+>
+export type CreateAuthenticationSessionMutationBody = NonReadonly<CreateSessionRequest>
+export type CreateAuthenticationSessionMutationError = globalThis.Error & {
+  info?: ErrorModel
+  status?: number
+}
+
+/**
+ * @summary Sign in and create an authentication session
+ */
+export const useCreateAuthenticationSession = <
+  TError = globalThis.Error & { info?: ErrorModel; status?: number },
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof createAuthenticationSession>>,
+      TError,
+      { data: NonReadonly<CreateSessionRequest> },
+      TContext
+    >
+    fetch?: RequestInit
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof createAuthenticationSession>>,
+  TError,
+  { data: NonReadonly<CreateSessionRequest> },
+  TContext
+> => {
+  return useMutation(getCreateAuthenticationSessionMutationOptions(options), queryClient)
+}
+
+export type deleteCurrentAuthenticationSessionResponse204 = {
+  data: void
+  status: 204
+}
+
+export type deleteCurrentAuthenticationSessionResponse500 = {
+  data: ErrorModel
+  status: 500
+}
+
+export type deleteCurrentAuthenticationSessionResponse503 = {
+  data: ErrorModel
+  status: 503
+}
+
+export type deleteCurrentAuthenticationSessionResponseSuccess =
+  deleteCurrentAuthenticationSessionResponse204 & {
+    headers: Record<string, string>
+  }
+export type deleteCurrentAuthenticationSessionResponseError = (
+  deleteCurrentAuthenticationSessionResponse500 | deleteCurrentAuthenticationSessionResponse503
+) & {
+  headers: Record<string, string>
+}
+
+export const getDeleteCurrentAuthenticationSessionUrl = () => {
+  return `/api/authentication-sessions/current`
+}
+
+/**
+ * @summary Sign out and delete the current authentication session
+ */
+export const deleteCurrentAuthenticationSession = async (
+  options?: RequestInit,
+): Promise<deleteCurrentAuthenticationSessionResponseSuccess> => {
+  const res = await fetch(getDeleteCurrentAuthenticationSessionUrl(), {
+    ...options,
+    method: 'DELETE',
+  })
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text()
+  if (!res.ok) {
+    const err: globalThis.Error & {
+      info?: deleteCurrentAuthenticationSessionResponseError['data']
+      status?: number
+    } = new globalThis.Error()
+    const data: deleteCurrentAuthenticationSessionResponseError['data'] = body
+      ? JSON.parse(body)
+      : {}
+    err.info = data
+    err.status = res.status
+    throw err
+  }
+  const data: deleteCurrentAuthenticationSessionResponseSuccess['data'] = body
+    ? JSON.parse(body)
+    : undefined
+  return {
+    data,
+    status: res.status,
+    headers: Object.fromEntries(
+      [...res.headers.entries()].filter(([name]) => name !== 'set-cookie'),
+    ),
+  } as deleteCurrentAuthenticationSessionResponseSuccess
+}
+
+export const getDeleteCurrentAuthenticationSessionMutationOptions = <
+  TError = globalThis.Error & { info?: ErrorModel; status?: number },
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteCurrentAuthenticationSession>>,
+    TError,
+    void,
+    TContext
+  >
+  fetch?: RequestInit
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteCurrentAuthenticationSession>>,
+  TError,
+  void,
+  TContext
+> => {
+  const mutationKey = ['deleteCurrentAuthenticationSession']
+  const { mutation: mutationOptions, fetch: fetchOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, fetch: undefined }
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteCurrentAuthenticationSession>>,
+    void
+  > = () => {
+    return deleteCurrentAuthenticationSession(fetchOptions)
+  }
+
+  return { mutationFn, ...mutationOptions }
+}
+
+export type DeleteCurrentAuthenticationSessionMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteCurrentAuthenticationSession>>
+>
+
+export type DeleteCurrentAuthenticationSessionMutationError = globalThis.Error & {
+  info?: ErrorModel
+  status?: number
+}
+
+/**
+ * @summary Sign out and delete the current authentication session
+ */
+export const useDeleteCurrentAuthenticationSession = <
+  TError = globalThis.Error & { info?: ErrorModel; status?: number },
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof deleteCurrentAuthenticationSession>>,
+      TError,
+      void,
+      TContext
+    >
+    fetch?: RequestInit
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof deleteCurrentAuthenticationSession>>,
+  TError,
+  void,
+  TContext
+> => {
+  return useMutation(getDeleteCurrentAuthenticationSessionMutationOptions(options), queryClient)
+}
+
+export type getCurrentAuthenticationSessionResponse200 = {
+  data: SessionResource
+  status: 200
+}
+
+export type getCurrentAuthenticationSessionResponseDefault = {
+  data: ErrorModel
+  status: Exclude<HTTPStatusCodes, 200>
+}
+
+export type getCurrentAuthenticationSessionResponseSuccess =
+  getCurrentAuthenticationSessionResponse200 & {
+    headers: Record<string, string>
+  }
+export type getCurrentAuthenticationSessionResponseError =
+  getCurrentAuthenticationSessionResponseDefault & {
+    headers: Record<string, string>
+  }
+
+export const getGetCurrentAuthenticationSessionUrl = () => {
+  return `/api/authentication-sessions/current`
+}
+
+/**
+ * @summary Get the current authentication session
+ */
+export const getCurrentAuthenticationSession = async (
+  options?: RequestInit,
+): Promise<getCurrentAuthenticationSessionResponseSuccess> => {
+  const res = await fetch(getGetCurrentAuthenticationSessionUrl(), {
+    ...options,
+    method: 'GET',
+  })
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text()
+  if (!res.ok) {
+    const err: globalThis.Error & {
+      info?: getCurrentAuthenticationSessionResponseError['data']
+      status?: number
+    } = new globalThis.Error()
+    const data: getCurrentAuthenticationSessionResponseError['data'] = body ? JSON.parse(body) : {}
+    err.info = data
+    err.status = res.status
+    throw err
+  }
+  const data = SessionResource.parse(body ? JSON.parse(body) : {})
+  return {
+    data,
+    status: res.status,
+    headers: Object.fromEntries(
+      [...res.headers.entries()].filter(([name]) => name !== 'set-cookie'),
+    ),
+  } as getCurrentAuthenticationSessionResponseSuccess
+}
+
+export const getGetCurrentAuthenticationSessionQueryKey = () => {
+  return [`/api/authentication-sessions/current`] as const
+}
+
+export const getGetCurrentAuthenticationSessionQueryOptions = <
+  TData = Awaited<ReturnType<typeof getCurrentAuthenticationSession>>,
+  TError = globalThis.Error & { info?: ErrorModel; status?: number },
+>(options?: {
+  query?: Partial<
+    UseQueryOptions<Awaited<ReturnType<typeof getCurrentAuthenticationSession>>, TError, TData>
+  >
+  fetch?: RequestInit
+}) => {
+  const { query: queryOptions, fetch: fetchOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getGetCurrentAuthenticationSessionQueryKey()
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getCurrentAuthenticationSession>>> = ({
+    signal,
+  }) => getCurrentAuthenticationSession({ signal, ...fetchOptions })
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getCurrentAuthenticationSession>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetCurrentAuthenticationSessionQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getCurrentAuthenticationSession>>
+>
+export type GetCurrentAuthenticationSessionQueryError = globalThis.Error & {
+  info?: ErrorModel
+  status?: number
+}
+
+export function useGetCurrentAuthenticationSession<
+  TData = Awaited<ReturnType<typeof getCurrentAuthenticationSession>>,
+  TError = globalThis.Error & { info?: ErrorModel; status?: number },
+>(
+  options: {
+    query: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof getCurrentAuthenticationSession>>, TError, TData>
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getCurrentAuthenticationSession>>,
+          TError,
+          Awaited<ReturnType<typeof getCurrentAuthenticationSession>>
+        >,
+        'initialData'
+      >
+    fetch?: RequestInit
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetCurrentAuthenticationSession<
+  TData = Awaited<ReturnType<typeof getCurrentAuthenticationSession>>,
+  TError = globalThis.Error & { info?: ErrorModel; status?: number },
+>(
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof getCurrentAuthenticationSession>>, TError, TData>
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getCurrentAuthenticationSession>>,
+          TError,
+          Awaited<ReturnType<typeof getCurrentAuthenticationSession>>
+        >,
+        'initialData'
+      >
+    fetch?: RequestInit
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetCurrentAuthenticationSession<
+  TData = Awaited<ReturnType<typeof getCurrentAuthenticationSession>>,
+  TError = globalThis.Error & { info?: ErrorModel; status?: number },
+>(
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof getCurrentAuthenticationSession>>, TError, TData>
+    >
+    fetch?: RequestInit
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Get the current authentication session
+ */
+
+export function useGetCurrentAuthenticationSession<
+  TData = Awaited<ReturnType<typeof getCurrentAuthenticationSession>>,
+  TError = globalThis.Error & { info?: ErrorModel; status?: number },
+>(
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof getCurrentAuthenticationSession>>, TError, TData>
+    >
+    fetch?: RequestInit
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getGetCurrentAuthenticationSessionQueryOptions(options)
 
   const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
     queryKey: DataTag<QueryKey, TData, TError>
