@@ -93,11 +93,11 @@ export function InverseExplorer() {
     <Card className="my-8 grid min-w-0 gap-5 p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-2xs font-bold uppercase tracking-widest text-faint">
+          <p className="text-xs font-bold uppercase tracking-widest text-faint">
             Interactive model
           </p>
           <h2 className="mt-1.5 text-lg font-semibold tracking-tight">Inverse explorer</h2>
-          <p className="mt-2 max-w-2xl text-xs leading-relaxed text-muted">
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
             Reversibility depends on whether the output preserves enough information and covers the
             declared codomain.
           </p>
@@ -109,7 +109,7 @@ export function InverseExplorer() {
 
       {complete ? (
         <div className="rounded-lg border border-accent-teal/30 bg-accent-teal/10 p-5">
-          <p className="text-2xs font-bold uppercase tracking-widest text-accent-teal">
+          <p className="text-xs font-bold uppercase tracking-widest text-accent-teal">
             Reversibility
           </p>
           <p className="mt-2 text-sm leading-relaxed text-ink">
@@ -129,7 +129,7 @@ export function InverseExplorer() {
 
           {feedback ? (
             <div
-              className={`rounded-lg border p-3 text-xs leading-relaxed text-ink ${feedbackClasses[feedback.tone]}`}
+              className={`rounded-lg border p-3 text-sm leading-relaxed text-ink ${feedbackClasses[feedback.tone]}`}
               role={feedback.tone === 'error' ? 'alert' : 'status'}
               aria-live="polite"
             >
@@ -140,7 +140,7 @@ export function InverseExplorer() {
 
           {stage === 3 && reverseStep === 2 ? (
             <div
-              className="rounded-lg border border-accent-teal/30 bg-accent-teal/10 p-3 text-xs leading-relaxed text-ink"
+              className="rounded-lg border border-accent-teal/30 bg-accent-teal/10 p-3 text-sm leading-relaxed text-ink"
               role="status"
               aria-live="polite"
             >
@@ -176,6 +176,11 @@ function SquareGraph({ domain }: { domain: SquareDomain }) {
 
   return (
     <div className="grid gap-3 rounded-lg border border-line bg-panel-soft p-3 sm:grid-cols-2 sm:items-center">
+      {/*
+        Text inside this viewBox is in user units, scaled to the rendered width, so it is not on
+        the document type scale. Label coordinates are hand-tuned around their widths; growing the
+        size would push "(-3, 9)" over its own point.
+      */}
       <svg
         className="block w-full min-w-0 max-w-full"
         viewBox="0 0 600 300"
@@ -209,11 +214,11 @@ function SquareGraph({ domain }: { domain: SquareDomain }) {
         </text>
       </svg>
       <div className="rounded-lg border border-line bg-panel p-4">
-        <p className="text-2xs font-bold uppercase tracking-widest text-faint">Declared mapping</p>
+        <p className="text-xs font-bold uppercase tracking-widest text-faint">Declared mapping</p>
         <code className="mt-3 block text-sm text-ink">f(x) = x²</code>
-        <p className="mt-3 text-xs leading-relaxed text-muted">Domain: {domainLabels[domain]}</p>
-        <p className="mt-2 text-xs leading-relaxed text-muted">Codomain: [0, ∞)</p>
-        <div className="mt-3 grid gap-1 font-mono text-xs text-ink">
+        <p className="mt-3 text-sm leading-relaxed text-muted">Domain: {domainLabels[domain]}</p>
+        <p className="mt-2 text-sm leading-relaxed text-muted">Codomain: [0, ∞)</p>
+        <div className="mt-3 grid gap-1 font-mono text-sm text-ink">
           {showPositive ? <span>3 → 9</span> : null}
           {showNegative ? <span>-3 → 9</span> : null}
         </div>
@@ -227,7 +232,7 @@ function InformationLossStage({ onAnswer }: { onAnswer: (answer: string) => void
     <div className="grid gap-3">
       <div>
         <h3 className="text-base font-semibold text-ink">Information loss</h3>
-        <p className="mt-2 text-xs leading-relaxed text-muted">
+        <p className="mt-2 text-sm leading-relaxed text-muted">
           If all you know is that the output was 9, what was the input?
         </p>
       </div>
@@ -255,7 +260,7 @@ function DomainStage({
     <div className="grid gap-3">
       <div>
         <h3 className="text-base font-semibold text-ink">Change the domain</h3>
-        <p className="mt-2 text-xs leading-relaxed text-muted">
+        <p className="mt-2 text-sm leading-relaxed text-muted">
           Choose a domain. Which restrictions keep only one branch and make squaring injective?
         </p>
       </div>
@@ -279,21 +284,21 @@ function CodomainStage({ onAnswer }: { onAnswer: (answer: boolean) => void }) {
     <div className="grid gap-4">
       <div>
         <h3 className="text-base font-semibold text-ink">Codomain matters too</h3>
-        <p className="mt-2 text-xs leading-relaxed text-muted">
+        <p className="mt-2 text-sm leading-relaxed text-muted">
           Compare f : [0, ∞) → ℝ with f : [0, ∞) → [0, ∞), using f(x) = x².
         </p>
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="rounded-lg border border-accent-coral/30 bg-accent-coral/10 p-4">
           <code className="text-sm text-ink">f : [0, ∞) → ℝ</code>
-          <p className="mt-2 text-xs text-muted">Negative codomain values are gaps.</p>
+          <p className="mt-2 text-sm text-muted">Negative codomain values are gaps.</p>
         </div>
         <div className="rounded-lg border border-accent-teal/30 bg-accent-teal/10 p-4">
           <code className="text-sm text-ink">f : [0, ∞) → [0, ∞)</code>
-          <p className="mt-2 text-xs text-muted">Every declared destination is reached.</p>
+          <p className="mt-2 text-sm text-muted">Every declared destination is reached.</p>
         </div>
       </div>
-      <p className="text-xs leading-relaxed text-muted">
+      <p className="text-sm leading-relaxed text-muted">
         Can a full inverse f⁻¹ : ℝ → [0, ∞) handle the input -4?
       </p>
       <div className="flex flex-wrap gap-2">
@@ -311,7 +316,7 @@ function ReverseOperationsStage({ step, onStep }: { step: number; onStep: () => 
     <div className="grid gap-4">
       <div>
         <h3 className="text-base font-semibold text-ink">Reverse the operations</h3>
-        <p className="mt-2 text-xs leading-relaxed text-muted">
+        <p className="mt-2 text-sm leading-relaxed text-muted">
           f(x) = 2x + 3 sends 4 → 11. Walk backward from 11.
         </p>
       </div>

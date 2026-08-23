@@ -10,7 +10,7 @@ type BindingState = {
 }
 
 const controlClass =
-  'inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-xs font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-teal disabled:cursor-not-allowed disabled:opacity-50'
+  'inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-teal disabled:cursor-not-allowed disabled:opacity-50'
 
 function createInitialState(): BindingState {
   const samples = [10, 20, 30]
@@ -36,15 +36,15 @@ function ListObjectCard({
   return (
     <div className="rounded-lg border border-accent-blue/30 bg-accent-blue/10 p-3">
       <div className="flex items-center justify-between gap-2">
-        <span className="text-2xs font-bold uppercase tracking-widest text-accent-blue">
+        <span className="text-xs font-bold uppercase tracking-widest text-accent-blue">
           {label}
         </span>
-        <span className="text-2xs text-muted">
+        <span className="text-sm text-muted">
           {shared ? 'shared storage' : 'independent storage'}
         </span>
       </div>
       <code className="mt-3 block text-sm text-ink">[{values.join(', ')}]</code>
-      <p className="mt-2 text-2xs leading-normal text-muted">
+      <p className="mt-2 text-sm leading-normal text-muted">
         {shared
           ? `${names} both refer to this list object.`
           : `${names} refers to this list object.`}
@@ -88,11 +88,11 @@ export function ReferenceBindingExplorer() {
     <Card className="grid gap-5 p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-2xs font-bold uppercase tracking-widest text-faint">
+          <p className="text-xs font-bold uppercase tracking-widest text-faint">
             Interactive model
           </p>
           <h2 className="mt-1.5 text-lg font-semibold tracking-tight">Reference or copy?</h2>
-          <p className="mt-2 max-w-2xl text-xs leading-relaxed text-muted">
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
             Assignment binds another name to an object. It does not automatically create new list
             storage.
           </p>
@@ -103,7 +103,7 @@ export function ReferenceBindingExplorer() {
       </div>
 
       <div
-        className={`rounded-lg border p-3 text-xs leading-relaxed ${bindingState.isCopied ? 'border-accent-gold/30 bg-accent-gold/10 text-ink' : 'border-accent-teal/30 bg-accent-teal/10 text-ink'}`}
+        className={`rounded-lg border p-3 text-sm leading-relaxed ${bindingState.isCopied ? 'border-accent-gold/30 bg-accent-gold/10 text-ink' : 'border-accent-teal/30 bg-accent-teal/10 text-ink'}`}
         role="status"
         aria-live="polite"
       >
@@ -121,22 +121,22 @@ export function ReferenceBindingExplorer() {
 
       <div className="grid gap-4 md:grid-cols-3 md:items-stretch">
         <div className="rounded-lg border border-line bg-raised p-4">
-          <p className="text-2xs font-bold uppercase tracking-widest text-faint">Names</p>
+          <p className="text-xs font-bold uppercase tracking-widest text-faint">Names</p>
           <div className="mt-3 grid gap-3">
             <div className="flex items-center justify-between gap-3 rounded-md border border-line px-3 py-2">
               <code className="text-sm text-ink">samples</code>
-              <span className="text-xs text-accent-teal" aria-hidden="true">
+              <span className="text-sm text-accent-teal" aria-hidden="true">
                 → object A
               </span>
             </div>
             <div className="flex items-center justify-between gap-3 rounded-md border border-line px-3 py-2">
               <code className="text-sm text-ink">backup</code>
-              <span className="text-xs text-accent-teal" aria-hidden="true">
+              <span className="text-sm text-accent-teal" aria-hidden="true">
                 → {bindingState.isCopied ? 'object B' : 'object A'}
               </span>
             </div>
           </div>
-          <p className="mt-3 text-2xs leading-normal text-muted">
+          <p className="mt-3 text-sm leading-normal text-muted">
             The arrows show where each name looks for its list object.
           </p>
         </div>
@@ -146,7 +146,7 @@ export function ReferenceBindingExplorer() {
         </div>
 
         <div className="rounded-lg border border-line bg-raised p-4">
-          <p className="text-2xs font-bold uppercase tracking-widest text-faint">List storage</p>
+          <p className="text-xs font-bold uppercase tracking-widest text-faint">List storage</p>
           <div className="mt-3 grid gap-3 sm:grid-cols-2 md:grid-cols-1">
             <ListObjectCard
               label="object A"
@@ -166,7 +166,7 @@ export function ReferenceBindingExplorer() {
         </div>
       </div>
 
-      <pre className="overflow-x-auto rounded-lg border border-line bg-code-surface p-4 font-mono text-xs leading-relaxed text-code-ink">
+      <pre className="overflow-x-auto rounded-lg border border-line bg-code-surface p-4 font-mono text-sm leading-relaxed text-code-ink">
         <code>
           {bindingState.isCopied
             ? `samples = [10, 20, 30]\nbackup = samples\nbackup = samples.copy()`

@@ -134,11 +134,11 @@ export function ReviewSessionView({
   return (
     <div className="grid max-w-6xl gap-7 max-sm:gap-5">
       <PageIntro compact title="Review">
-        <div className="mt-4 text-2xs text-faint">
+        <div className="mt-4 text-sm text-faint">
           <strong className="text-accent-teal">{remaining}</strong> remaining
         </div>
       </PageIntro>
-      <div className="grid grid-cols-[100px_1fr_45px] items-center gap-4 text-2xs text-faint max-sm:grid-cols-[83px_1fr_32px] max-sm:gap-2">
+      <div className="grid grid-cols-[100px_1fr_45px] items-center gap-4 text-sm text-faint max-sm:grid-cols-[83px_1fr_32px] max-sm:gap-2">
         <span>Session progress</span>
         <ProgressBar value={progress} tone="teal" />
         <span className="text-right text-muted">
@@ -150,7 +150,7 @@ export function ReviewSessionView({
           <Card className="flex min-h-96 flex-col p-6 max-sm:min-h-104 max-sm:p-5">
             <div className="flex items-center justify-between gap-3">
               <Badge tone="teal">{current.objectiveIds[0]}</Badge>
-              <span className="text-2xs text-faint">
+              <span className="text-sm text-faint">
                 {current.lastReviewedAt
                   ? `Last reviewed ${formatLocalDate(current.lastReviewedAt)}`
                   : 'New review item'}
@@ -166,12 +166,12 @@ export function ReviewSessionView({
             </div>
             {revealed ? (
               <div className="border-t border-line bg-accent-teal/5 px-4 py-5">
-                <p className="text-2xs font-bold uppercase tracking-widest text-faint">Answer</p>
+                <p className="text-xs font-bold uppercase tracking-widest text-faint">Answer</p>
                 <p className="my-2 text-sm leading-relaxed text-ink">{current.answer}</p>
               </div>
             ) : current.hint ? (
-              <div className="border-t border-line pt-4 text-xs text-faint">
-                <span className="mr-2 text-2xs font-bold uppercase tracking-wide text-accent-gold">
+              <div className="border-t border-line pt-4 text-sm text-faint">
+                <span className="mr-2 text-xs font-bold uppercase tracking-wide text-accent-gold">
                   Hint
                 </span>
                 {current.hint}
@@ -184,7 +184,7 @@ export function ReviewSessionView({
                 </Button>
               ) : (
                 <div className="grid w-full gap-3">
-                  <p className="text-center text-2xs text-faint">How well did you recall it?</p>
+                  <p className="text-center text-sm text-faint">How well did you recall it?</p>
                   <div className="flex w-full items-center justify-center gap-2 max-sm:gap-1">
                     {current.previews.map((preview) => (
                       <RatingButton
@@ -200,12 +200,12 @@ export function ReviewSessionView({
               )}
             </div>
             {submitError ? (
-              <p role="alert" className="mt-4 text-center text-xs text-accent-coral">
+              <p role="alert" className="mt-4 text-center text-sm text-accent-coral">
                 This rating could not be saved. The current card is still here; try again.
               </p>
             ) : null}
           </Card>
-          <div className="mt-3 flex items-center gap-2 text-2xs text-faint">
+          <div className="mt-3 flex items-center gap-2 text-sm text-faint">
             <span className="mt-1 size-2 shrink-0 rounded-full bg-accent-teal ring-4 ring-accent-teal/10" />
             <strong className="font-medium text-muted">FSRS scheduling</strong>
             <Link className="ml-auto text-accent-teal no-underline" to="/progress">
@@ -240,10 +240,10 @@ function RatingButton({
       disabled={disabled}
       title={`Next due ${formatLocalDate(preview.dueAt)}`}
     >
-      <strong className="block text-2xs">
+      <strong className="block text-sm">
         {pending ? 'Saving…' : ratingLabels[preview.rating]}
       </strong>
-      <small className="mt-1 block text-2xs text-faint">
+      <small className="mt-1 block text-sm text-faint">
         {formatInterval(preview.intervalSeconds)}
       </small>
     </button>
@@ -257,7 +257,7 @@ export function NoDueReviews() {
       detail="There is nothing in the current FSRS queue. Continue learning and return when a card is due."
       action={
         <Link
-          className="inline-flex items-center justify-center rounded-lg bg-brand-teal px-4 py-2.5 text-xs font-bold text-brand-ink no-underline"
+          className="inline-flex items-center justify-center rounded-lg bg-brand-teal px-4 py-2.5 text-sm font-bold text-brand-ink no-underline"
           to="/curriculum"
         >
           Continue learning
@@ -294,7 +294,7 @@ function ReviewComplete({ reviewed, revisit }: { reviewed: number; revisit: numb
       <div className="grid size-16 place-items-center rounded-full border border-accent-teal/40 bg-accent-teal/10 text-3xl text-accent-teal">
         ✓
       </div>
-      <p className="mt-7 text-2xs font-bold uppercase tracking-widest text-faint">
+      <p className="mt-7 text-xs font-bold uppercase tracking-widest text-faint">
         Session complete
       </p>
       <h1 className="my-2.5 text-5xl tracking-tight max-sm:text-4xl">Review complete.</h1>
@@ -305,22 +305,22 @@ function ReviewComplete({ reviewed, revisit }: { reviewed: number; revisit: numb
       <div className="my-7 flex gap-px">
         <div className="grid min-w-32 gap-1 bg-accent-slate/10 p-4 max-sm:min-w-24 max-sm:px-2 max-sm:py-3">
           <strong className="text-2xl max-sm:text-xl">{reviewed}</strong>
-          <span className="text-2xs uppercase tracking-wide text-faint">reviewed</span>
+          <span className="text-xs uppercase tracking-wide text-faint">reviewed</span>
         </div>
         <div className="grid min-w-32 gap-1 bg-accent-slate/10 p-4 max-sm:min-w-24 max-sm:px-2 max-sm:py-3">
           <strong className="text-2xl max-sm:text-xl">{revisit}</strong>
-          <span className="text-2xs uppercase tracking-wide text-faint">returning sooner</span>
+          <span className="text-xs uppercase tracking-wide text-faint">returning sooner</span>
         </div>
       </div>
       <div className="flex gap-2">
         <Link
-          className="inline-flex items-center justify-center gap-2.5 rounded-lg bg-brand-teal px-4 py-2.5 text-xs font-bold text-brand-ink no-underline transition hover:-translate-y-px hover:bg-brand-teal-light"
+          className="inline-flex items-center justify-center gap-2.5 rounded-lg bg-brand-teal px-4 py-2.5 text-sm font-bold text-brand-ink no-underline transition hover:-translate-y-px hover:bg-brand-teal-light"
           to="/"
         >
           Back home
         </Link>
         <Link
-          className="inline-flex items-center justify-center gap-2.5 rounded-lg border border-line-strong bg-accent-slate/10 px-4 py-2.5 text-xs font-bold text-ink no-underline transition hover:bg-accent-slate/20"
+          className="inline-flex items-center justify-center gap-2.5 rounded-lg border border-line-strong bg-accent-slate/10 px-4 py-2.5 text-sm font-bold text-ink no-underline transition hover:bg-accent-slate/20"
           to="/progress"
         >
           View progress

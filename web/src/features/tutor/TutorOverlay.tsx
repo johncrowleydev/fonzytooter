@@ -82,11 +82,11 @@ export function TutorOverlay() {
       <section className="flex h-full w-full max-w-md flex-col border-l border-line-strong bg-panel shadow-2xl max-sm:max-w-none">
         <header className="flex items-center justify-between border-b border-line px-6 pb-5 pt-6 max-sm:px-4 max-sm:pb-4 max-sm:pt-5">
           <div>
-            <p className="mb-1.5 text-2xs font-bold uppercase tracking-widest text-faint">
+            <p className="mb-1.5 text-xs font-bold uppercase tracking-widest text-faint">
               Always available
             </p>
             <h2 className="m-0 text-2xl tracking-tight">
-              Tutor <span className="align-middle text-2xs text-accent-teal">●</span>
+              Tutor <span className="align-middle text-sm text-accent-teal">●</span>
             </h2>
           </div>
           <button
@@ -113,7 +113,7 @@ export function TutorOverlay() {
               key={value}
               type="button"
               onClick={() => setMode(value)}
-              className={`rounded-full border px-2 py-2 text-2xs ${mode === value ? modeButtonStyles.active : modeButtonStyles.inactive}`}
+              className={`rounded-full border px-2 py-2 text-sm ${mode === value ? modeButtonStyles.active : modeButtonStyles.inactive}`}
             >
               {label}
             </button>
@@ -124,20 +124,20 @@ export function TutorOverlay() {
           {messages.length === 0 ? (
             <div className="p-10 text-center">
               <span className="block text-2xl text-accent-gold">✦</span>
-              <p className="text-xs leading-relaxed text-muted">
+              <p className="text-sm leading-relaxed text-muted">
                 Ask about what you are currently studying. I’ll keep the answer anchored to this
                 screen.
               </p>
               <div className="mt-5 flex flex-wrap justify-center gap-1.5">
                 <button
-                  className="rounded-full border border-line bg-transparent px-2 py-2 text-2xs text-faint hover:text-ink"
+                  className="rounded-full border border-line bg-transparent px-2 py-2 text-sm text-faint hover:text-ink"
                   type="button"
                   onClick={() => setInput('Can you explain the key idea here?')}
                 >
                   Explain the key idea
                 </button>
                 <button
-                  className="rounded-full border border-line bg-transparent px-2 py-2 text-2xs text-faint hover:text-ink"
+                  className="rounded-full border border-line bg-transparent px-2 py-2 text-sm text-faint hover:text-ink"
                   type="button"
                   onClick={() => setInput('Give me a hint')}
                 >
@@ -150,10 +150,10 @@ export function TutorOverlay() {
           {messages.map((message) => (
             <div
               key={message.id}
-              className={`my-3 rounded-lg px-3 py-3 text-xs leading-relaxed ${messageStyles[message.role]}`}
+              className={`my-3 rounded-lg px-3 py-3 text-sm leading-relaxed ${messageStyles[message.role]}`}
             >
               <span
-                className={`mb-1.5 block text-2xs uppercase tracking-wide ${messageLabelStyles[message.role]}`}
+                className={`mb-1.5 block text-xs uppercase tracking-wide ${messageLabelStyles[message.role]}`}
               >
                 {message.role === 'user' ? 'You' : 'Tutor'}
               </span>
@@ -170,10 +170,10 @@ export function TutorOverlay() {
             onChange={(event) => setInput(event.target.value)}
             placeholder="Ask anything about this screen…"
             rows={3}
-            className="block min-h-20 w-full resize-none rounded-lg border border-line-strong bg-panel-soft p-3 text-xs leading-normal text-ink outline-0 placeholder:text-faint focus:border-accent-teal/50"
+            className="block min-h-20 w-full resize-none rounded-lg border border-line-strong bg-panel-soft p-3 text-sm leading-normal text-ink outline-0 placeholder:text-faint focus:border-accent-teal/50"
           />
           <div className="mt-2 flex items-center justify-between gap-2.5">
-            <span className="text-2xs text-faint">
+            <span className="text-sm text-faint">
               {mode === 'exercise' ? 'Hints, not solutions' : 'Ask a question'}
             </span>
             <Button type="submit" disabled={isThinking || !input.trim()}>

@@ -186,7 +186,7 @@ function WorksheetContent({
   return (
     <div className="grid max-w-5xl gap-7 max-sm:gap-5">
       <nav
-        className="flex flex-wrap items-center gap-2 text-2xs text-faint"
+        className="flex flex-wrap items-center gap-2 text-sm text-faint"
         aria-label="Worksheet breadcrumbs"
       >
         <Link className="text-muted no-underline hover:text-accent-teal" to={coursePath(courseId)}>
@@ -226,7 +226,7 @@ function WorksheetContent({
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <p className="text-sm font-semibold text-ink">Printable practice</p>
-            <p className="mt-1 text-xs leading-relaxed text-muted">
+            <p className="mt-1 text-sm leading-relaxed text-muted">
               Download a blank worksheet or a copy with authored solutions.
             </p>
           </div>
@@ -244,14 +244,14 @@ function WorksheetContent({
           </div>
         </div>
         {downloadError ? (
-          <p className="mt-3 text-xs text-accent-coral" role="alert">
+          <p className="mt-3 text-sm text-accent-coral" role="alert">
             {downloadError}
           </p>
         ) : null}
       </Card>
 
       <Card className="max-w-3xl">
-        <p className="mb-3 text-2xs font-bold uppercase tracking-widest text-faint">Instructions</p>
+        <p className="mb-3 text-xs font-bold uppercase tracking-widest text-faint">Instructions</p>
         <div className="text-sm">
           <WorksheetMarkup source={worksheet.instructions} />
         </div>
@@ -281,7 +281,7 @@ function WorksheetContent({
       </section>
 
       <Link
-        className="w-max text-xs font-bold text-muted no-underline hover:text-ink"
+        className="w-max text-sm font-bold text-muted no-underline hover:text-ink"
         to={lessonPath(courseId, moduleId, lessonId)}
       >
         ← Back to {lessonTitle}
@@ -311,14 +311,14 @@ function WorksheetState({
   return (
     <div className="grid max-w-5xl gap-7 max-sm:gap-5">
       <Link
-        className="justify-self-start text-xs font-bold text-muted no-underline hover:text-ink"
+        className="justify-self-start text-sm font-bold text-muted no-underline hover:text-ink"
         to={destination}
       >
         ← Curriculum
       </Link>
       <Card muted>
         <h2 className="text-base tracking-tight text-ink">{title}</h2>
-        <p className="mt-2 text-xs leading-relaxed text-muted">{detail}</p>
+        <p className="mt-2 text-sm leading-relaxed text-muted">{detail}</p>
       </Card>
     </div>
   )

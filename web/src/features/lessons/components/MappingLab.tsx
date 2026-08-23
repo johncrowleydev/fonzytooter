@@ -151,11 +151,11 @@ export function MappingLab() {
     <Card className="my-8 grid min-w-0 gap-5 p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-2xs font-bold uppercase tracking-widest text-faint">
+          <p className="text-xs font-bold uppercase tracking-widest text-faint">
             Interactive model
           </p>
           <h2 className="mt-1.5 text-lg font-semibold tracking-tight">Mapping lab</h2>
-          <p className="mt-2 max-w-2xl text-xs leading-relaxed text-muted">
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
             Edit the arrows to test the rule from domain to codomain. Invalid relations are allowed
             on purpose.
           </p>
@@ -167,7 +167,7 @@ export function MappingLab() {
 
       {complete ? (
         <div className="rounded-lg border border-accent-teal/30 bg-accent-teal/10 p-5">
-          <p className="text-2xs font-bold uppercase tracking-widest text-accent-teal">
+          <p className="text-xs font-bold uppercase tracking-widest text-accent-teal">
             Final takeaway
           </p>
           <p className="mt-2 text-sm leading-relaxed text-ink">
@@ -178,11 +178,11 @@ export function MappingLab() {
       ) : (
         <>
           <div>
-            <p className="text-2xs font-bold uppercase tracking-widest text-faint">
+            <p className="text-xs font-bold uppercase tracking-widest text-faint">
               Challenge {stage + 1}
             </p>
             <h3 className="mt-1.5 text-base font-semibold text-ink">{challenges[stage]}</h3>
-            <p className="mt-2 text-xs leading-relaxed text-muted">{instructionFor(stage)}</p>
+            <p className="mt-2 text-sm leading-relaxed text-muted">{instructionFor(stage)}</p>
           </div>
 
           {stage === 3 ? (
@@ -213,7 +213,7 @@ export function MappingLab() {
 
           {feedback ? (
             <div
-              className={`rounded-lg border p-3 text-xs leading-relaxed text-ink ${feedbackClasses[feedback.tone]}`}
+              className={`rounded-lg border p-3 text-sm leading-relaxed text-ink ${feedbackClasses[feedback.tone]}`}
               role={feedback.tone === 'error' ? 'alert' : 'status'}
               aria-live="polite"
             >

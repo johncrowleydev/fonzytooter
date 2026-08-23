@@ -60,7 +60,7 @@ type MappingDiagramProps = {
 }
 
 const nodeButtonClass =
-  'rounded-lg border px-3 py-2 text-xs font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-teal'
+  'rounded-lg border px-3 py-2 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-teal'
 
 export function MappingDiagram({
   domain,
@@ -84,7 +84,7 @@ export function MappingDiagram({
   return (
     <div className="grid min-w-0 gap-4">
       <div className="rounded-lg border border-line bg-panel-soft p-3">
-        <div className="flex justify-between text-2xs font-bold uppercase tracking-widest text-faint">
+        <div className="flex justify-between text-xs font-bold uppercase tracking-widest text-faint">
           <span>Domain</span>
           <span>Codomain</span>
         </div>
@@ -172,7 +172,7 @@ export function MappingDiagram({
       {editable ? (
         <div className="grid gap-3 rounded-lg border border-line bg-raised p-3">
           <fieldset>
-            <legend className="text-2xs font-bold uppercase tracking-widest text-faint">
+            <legend className="text-xs font-bold uppercase tracking-widest text-faint">
               1. Select an input
             </legend>
             <div className="mt-2 flex flex-wrap gap-2">
@@ -195,7 +195,7 @@ export function MappingDiagram({
           </fieldset>
 
           <fieldset disabled={!selectedInput}>
-            <legend className="text-2xs font-bold uppercase tracking-widest text-faint">
+            <legend className="text-xs font-bold uppercase tracking-widest text-faint">
               2. {singleOutput ? 'Choose an output' : 'Toggle outputs'} for{' '}
               {selectedInput ? `input ${selectedInput}` : 'the selected input'}
             </legend>
@@ -222,7 +222,7 @@ export function MappingDiagram({
           </fieldset>
         </div>
       ) : (
-        <p className="text-xs leading-relaxed text-muted">{formatMappingSummary(domain, edges)}</p>
+        <p className="text-sm leading-relaxed text-muted">{formatMappingSummary(domain, edges)}</p>
       )}
     </div>
   )

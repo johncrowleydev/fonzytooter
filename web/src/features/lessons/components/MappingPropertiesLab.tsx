@@ -92,7 +92,7 @@ const feedbackClasses = {
   error: 'border-accent-coral/30 bg-accent-coral/10',
 } as const
 const evidenceButtonClass =
-  'rounded-lg border px-3 py-2 text-left text-xs font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-teal disabled:cursor-not-allowed disabled:opacity-50'
+  'rounded-lg border px-3 py-2 text-left text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-teal disabled:cursor-not-allowed disabled:opacity-50'
 
 export function MappingPropertiesLab() {
   const [stage, setStage] = useState(0)
@@ -302,13 +302,13 @@ export function MappingPropertiesLab() {
     <Card className="my-8 grid min-w-0 gap-5 p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-2xs font-bold uppercase tracking-widest text-faint">
+          <p className="text-xs font-bold uppercase tracking-widest text-faint">
             Interactive model
           </p>
           <h2 className="mt-1.5 text-lg font-semibold tracking-tight">
             Collisions, gaps, and reversibility
           </h2>
-          <p className="mt-2 max-w-2xl text-xs leading-relaxed text-muted">
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
             Read injective and surjective as independent structural properties of a function.
           </p>
         </div>
@@ -319,7 +319,7 @@ export function MappingPropertiesLab() {
 
       {complete ? (
         <div className="rounded-lg border border-accent-teal/30 bg-accent-teal/10 p-5">
-          <p className="text-2xs font-bold uppercase tracking-widest text-accent-teal">
+          <p className="text-xs font-bold uppercase tracking-widest text-accent-teal">
             Transition to inverses
           </p>
           <p className="mt-2 text-sm leading-relaxed text-ink">
@@ -390,7 +390,7 @@ export function MappingPropertiesLab() {
 
           {feedback ? (
             <div
-              className={`rounded-lg border p-3 text-xs leading-relaxed text-ink ${feedbackClasses[feedback.tone]}`}
+              className={`rounded-lg border p-3 text-sm leading-relaxed text-ink ${feedbackClasses[feedback.tone]}`}
               role={feedback.tone === 'error' ? 'alert' : 'status'}
               aria-live="polite"
             >
@@ -437,7 +437,7 @@ function DiagnosticControls({
   return (
     <div className="grid gap-4 rounded-lg border border-line bg-raised p-4">
       <fieldset>
-        <legend className="text-xs font-semibold text-ink">
+        <legend className="text-sm font-semibold text-ink">
           {stage === 0 ? 'Is this function injective?' : 'Is this function surjective?'}
         </legend>
         <div className="mt-3 flex flex-wrap gap-2">
@@ -458,7 +458,7 @@ function DiagnosticControls({
 
       {stage === 0 ? (
         <fieldset disabled={answer !== 'no'}>
-          <legend className="text-xs font-semibold text-ink">Which inputs collide?</legend>
+          <legend className="text-sm font-semibold text-ink">Which inputs collide?</legend>
           <div className="mt-3 flex flex-wrap gap-2">
             {pairOptions.map((option) => (
               <button
@@ -479,7 +479,7 @@ function DiagnosticControls({
       ) : null}
 
       <fieldset disabled={answer !== 'no'}>
-        <legend className="text-xs font-semibold text-ink">
+        <legend className="text-sm font-semibold text-ink">
           {stage === 0 ? 'Which output receives the collision?' : 'Which codomain value is missed?'}
         </legend>
         <div className="mt-3 flex flex-wrap gap-2">
@@ -531,7 +531,7 @@ function StageContent({
           <h3 className="text-base font-semibold text-ink">
             {stage === 0 ? 'Find the collision' : 'Find the gap'}
           </h3>
-          <p className="mt-2 text-xs leading-relaxed text-muted">
+          <p className="mt-2 text-sm leading-relaxed text-muted">
             {stage === 0
               ? 'Is this function injective? Choose the answer supported by the diagram.'
               : 'Is this function surjective? Choose the answer supported by the diagram.'}
@@ -550,7 +550,7 @@ function StageContent({
           <h3 className="text-base font-semibold text-ink">
             {stage === 2 ? 'Make it injective' : 'Build a surjection with unequal set sizes'}
           </h3>
-          <p className="mt-2 text-xs leading-relaxed text-muted">
+          <p className="mt-2 text-sm leading-relaxed text-muted">
             {stage === 2
               ? 'Rearrange the valid mapping so that no two inputs collide.'
               : 'Build a surjective function from {1, 2, 3, 4} to {A, B, C}.'}
@@ -574,7 +574,7 @@ function StageContent({
       <div className="grid gap-5">
         <div>
           <h3 className="text-base font-semibold text-ink">Classify four mappings</h3>
-          <p className="mt-2 text-xs leading-relaxed text-muted">
+          <p className="mt-2 text-sm leading-relaxed text-muted">
             For each diagram, check separately for collisions and gaps.
           </p>
         </div>
@@ -588,10 +588,10 @@ function StageContent({
                 edges={mapping.edges}
                 compact
               />
-              <label className="grid gap-1.5 text-xs text-muted">
+              <label className="grid gap-1.5 text-sm text-muted">
                 Classification
                 <select
-                  className="rounded-md border border-line-strong bg-panel px-3 py-2 text-xs text-ink outline-0 focus-visible:border-accent-teal focus-visible:ring-2 focus-visible:ring-accent-teal/30"
+                  className="rounded-md border border-line-strong bg-panel px-3 py-2 text-sm text-ink outline-0 focus-visible:border-accent-teal focus-visible:ring-2 focus-visible:ring-accent-teal/30"
                   value={classifications[mapping.id] ?? ''}
                   onChange={(event) => onClassify(mapping.id, event.target.value)}
                 >
@@ -614,7 +614,7 @@ function StageContent({
   return (
     <div>
       <h3 className="text-base font-semibold text-ink">Which mapping is perfectly reversible?</h3>
-      <p className="mt-2 text-xs leading-relaxed text-muted">
+      <p className="mt-2 text-sm leading-relaxed text-muted">
         Choose the category whose outputs can each map back to exactly one original input.
       </p>
     </div>
@@ -624,10 +624,10 @@ function StageContent({
 function PropertyMatrix() {
   return (
     <div className="rounded-lg border border-line bg-panel-soft p-3">
-      <p className="text-2xs font-bold uppercase tracking-widest text-faint">
+      <p className="text-xs font-bold uppercase tracking-widest text-faint">
         Two independent questions
       </p>
-      <table className="mt-3 w-full table-fixed text-center text-xs">
+      <table className="mt-3 w-full table-fixed text-center text-sm">
         <thead className="text-muted">
           <tr>
             <th className="p-2 text-left">Injective?</th>

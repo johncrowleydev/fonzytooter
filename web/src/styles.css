@@ -1,6 +1,20 @@
 @import 'tailwindcss';
 
 /*
+ * Type scale. There is deliberately no size below `text-xs`: a `--text-2xs` of 9px used to carry
+ * real content at 119 call sites, which is what made the UI feel cramped on every screen.
+ *
+ *   text-xs   12px  the floor. Uppercase eyebrows, badges, and tab-bar labels only -- never a
+ *                   sentence. Also used for glyphs sized by their container rather than the scale.
+ *   text-sm   14px  secondary copy: descriptions, metadata, list rows, controls, buttons.
+ *   text-base 16px  primary reading copy, including authored lesson prose.
+ *   text-lg+        headings.
+ *
+ * Text inside an SVG viewBox is in user units and scales with the diagram, so it is not on this
+ * scale at all.
+ */
+
+/*
  * The brand hues exist in two families, split by role. Getting the wrong one is the difference
  * between 9:1 and 1.8:1, so the distinction matters more than it looks.
  *
@@ -25,7 +39,6 @@
   --color-brand-slate: #9db9c2;
   --color-brand-ink: #0b171e;
   --color-avatar: #2f4c64;
-  --text-2xs: 0.5625rem;
 
   /*
    * Code surfaces stay dark in both themes by design. They are tokens rather than per-site literal
