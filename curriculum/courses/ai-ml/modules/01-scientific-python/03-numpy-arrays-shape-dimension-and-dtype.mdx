@@ -208,6 +208,8 @@ mystery.size
 
 The habit of predicting first matters. Shape reasoning becomes much more useful when you can do it before the computer tells you the answer.
 
+<ArrayStructureExplorer />
+
 ---
 
 ## Dtype describes the element representation
@@ -396,6 +398,8 @@ x[0:1].shape  -> (1, 4)
 
 That distinction may seem fussy now. Later, when operations require particular tensor shapes, it becomes extremely important.
 
+<IndexingShapeVisualizer />
+
 ---
 
 ## Mutation changes array values in place
@@ -489,6 +493,8 @@ NumPy has more detailed rules about which operations return views and which retu
 
 > **An array derived from another array is not necessarily independent data. If independence matters, verify the behavior or make it explicit with `.copy()`.**
 
+<ViewCopyExplorer />
+
 We will avoid a detour into strides, memory order, contiguous arrays, and advanced indexing. Those details matter in some numerical work, but they are not needed to build the mental model required for this course.
 
 ---
@@ -580,6 +586,8 @@ print(original)
 They expected `original` to remain `[1, 2, 3, 4]`.
 
 Explain why that expectation is wrong, then change the code so that modifying `middle` cannot modify `original`.
+
+<ArrayMentalModelCheck />
 
 ---
 

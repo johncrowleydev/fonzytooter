@@ -1,6 +1,9 @@
 import type { ComponentPropsWithoutRef } from 'react'
 import type { MDXComponents } from 'mdx/types'
+import { ArrayMentalModelCheck } from '../components/ArrayMentalModelCheck'
+import { ArrayStructureExplorer } from '../components/ArrayStructureExplorer'
 import { CompositionPipeline } from '../components/CompositionPipeline'
+import { IndexingShapeVisualizer } from '../components/IndexingShapeVisualizer'
 import { InverseExplorer } from '../components/InverseExplorer'
 import { MappingLab } from '../components/MappingLab'
 import { MappingPropertiesLab } from '../components/MappingPropertiesLab'
@@ -8,6 +11,7 @@ import { MutableDefaultExplorer } from '../components/MutableDefaultExplorer'
 import { PythonMentalModelCheck } from '../components/PythonMentalModelCheck'
 import { ReferenceBindingExplorer } from '../components/ReferenceBindingExplorer'
 import { SliceExplorer } from '../components/SliceExplorer'
+import { ViewCopyExplorer } from '../components/ViewCopyExplorer'
 
 function withClassName(className: string, existingClassName?: string) {
   return existingClassName ? `${className} ${existingClassName}` : className
@@ -149,7 +153,10 @@ export const lessonMdxComponents = {
   pre: LessonPreformatted,
   strong: LessonStrong,
   ul: LessonUnorderedList,
+  ArrayMentalModelCheck,
+  ArrayStructureExplorer,
   CompositionPipeline,
+  IndexingShapeVisualizer,
   InverseExplorer,
   MappingLab,
   MappingPropertiesLab,
@@ -157,4 +164,5 @@ export const lessonMdxComponents = {
   PythonMentalModelCheck,
   ReferenceBindingExplorer,
   SliceExplorer,
+  ViewCopyExplorer,
 } satisfies MDXComponents
