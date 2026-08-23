@@ -1,0 +1,7 @@
+id: equality-vs-identity
+order: 3
+objectiveIds:
+  - python.execution-model
+sourceLessonId: 01-python-for-a-programmer
+prompt: What question does `==` ask, and what question does `is` ask?
+answer: `==` asks whether values compare equal; `is` asks whether two references identify the same object.
