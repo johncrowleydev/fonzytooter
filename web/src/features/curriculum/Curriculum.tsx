@@ -137,7 +137,6 @@ function ModuleRow({ courseId, module }: { courseId: string; module: ModuleSumma
       </span>
       <span className="min-w-0 flex-1">
         <strong className="block text-base tracking-tight">{module.title}</strong>
-        <span className="mt-1 block text-sm text-faint">{module.id}</span>
       </span>
       <span className="text-base text-faint" aria-hidden="true">
         →

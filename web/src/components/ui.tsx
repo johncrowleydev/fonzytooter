@@ -151,6 +151,20 @@ export function ProgressBar({
   )
 }
 
+/*
+ * A screen reader reads this label out, so it cannot be the state key: "in-progress" and
+ * "not-assessed" are internal vocabulary that happens to look like words.
+ */
+const statusLabels: Record<keyof typeof statusStyles, string> = {
+  locked: 'Locked',
+  todo: 'Not started',
+  available: 'Available',
+  'in-progress': 'In progress',
+  working: 'In progress',
+  completed: 'Completed',
+  done: 'Completed',
+}
+
 export function StatusDot({
   state,
   size = 'normal',
@@ -162,7 +176,8 @@ export function StatusDot({
   return (
     <span
       className={`inline-block shrink-0 rounded-full border ${sizeClass} ${statusStyles[state]}`}
-      aria-label={state}
+      role="img"
+      aria-label={statusLabels[state]}
     />
   )
 }

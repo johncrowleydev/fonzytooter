@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { useGetCourseProgress } from '../../api/generated/endpoints'
+import { useEffect, useMemo, useState } from 'react'
+import { useGetCourse, useGetCourseProgress } from '../../api/generated/endpoints'
 import type { CourseProgressResource } from '../../api/generated/schemas/courseProgressResource.zod'
 import type { ObjectiveProgressResource } from '../../api/generated/schemas/objectiveProgressResource.zod'
 import { DEFAULT_COURSE_ID } from '../../app/routes'
@@ -27,8 +27,15 @@ type EvidenceFilter = 'all' | 'needs-review' | 'application' | 'not-introduced'
 export function Progress() {
   const { setPageContext } = useTutor()
   const progressQuery = useGetCourseProgress(DEFAULT_COURSE_ID)
+  // Objective progress carries a moduleId but no module title, so the names come from the course.
+  const courseQuery = useGetCourse(DEFAULT_COURSE_ID)
   const [selectedId, setSelectedId] = useState<string>()
   const progress = progressQuery.data?.data
+  const moduleTitles = useMemo(
+    () =>
+      new Map((courseQuery.data?.data.modules ?? []).map((module) => [module.id, module.title])),
+    [courseQuery.data],
+  )
   const selected =
     progress?.objectives.find((objective) => objective.id === selectedId) ?? progress?.objectives[0]
 
@@ -54,17 +61,27 @@ export function Progress() {
     )
   }
 
-  return <ProgressView progress={progress} selectedId={selected?.id} onSelect={setSelectedId} />
+  return (
+    <ProgressView
+      progress={progress}
+      selectedId={selected?.id}
+      onSelect={setSelectedId}
+      moduleTitles={moduleTitles}
+    />
+  )
 }
 
 export function ProgressView({
   progress,
   selectedId,
   onSelect,
+  moduleTitles,
 }: {
   progress: CourseProgressResource
   selectedId?: string
   onSelect: (objectiveId: string) => void
+  /** Module id to title. Optional because the course may still be loading. */
+  moduleTitles?: ReadonlyMap<string, string>
 }) {
   const introducedCount = progress.objectives.filter((objective) => objective.introduced).length
   const [filter, setFilter] = useState<EvidenceFilter>('all')
@@ -147,6 +164,7 @@ export function ProgressView({
                 <ObjectiveBrowserRow
                   key={objective.id}
                   objective={objective}
+                  moduleTitle={moduleTitles?.get(objective.moduleId)}
                   selected={selected.id === objective.id}
                   onClick={() => onSelect(objective.id)}
                 />
@@ -246,10 +264,12 @@ function SummaryStat({
 
 function ObjectiveBrowserRow({
   objective,
+  moduleTitle,
   selected,
   onClick,
 }: {
   objective: ObjectiveProgressResource
+  moduleTitle?: string
   selected: boolean
   onClick: () => void
 }) {
@@ -264,9 +284,14 @@ function ObjectiveBrowserRow({
         <strong className="block overflow-wrap-anywhere text-sm font-semibold">
           {objective.title}
         </strong>
-        <small className="mt-1 block text-sm capitalize text-faint">
-          {objective.moduleId.replaceAll('-', ' ')}
-        </small>
+        {/*
+          This previously de-slugified objective.moduleId and capitalised it, which produced
+          prose-shaped text that was still an identifier. The module's real title is used instead,
+          and nothing is shown when it is not available yet.
+        */}
+        {moduleTitle ? (
+          <small className="mt-1 block text-sm text-faint">{moduleTitle}</small>
+        ) : null}
       </span>
       <Badge tone={objective.introduced ? 'teal' : 'neutral'}>
         {objective.introduced ? 'Introduced' : 'Not introduced'}
