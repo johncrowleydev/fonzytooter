@@ -129,7 +129,7 @@ export function ProgressView({
             type="button"
             key={value}
             onClick={() => setFilter(value)}
-            className={`rounded-full border px-3 py-2 text-2xs font-semibold ${filter === value ? 'border-accent-teal bg-accent-teal/10 text-ink' : 'border-line bg-panel text-muted'}`}
+            className={`rounded-full border px-3 py-2 text-sm font-semibold ${filter === value ? 'border-accent-teal bg-accent-teal/10 text-ink' : 'border-line bg-panel text-muted'}`}
           >
             {label}
           </button>
@@ -158,7 +158,7 @@ export function ProgressView({
       ) : (
         <Card muted>
           <h2 className="text-base tracking-tight text-ink">No objectives available</h2>
-          <p className="mt-2 text-xs leading-relaxed text-muted">
+          <p className="mt-2 text-sm leading-relaxed text-muted">
             This course does not have authored learning objectives yet.
           </p>
         </Card>
@@ -174,7 +174,7 @@ function ObjectiveDetail({ objective }: { objective: ObjectiveProgressResource }
         {objective.introduced ? 'Introduced' : 'Not introduced'}
       </Badge>
       <h2 className="my-5 max-w-sm text-3xl leading-tight tracking-tight">{objective.title}</h2>
-      <p className="text-xs leading-relaxed text-muted">{objective.description}</p>
+      <p className="text-sm leading-relaxed text-muted">{objective.description}</p>
       <div className="mt-8 grid gap-0">
         <Dimension
           label="Introduced"
@@ -201,7 +201,7 @@ function ObjectiveDetail({ objective }: { objective: ObjectiveProgressResource }
         />
         <Dimension label="Transfer" value="Not assessed" state="not-assessed" />
       </div>
-      <div className="mt-6 grid gap-2 text-2xs text-muted">
+      <div className="mt-6 grid gap-2 text-sm text-muted">
         <p>
           {objective.completedLessonCount} of {objective.linkedLessonCount} linked lessons
           completed.
@@ -216,7 +216,7 @@ function ObjectiveDetail({ objective }: { objective: ObjectiveProgressResource }
           <p>Last exercise check {formatEvidenceTime(objective.application.lastCheckedAt)}.</p>
         ) : null}
       </div>
-      <p className="mt-8 rounded-lg border border-line bg-accent-slate/10 p-4 text-2xs leading-relaxed text-muted">
+      <p className="mt-8 rounded-lg border border-line bg-accent-slate/10 p-4 text-sm leading-relaxed text-muted">
         These are counts and timestamps from real learner actions. They are evidence, not a mastery
         score. Transfer remains {objective.transferAssessed ? 'assessed' : 'not assessed'}.
       </p>
@@ -238,8 +238,8 @@ function SummaryStat({
   return (
     <Card className={`grid gap-1 border-t-2 border-t-transparent p-5 ${summaryToneStyles[tone]}`}>
       <span className="text-4xl tracking-tight">{value}</span>
-      <strong className="text-xs">{label}</strong>
-      <span className="text-2xs text-faint">{note}</span>
+      <strong className="text-sm">{label}</strong>
+      <span className="text-sm text-faint">{note}</span>
     </Card>
   )
 }
@@ -261,10 +261,10 @@ function ObjectiveBrowserRow({
     >
       <StatusDot state={objective.introduced ? 'completed' : 'available'} />
       <span className="min-w-0 max-sm:flex-1">
-        <strong className="block overflow-wrap-anywhere text-xs font-semibold">
+        <strong className="block overflow-wrap-anywhere text-sm font-semibold">
           {objective.title}
         </strong>
-        <small className="mt-1 block text-2xs capitalize text-faint">
+        <small className="mt-1 block text-sm capitalize text-faint">
           {objective.moduleId.replaceAll('-', ' ')}
         </small>
       </span>
@@ -287,9 +287,9 @@ function Dimension({
 }) {
   return (
     <div className="grid grid-cols-[85px_1fr_100px] items-center gap-3 border-b border-line py-3 max-sm:grid-cols-[72px_1fr_84px]">
-      <span className="text-2xs text-muted">{label}</span>
+      <span className="text-sm text-muted">{label}</span>
       <span className={`h-1 rounded-full ${dimensionToneStyles[state]}`} />
-      <strong className="text-right text-2xs font-semibold">{value}</strong>
+      <strong className="text-right text-sm font-semibold">{value}</strong>
     </div>
   )
 }
@@ -300,7 +300,7 @@ function ProgressState({ title, detail }: { title: string; detail: string }) {
       <PageIntro compact title="Progress" />
       <Card muted>
         <h2 className="text-base tracking-tight text-ink">{title}</h2>
-        <p className="mt-2 text-xs leading-relaxed text-muted">{detail}</p>
+        <p className="mt-2 text-sm leading-relaxed text-muted">{detail}</p>
       </Card>
     </div>
   )

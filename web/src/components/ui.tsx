@@ -65,7 +65,7 @@ export function Button({
       type={type}
       onClick={onClick}
       disabled={disabled}
-      className={`inline-flex items-center justify-center gap-2.5 rounded-lg px-4 py-2.5 text-xs font-bold transition ${variants[variant]} ${className}`}
+      className={`inline-flex items-center justify-center gap-2.5 rounded-lg px-4 py-2.5 text-sm font-bold transition ${variants[variant]} ${className}`}
     >
       {children}
     </button>
@@ -92,7 +92,7 @@ export function Badge({
 }: PropsWithChildren<{ tone?: keyof typeof badgeTones }>) {
   return (
     <span
-      className={`inline-flex w-max items-center rounded-full border px-2 py-1 text-2xs font-bold uppercase leading-none tracking-wide ${badgeTones[tone]}`}
+      className={`inline-flex w-max items-center rounded-full border px-2 py-1 text-xs font-bold uppercase leading-none tracking-wide ${badgeTones[tone]}`}
     >
       {children}
     </span>
@@ -114,10 +114,10 @@ export function SectionHeading({
     <div className="mb-4 flex items-start justify-between gap-4">
       <div>
         {eyebrow ? (
-          <p className="text-2xs font-bold uppercase tracking-widest text-faint">{eyebrow}</p>
+          <p className="text-xs font-bold uppercase tracking-widest text-faint">{eyebrow}</p>
         ) : null}
         <h2 className="mt-1.5 text-lg font-semibold leading-tight tracking-tight">{title}</h2>
-        {detail ? <p className="mt-1.5 text-xs leading-normal text-faint">{detail}</p> : null}
+        {detail ? <p className="mt-1.5 text-sm leading-normal text-faint">{detail}</p> : null}
       </div>
       {action ? <div>{action}</div> : null}
     </div>
@@ -180,7 +180,7 @@ export function PageIntro({
   return (
     <header className={`max-w-3xl ${compact ? 'max-w-none' : ''}`}>
       {eyebrow ? (
-        <p className="mb-3 text-2xs font-bold uppercase tracking-widest text-faint">{eyebrow}</p>
+        <p className="mb-3 text-xs font-bold uppercase tracking-widest text-faint">{eyebrow}</p>
       ) : null}
       <h1
         className={`${compact ? 'text-3xl sm:text-4xl' : 'text-4xl sm:text-5xl'} m-0 font-semibold leading-none tracking-tight`}

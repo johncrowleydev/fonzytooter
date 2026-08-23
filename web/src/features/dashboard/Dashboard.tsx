@@ -72,14 +72,14 @@ export function DashboardView({
               <h2 className="text-4xl font-semibold leading-none tracking-tight max-sm:text-3xl">
                 {progress.nextLesson.lessonTitle}
               </h2>
-              <p className="mt-4 text-xs font-semibold text-accent-coral">
+              <p className="mt-4 text-sm font-semibold text-accent-coral">
                 {progress.nextLesson.moduleTitle}
               </p>
-              <p className="my-4 max-w-lg text-xs leading-relaxed text-muted">
+              <p className="my-4 max-w-lg text-sm leading-relaxed text-muted">
                 This is the next incomplete lesson in curriculum order.
               </p>
               <Link
-                className="inline-flex items-center justify-center gap-2.5 rounded-lg bg-brand-teal px-4 py-2.5 text-xs font-bold text-brand-ink no-underline transition hover:-translate-y-px hover:bg-brand-teal-light"
+                className="inline-flex items-center justify-center gap-2.5 rounded-lg bg-brand-teal px-4 py-2.5 text-sm font-bold text-brand-ink no-underline transition hover:-translate-y-px hover:bg-brand-teal-light"
                 to={lessonPath(
                   progress.nextLesson.courseId,
                   progress.nextLesson.moduleId,
@@ -94,11 +94,11 @@ export function DashboardView({
               <h2 className="text-3xl font-semibold tracking-tight">
                 All current lessons complete
               </h2>
-              <p className="my-4 text-xs leading-relaxed text-muted">
+              <p className="my-4 text-sm leading-relaxed text-muted">
                 There is no incomplete authored lesson in this course right now.
               </p>
               <Link
-                className="text-xs font-bold text-accent-teal no-underline hover:text-ink"
+                className="text-sm font-bold text-accent-teal no-underline hover:text-ink"
                 to={coursePath(progress.courseId)}
               >
                 Browse curriculum →
@@ -145,7 +145,7 @@ export function DashboardView({
         </Card>
         <Card className="min-h-72">
           <SectionHeading eyebrow="Evidence" title="What has been recorded" />
-          <div className="grid gap-4 text-xs text-muted">
+          <div className="grid gap-4 text-sm text-muted">
             <p>
               {progress.completedLessonCount} completed lessons introduce their linked objectives.
             </p>
@@ -161,8 +161,8 @@ export function DashboardView({
         <div className="flex max-w-xl items-start gap-3">
           <span className="text-base text-accent-gold">✦</span>
           <div>
-            <strong className="text-xs">What this progress means</strong>
-            <p className="mt-1.5 text-xs leading-normal text-muted">
+            <strong className="text-sm">What this progress means</strong>
+            <p className="mt-1.5 text-sm leading-normal text-muted">
               Lesson completion, review history, and checked exercise attempts are shown as separate
               evidence. Transfer stays unassessed until a real transfer workflow exists.
             </p>
@@ -181,8 +181,8 @@ export function ActivityList({ activities }: { activities: ActivityResource[] })
   if (activities.length === 0) {
     return (
       <div className="rounded-lg border border-dashed border-line p-5">
-        <strong className="text-xs text-ink">No activity yet</strong>
-        <p className="mt-2 text-2xs leading-relaxed text-muted">
+        <strong className="text-sm text-ink">No activity yet</strong>
+        <p className="mt-2 text-sm leading-relaxed text-muted">
           Complete a lesson or check an exercise to start a learner activity history.
         </p>
       </div>
@@ -196,22 +196,22 @@ export function ActivityList({ activities }: { activities: ActivityResource[] })
         const reviewCompleted = activity.kind === 'review_completed'
         const content = (
           <>
-            <span className="grid size-6 place-items-center rounded-lg bg-accent-gold/10 text-xs text-accent-gold">
+            <span className="grid size-6 place-items-center rounded-lg bg-accent-gold/10 text-sm text-accent-gold">
               ✓
             </span>
             <div>
-              <strong className="block text-xs font-semibold">
+              <strong className="block text-sm font-semibold">
                 {reviewCompleted
                   ? `Reviewed ${activity.reviewItemId ?? 'recall prompt'}`
                   : exerciseChecked
                     ? `Checked ${activity.exerciseTitle ?? activity.exerciseId}`
                     : `Completed ${activity.lessonTitle ?? 'lesson'}`}
               </strong>
-              <span className="mt-1 block text-2xs text-faint">
+              <span className="mt-1 block text-sm text-faint">
                 {activity.moduleTitle ?? activity.courseTitle}
               </span>
             </div>
-            <time className="text-2xs text-faint" dateTime={activity.occurredAt}>
+            <time className="text-sm text-faint" dateTime={activity.occurredAt}>
               {formatActivityTime(activity.occurredAt)}
             </time>
           </>
@@ -267,12 +267,12 @@ function ActionCard({
         {icon}
       </div>
       <div>
-        <p className="mt-px text-2xs font-bold uppercase tracking-widest text-faint">{eyebrow}</p>
+        <p className="mt-px text-xs font-bold uppercase tracking-widest text-faint">{eyebrow}</p>
         <h3 className="my-2 text-lg tracking-tight">{title}</h3>
-        <p className="text-2xs leading-relaxed text-faint">{detail}</p>
+        <p className="text-sm leading-relaxed text-faint">{detail}</p>
         {to ? (
           <Link
-            className="mt-3 inline-flex text-2xs font-bold text-accent-teal no-underline"
+            className="mt-3 inline-flex text-sm font-bold text-accent-teal no-underline"
             to={to}
           >
             Open →
@@ -287,7 +287,7 @@ function DashboardStat({ value, label }: { value: number; label: string }) {
   return (
     <div className="grid gap-1">
       <strong className="text-2xl tracking-tight">{value}</strong>
-      <span className="text-2xs uppercase tracking-wide text-faint">{label}</span>
+      <span className="text-xs uppercase tracking-wide text-faint">{label}</span>
     </div>
   )
 }
@@ -306,7 +306,7 @@ function DashboardState({
       {intro}
       <Card muted>
         <h2 className="text-base tracking-tight text-ink">{title}</h2>
-        <p className="mt-2 text-xs leading-relaxed text-muted">{detail}</p>
+        <p className="mt-2 text-sm leading-relaxed text-muted">{detail}</p>
       </Card>
     </div>
   )

@@ -42,15 +42,15 @@ function ProjectRow({ project }: { project: (typeof projects)[number] }) {
         <span className="text-right text-base text-faint">→</span>
       </div>
       <h3 className="my-4 text-lg tracking-tight">{project.title}</h3>
-      <p className="m-0 max-w-2xl text-xs leading-relaxed text-muted">{project.description}</p>
+      <p className="m-0 max-w-2xl text-sm leading-relaxed text-muted">{project.description}</p>
       <div className="mt-6 flex items-end justify-between gap-5 max-sm:block">
         <div className="w-44">
           <ProgressBar value={percent} tone="coral" />
-          <span className="text-2xs text-faint">
+          <span className="text-sm text-faint">
             {done} of {project.objectives.length} objectives
           </span>
         </div>
-        <span className="font-mono text-2xs text-faint max-sm:mt-3 max-sm:block">
+        <span className="font-mono text-sm text-faint max-sm:mt-3 max-sm:block">
           {project.repository.replace('github.com/', '')}
         </span>
       </div>
