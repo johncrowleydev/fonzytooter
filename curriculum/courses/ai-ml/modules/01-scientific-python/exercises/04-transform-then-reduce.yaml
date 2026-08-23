@@ -1,0 +1,39 @@
+id: numpy.transform-then-reduce
+title: Transform Then Reduce
+lessonId: 04-vectorized-thinking
+order: 3
+objectiveIds:
+  - numpy.vectorization
+prompt: |
+  Implement `mean_squared_error(measurements, target)` using NumPy array
+  operations. Compute every squared error relative to `target`, then reduce
+  those values to one mean.
+
+  Do not write an explicit Python loop.
+starterCode: |
+  import numpy as np
+
+  def mean_squared_error(measurements, target):
+      pass
+tests:
+  - id: basic-error
+    title: Computes mean squared error
+    visibility: visible
+    code: |
+      measurements = np.array([9.0, 10.0, 12.0])
+      result = mean_squared_error(measurements, 10.0)
+      assert np.isclose(result, (1.0 + 0.0 + 4.0) / 3.0)
+  - id: scalar-result
+    title: Reduces to a scalar value
+    visibility: visible
+    code: |
+      measurements = np.array([1.0, 2.0, 3.0, 4.0])
+      result = mean_squared_error(measurements, 2.5)
+      assert np.ndim(result) == 0
+  - id: unseen-values
+    title: Works for unseen values
+    visibility: hidden
+    code: |
+      measurements = np.array([-2.0, 4.0, 9.0, 11.0])
+      expected = ((measurements - 3.0) ** 2).mean()
+      assert np.isclose(mean_squared_error(measurements, 3.0), expected)
