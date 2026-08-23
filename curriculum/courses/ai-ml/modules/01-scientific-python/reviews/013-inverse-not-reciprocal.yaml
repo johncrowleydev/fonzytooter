@@ -1,0 +1,7 @@
+id: inverse-not-reciprocal
+order: 13
+objectiveIds:
+  - python.functions
+sourceLessonId: 02-functions-code-and-mathematics
+prompt: Why is an inverse function not the same thing as a reciprocal?
+answer: An inverse function undoes a mapping, while a reciprocal replaces a value with 1 divided by that value.
