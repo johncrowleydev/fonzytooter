@@ -1,0 +1,7 @@
+id: broadcast-missing-leading
+order: 29
+objectiveIds:
+  - numpy.broadcasting
+sourceLessonId: 05-broadcasting
+prompt: How should missing leading dimensions be treated when reasoning about NumPy broadcasting?
+answer: Treat them as if they were dimensions of size `1`.
