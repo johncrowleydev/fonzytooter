@@ -176,6 +176,7 @@ export function StatusDot({
   return (
     <span
       className={`inline-block shrink-0 rounded-full border ${sizeClass} ${statusStyles[state]}`}
+      role="img"
       aria-label={statusLabels[state]}
     />
   )

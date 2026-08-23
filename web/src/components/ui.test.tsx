@@ -21,7 +21,7 @@ describe('StatusDot', () => {
   ] as const)('announces %s as %s', (state, label) => {
     render(<StatusDot state={state} />)
 
-    expect(screen.getByLabelText(label)).toBeDefined()
+    expect(screen.getByRole('img', { name: label })).toBeDefined()
   })
 
   it('never announces a raw state key', () => {
@@ -32,7 +32,7 @@ describe('StatusDot', () => {
       </>,
     )
 
-    expect(screen.queryByLabelText('in-progress')).toBeNull()
-    expect(screen.queryByLabelText('todo')).toBeNull()
+    expect(screen.queryByRole('img', { name: 'in-progress' })).toBeNull()
+    expect(screen.queryByRole('img', { name: 'todo' })).toBeNull()
   })
 })
