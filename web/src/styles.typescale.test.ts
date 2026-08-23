@@ -66,4 +66,15 @@ describe('type scale floor', () => {
 
     expect(offenders).toEqual([])
   })
+
+  it('keeps authored lesson prose at the primary reading tier on every viewport', () => {
+    const lessonSource = sourceFiles.find(
+      ({ path }) => path === 'features/lessons/Lesson.tsx',
+    )?.contents
+    const proseClasses = lessonSource?.match(/<div className="([^"]*)">\s*<LessonMdx\b/)?.[1]
+
+    expect(proseClasses).toBeDefined()
+    expect(proseClasses?.split(/\s+/)).toContain('text-base')
+    expect(proseClasses).not.toMatch(/\b(?:max|min)-[^:]+:text-(?:xs|sm)\b/)
+  })
 })
