@@ -1,0 +1,7 @@
+id: array-shape
+order: 15
+objectiveIds:
+  - numpy.arrays
+sourceLessonId: 03-numpy-arrays-shape-dimension-and-dtype
+prompt: What does a NumPy array's `shape` tell you?
+answer: The number of positions available along each axis, in axis order.
