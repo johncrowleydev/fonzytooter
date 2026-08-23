@@ -3,5 +3,5 @@ order: 24
 objectiveIds:
   - numpy.vectorization
 sourceLessonId: 04-vectorized-thinking
-prompt: If an array has shape `(2, 3, 4)`, what is the shape after reducing over `axis=1` without `keepdims`?
-answer: `(2, 4)` because axis 1 is collapsed and removed.
+prompt: "If an array has shape `(2, 3, 4)`, what is the shape after reducing over `axis=1` without `keepdims`?"
+answer: "`(2, 4)` because axis 1 is collapsed and removed."
