@@ -41,6 +41,7 @@ jobs:
           # Passed through the environment rather than interpolated into the script, so a branch
           # name can never be treated as shell syntax.
           GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
           BASE_REF: ${{ github.event.pull_request.base.ref }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
@@ -53,7 +54,7 @@ jobs:
 
           echo "::notice::This pull request targets '${BASE_REF}' rather than main. When the stack is ready, merge only its top branch, or retarget each pull request to main first. Merging bottom-up in quick succession is what orphans the middle of a stack."
 
-          merged_parent="$(gh pr list --state merged --head "$BASE_REF" --json number --jq '.[0].number // empty')"
+          merged_parent="$(gh pr list --repo "$REPOSITORY" --state merged --head "$BASE_REF" --json number --jq '.[0].number // empty')"
 
           if [ -n "$merged_parent" ]; then
             echo "::error::Base branch '${BASE_REF}' was already merged in #${merged_parent}, so it is a dead branch. Merging #${PR_NUMBER} into it would leave this work unreachable from main even though the pull request would report as merged. Retarget #${PR_NUMBER} to main."
