@@ -1,0 +1,7 @@
+id: type-hints-runtime
+order: 6
+objectiveIds:
+  - python.execution-model
+sourceLessonId: 01-python-for-a-programmer
+prompt: Do ordinary Python type annotations automatically enforce argument and return types at runtime?
+answer: No. They describe intended types for humans and tooling unless additional runtime enforcement is added.
