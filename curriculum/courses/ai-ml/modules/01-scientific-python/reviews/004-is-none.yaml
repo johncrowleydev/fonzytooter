@@ -3,5 +3,5 @@ order: 4
 objectiveIds:
   - python.execution-model
 sourceLessonId: 01-python-for-a-programmer
-prompt: Why is `x is None` preferred to `x == None`?
-answer: `None` is a singleton sentinel, so identity is the intended question: whether `x` refers to that exact object.
+prompt: "Why is `x is None` preferred to `x == None`?"
+answer: "`None` is a singleton sentinel, so identity is the intended question: whether `x` refers to that exact object."
