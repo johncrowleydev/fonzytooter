@@ -298,7 +298,7 @@ export function Exercise() {
                   {exercise.visibleTests.map((test) => (
                     <div key={test.id}>
                       <p className="mb-2 font-semibold text-ink">{test.title}</p>
-                      <pre className="overflow-x-auto rounded-lg bg-code-surface p-3 text-sm text-code-ink">
+                      <pre className="overflow-x-auto overscroll-x-contain rounded-lg bg-code-surface p-3 text-sm text-code-ink">
                         <code>{test.code}</code>
                       </pre>
                     </div>

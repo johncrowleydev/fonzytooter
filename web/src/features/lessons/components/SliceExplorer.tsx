@@ -52,7 +52,7 @@ export function SliceExplorer() {
         <label className="grid gap-1.5 text-sm text-muted" htmlFor="slice-start">
           <span className="font-semibold text-ink">start</span>
           <select
-            className="rounded-md border border-line-strong bg-panel px-3 py-2 text-sm text-ink outline-0 focus-visible:border-accent-teal focus-visible:ring-2 focus-visible:ring-accent-teal/30"
+            className="rounded-md border border-line-strong bg-panel px-3 py-2 text-sm text-ink focus-visible:border-accent-teal"
             id="slice-start"
             value={start}
             onChange={(event) => setStart(Number(event.target.value))}
@@ -67,7 +67,7 @@ export function SliceExplorer() {
         <label className="grid gap-1.5 text-sm text-muted" htmlFor="slice-stop">
           <span className="font-semibold text-ink">stop</span>
           <select
-            className="rounded-md border border-line-strong bg-panel px-3 py-2 text-sm text-ink outline-0 focus-visible:border-accent-teal focus-visible:ring-2 focus-visible:ring-accent-teal/30"
+            className="rounded-md border border-line-strong bg-panel px-3 py-2 text-sm text-ink focus-visible:border-accent-teal"
             id="slice-stop"
             value={stop}
             onChange={(event) => setStop(Number(event.target.value))}
@@ -81,7 +81,7 @@ export function SliceExplorer() {
         </label>
       </fieldset>
 
-      <div className="overflow-x-auto rounded-lg border border-line bg-panel-soft p-4">
+      <div className="overflow-x-auto overscroll-x-contain rounded-lg border border-line bg-panel-soft p-4">
         <div className="grid min-w-96 grid-cols-5 gap-2 text-center">
           {values.map((value, index) => {
             const included = includedIndices.includes(index)
@@ -118,7 +118,7 @@ export function SliceExplorer() {
         aria-live="polite"
       >
         <p className="text-xs font-bold uppercase tracking-widest text-faint">Result</p>
-        <pre className="mt-3 overflow-x-auto font-mono text-sm leading-relaxed text-ink">
+        <pre className="mt-3 overflow-x-auto overscroll-x-contain font-mono text-sm leading-relaxed text-ink">
           <code>{`values[${start}:${stop}]\n→ [${includedValues.join(', ')}]`}</code>
         </pre>
         <p className="mt-3 text-sm leading-relaxed text-muted">

@@ -65,7 +65,7 @@ export function AppShell({ children }: PropsWithChildren) {
           </Link>
           <div className="flex items-center gap-2">
             <button
-              className="grid size-8 place-items-center rounded-full border border-line-strong bg-accent-gold/10 text-accent-gold"
+              className="grid size-8 place-items-center rounded-full border border-line-strong bg-accent-gold/10 text-accent-gold pointer-coarse:size-11"
               onClick={toggleTheme}
               type="button"
               aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}

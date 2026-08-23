@@ -10,7 +10,7 @@ type BindingState = {
 }
 
 const controlClass =
-  'inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-teal disabled:cursor-not-allowed disabled:opacity-50'
+  'inline-flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50'
 
 function createInitialState(): BindingState {
   const samples = [10, 20, 30]
@@ -166,7 +166,7 @@ export function ReferenceBindingExplorer() {
         </div>
       </div>
 
-      <pre className="overflow-x-auto rounded-lg border border-line bg-code-surface p-4 font-mono text-sm leading-relaxed text-code-ink">
+      <pre className="overflow-x-auto overscroll-x-contain rounded-lg border border-line bg-code-surface p-4 font-mono text-sm leading-relaxed text-code-ink">
         <code>
           {bindingState.isCopied
             ? `samples = [10, 20, 30]\nbackup = samples\nbackup = samples.copy()`

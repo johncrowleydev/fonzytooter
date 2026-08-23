@@ -15,10 +15,10 @@ import { useTutor } from '../tutor/TutorContext'
 
 const ratingStyles: Record<ReviewSubmission['rating'], string> = {
   again:
-    'min-w-20 rounded-lg border border-line bg-raised px-3 py-2 text-muted transition hover:border-accent-coral hover:text-ink disabled:cursor-wait disabled:opacity-60 max-sm:min-w-0 max-sm:flex-1 max-sm:px-2',
-  hard: 'min-w-20 rounded-lg border border-line bg-raised px-3 py-2 text-muted transition hover:border-accent-gold hover:text-ink disabled:cursor-wait disabled:opacity-60 max-sm:min-w-0 max-sm:flex-1 max-sm:px-2',
-  good: 'min-w-20 rounded-lg border border-line bg-raised px-3 py-2 text-muted transition hover:border-accent-teal hover:text-ink disabled:cursor-wait disabled:opacity-60 max-sm:min-w-0 max-sm:flex-1 max-sm:px-2',
-  easy: 'min-w-20 rounded-lg border border-line bg-raised px-3 py-2 text-muted transition hover:border-accent-teal hover:text-ink disabled:cursor-wait disabled:opacity-60 max-sm:min-w-0 max-sm:flex-1 max-sm:px-2',
+    'min-w-20 rounded-lg border border-line bg-raised px-3 py-2 pointer-coarse:min-h-11 text-muted transition hover:border-accent-coral hover:text-ink disabled:cursor-wait disabled:opacity-60 max-sm:min-w-0 max-sm:flex-1 max-sm:px-2',
+  hard: 'min-w-20 rounded-lg border border-line bg-raised px-3 py-2 pointer-coarse:min-h-11 text-muted transition hover:border-accent-gold hover:text-ink disabled:cursor-wait disabled:opacity-60 max-sm:min-w-0 max-sm:flex-1 max-sm:px-2',
+  good: 'min-w-20 rounded-lg border border-line bg-raised px-3 py-2 pointer-coarse:min-h-11 text-muted transition hover:border-accent-teal hover:text-ink disabled:cursor-wait disabled:opacity-60 max-sm:min-w-0 max-sm:flex-1 max-sm:px-2',
+  easy: 'min-w-20 rounded-lg border border-line bg-raised px-3 py-2 pointer-coarse:min-h-11 text-muted transition hover:border-accent-teal hover:text-ink disabled:cursor-wait disabled:opacity-60 max-sm:min-w-0 max-sm:flex-1 max-sm:px-2',
 }
 
 const ratingLabels: Record<ReviewSubmission['rating'], string> = {
