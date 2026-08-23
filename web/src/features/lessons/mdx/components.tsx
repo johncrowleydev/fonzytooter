@@ -2,6 +2,7 @@ import type { ComponentPropsWithoutRef } from 'react'
 import type { MDXComponents } from 'mdx/types'
 import { ArrayMentalModelCheck } from '../components/ArrayMentalModelCheck'
 import { ArrayStructureExplorer } from '../components/ArrayStructureExplorer'
+import { HighlightedCode, languageFromClassName } from '../../../components/HighlightedCode'
 import { CompositionPipeline } from '../components/CompositionPipeline'
 import { IndexingShapeVisualizer } from '../components/IndexingShapeVisualizer'
 import { InverseExplorer } from '../components/InverseExplorer'
@@ -66,7 +67,7 @@ function LessonBlockquote({ className, ...props }: ComponentPropsWithoutRef<'blo
   return (
     <blockquote
       className={withClassName(
-        'my-6 border-l-2 border-brand-teal/50 pl-4 italic text-muted',
+        'my-6 border-l-2 border-accent-teal/50 pl-4 italic text-muted',
         className,
       )}
       {...props}
@@ -102,19 +103,35 @@ function LessonHorizontalRule({ className, ...props }: ComponentPropsWithoutRef<
   )
 }
 
-function LessonCode({ className, ...props }: ComponentPropsWithoutRef<'code'>) {
+function LessonCode({ className, children, ...props }: ComponentPropsWithoutRef<'code'>) {
+  const language = languageFromClassName(className)
+
+  // A fenced block arrives as a `language-*` class with the source as a single string child.
+  // Inline code has neither, and is left as-is.
+  if (language !== undefined && typeof children === 'string') {
+    return (
+      <code className={withClassName('block font-mono text-sm leading-6', className)} {...props}>
+        <HighlightedCode code={children} language={language} />
+      </code>
+    )
+  }
+
   const codeClassName = className
     ? withClassName('block font-mono text-sm leading-6', className)
-    : 'rounded bg-panel-soft px-1.5 py-0.5 font-mono text-[0.9em] text-brand-teal'
+    : 'rounded bg-panel-soft px-1.5 py-0.5 font-mono text-[0.9em] text-accent-teal'
 
-  return <code className={codeClassName} {...props} />
+  return (
+    <code className={codeClassName} {...props}>
+      {children}
+    </code>
+  )
 }
 
 function LessonPreformatted({ className, ...props }: ComponentPropsWithoutRef<'pre'>) {
   return (
     <pre
       className={withClassName(
-        'my-6 max-w-full overflow-x-auto rounded-lg border border-line bg-brand-ink px-4 py-3 text-sm leading-6 text-slate-100',
+        'my-6 max-w-full overflow-x-auto overscroll-x-contain rounded-lg border border-line bg-code-surface px-4 py-3 text-sm leading-6 text-code-ink',
         className,
       )}
       {...props}
@@ -126,7 +143,7 @@ function LessonLink({ className, ...props }: ComponentPropsWithoutRef<'a'>) {
   return (
     <a
       className={withClassName(
-        'text-brand-teal underline decoration-brand-teal/50 underline-offset-4 hover:text-brand-teal-light',
+        'text-accent-teal underline decoration-accent-teal/50 underline-offset-4 hover:text-accent-teal-light',
         className,
       )}
       {...props}

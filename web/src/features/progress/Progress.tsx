@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { useGetCourseProgress } from '../../api/generated/endpoints'
+import { useEffect, useMemo, useState } from 'react'
+import { useGetCourse, useGetCourseProgress } from '../../api/generated/endpoints'
 import type { CourseProgressResource } from '../../api/generated/schemas/courseProgressResource.zod'
 import type { ObjectiveProgressResource } from '../../api/generated/schemas/objectiveProgressResource.zod'
 import { DEFAULT_COURSE_ID } from '../../app/routes'
@@ -7,17 +7,19 @@ import { Badge, Card, PageIntro, SectionHeading, StatusDot } from '../../compone
 import { useTutor } from '../tutor/TutorContext'
 
 const summaryToneStyles = {
-  teal: 'border-t-brand-teal',
-  gold: 'border-t-brand-gold',
-  coral: 'border-t-brand-coral',
-  violet: 'border-t-brand-violet',
+  teal: 'border-t-accent-teal',
+  gold: 'border-t-accent-gold',
+  coral: 'border-t-accent-coral',
+  violet: 'border-t-accent-violet',
 } as const
 
+// Accent rather than brand: these are bare meter bars with no text, so they need to contrast with
+// the card behind them. See the note on progressTones in components/ui.tsx.
 const dimensionToneStyles = {
-  introduced: 'bg-brand-teal',
-  pending: 'bg-brand-gold',
-  evidence: 'bg-brand-coral',
-  'not-assessed': 'bg-brand-slate/20',
+  introduced: 'bg-accent-teal',
+  pending: 'bg-accent-gold',
+  evidence: 'bg-accent-coral',
+  'not-assessed': 'bg-accent-slate/20',
 } as const
 
 type EvidenceFilter = 'all' | 'needs-review' | 'application' | 'not-introduced'
@@ -25,8 +27,15 @@ type EvidenceFilter = 'all' | 'needs-review' | 'application' | 'not-introduced'
 export function Progress() {
   const { setPageContext } = useTutor()
   const progressQuery = useGetCourseProgress(DEFAULT_COURSE_ID)
+  // Objective progress carries a moduleId but no module title, so the names come from the course.
+  const courseQuery = useGetCourse(DEFAULT_COURSE_ID)
   const [selectedId, setSelectedId] = useState<string>()
   const progress = progressQuery.data?.data
+  const moduleTitles = useMemo(
+    () =>
+      new Map((courseQuery.data?.data.modules ?? []).map((module) => [module.id, module.title])),
+    [courseQuery.data],
+  )
   const selected =
     progress?.objectives.find((objective) => objective.id === selectedId) ?? progress?.objectives[0]
 
@@ -52,17 +61,27 @@ export function Progress() {
     )
   }
 
-  return <ProgressView progress={progress} selectedId={selected?.id} onSelect={setSelectedId} />
+  return (
+    <ProgressView
+      progress={progress}
+      selectedId={selected?.id}
+      onSelect={setSelectedId}
+      moduleTitles={moduleTitles}
+    />
+  )
 }
 
 export function ProgressView({
   progress,
   selectedId,
   onSelect,
+  moduleTitles,
 }: {
   progress: CourseProgressResource
   selectedId?: string
   onSelect: (objectiveId: string) => void
+  /** Module id to title. Optional because the course may still be loading. */
+  moduleTitles?: ReadonlyMap<string, string>
 }) {
   const introducedCount = progress.objectives.filter((objective) => objective.introduced).length
   const [filter, setFilter] = useState<EvidenceFilter>('all')
@@ -88,7 +107,7 @@ export function ProgressView({
         title="Progress"
         detail={`${progress.completedLessonCount} of ${progress.totalLessonCount} lessons complete`}
       />
-      <section className="grid grid-cols-4 gap-2.5 max-lg:grid-cols-2 max-sm:grid-cols-2">
+      <section className="grid grid-cols-4 gap-2.5 max-lg:grid-cols-2">
         <SummaryStat
           value={String(introducedCount)}
           label="Introduced"
@@ -127,7 +146,7 @@ export function ProgressView({
             type="button"
             key={value}
             onClick={() => setFilter(value)}
-            className={`rounded-full border px-3 py-2 text-2xs font-semibold ${filter === value ? 'border-brand-teal bg-brand-teal/10 text-ink' : 'border-line bg-panel text-muted'}`}
+            className={`rounded-full border px-3 py-2 text-sm font-semibold pointer-coarse:min-h-11 pointer-coarse:px-4 ${filter === value ? 'border-accent-teal bg-accent-teal/10 text-ink' : 'border-line bg-panel text-muted'}`}
           >
             {label}
           </button>
@@ -145,6 +164,7 @@ export function ProgressView({
                 <ObjectiveBrowserRow
                   key={objective.id}
                   objective={objective}
+                  moduleTitle={moduleTitles?.get(objective.moduleId)}
                   selected={selected.id === objective.id}
                   onClick={() => onSelect(objective.id)}
                 />
@@ -156,7 +176,7 @@ export function ProgressView({
       ) : (
         <Card muted>
           <h2 className="text-base tracking-tight text-ink">No objectives available</h2>
-          <p className="mt-2 text-xs leading-relaxed text-muted">
+          <p className="mt-2 text-sm leading-relaxed text-muted">
             This course does not have authored learning objectives yet.
           </p>
         </Card>
@@ -172,7 +192,7 @@ function ObjectiveDetail({ objective }: { objective: ObjectiveProgressResource }
         {objective.introduced ? 'Introduced' : 'Not introduced'}
       </Badge>
       <h2 className="my-5 max-w-sm text-3xl leading-tight tracking-tight">{objective.title}</h2>
-      <p className="text-xs leading-relaxed text-muted">{objective.description}</p>
+      <p className="text-sm leading-relaxed text-muted">{objective.description}</p>
       <div className="mt-8 grid gap-0">
         <Dimension
           label="Introduced"
@@ -199,7 +219,7 @@ function ObjectiveDetail({ objective }: { objective: ObjectiveProgressResource }
         />
         <Dimension label="Transfer" value="Not assessed" state="not-assessed" />
       </div>
-      <div className="mt-6 grid gap-2 text-2xs text-muted">
+      <div className="mt-6 grid gap-2 text-sm text-muted">
         <p>
           {objective.completedLessonCount} of {objective.linkedLessonCount} linked lessons
           completed.
@@ -214,7 +234,7 @@ function ObjectiveDetail({ objective }: { objective: ObjectiveProgressResource }
           <p>Last exercise check {formatEvidenceTime(objective.application.lastCheckedAt)}.</p>
         ) : null}
       </div>
-      <p className="mt-8 rounded-lg border border-line bg-brand-slate/10 p-4 text-2xs leading-relaxed text-muted">
+      <p className="mt-8 rounded-lg border border-line bg-accent-slate/10 p-4 text-sm leading-relaxed text-muted">
         These are counts and timestamps from real learner actions. They are evidence, not a mastery
         score. Transfer remains {objective.transferAssessed ? 'assessed' : 'not assessed'}.
       </p>
@@ -236,18 +256,20 @@ function SummaryStat({
   return (
     <Card className={`grid gap-1 border-t-2 border-t-transparent p-5 ${summaryToneStyles[tone]}`}>
       <span className="text-4xl tracking-tight">{value}</span>
-      <strong className="text-xs">{label}</strong>
-      <span className="text-2xs text-faint">{note}</span>
+      <strong className="text-sm">{label}</strong>
+      <span className="text-sm text-faint">{note}</span>
     </Card>
   )
 }
 
 function ObjectiveBrowserRow({
   objective,
+  moduleTitle,
   selected,
   onClick,
 }: {
   objective: ObjectiveProgressResource
+  moduleTitle?: string
   selected: boolean
   onClick: () => void
 }) {
@@ -255,16 +277,21 @@ function ObjectiveBrowserRow({
     <button
       type="button"
       onClick={onClick}
-      className={`grid w-full grid-cols-[11px_minmax(0,1fr)_auto_15px] items-center gap-2.5 border-0 border-b border-line bg-transparent py-3 text-left text-ink max-sm:flex max-sm:min-w-0 ${selected ? 'border-l-2 border-brand-teal bg-brand-teal/5 pl-2' : 'hover:bg-brand-teal/5'}`}
+      className={`grid w-full grid-cols-[11px_minmax(0,1fr)_auto_15px] items-center gap-2.5 border-0 border-b border-line bg-transparent py-3 text-left text-ink max-sm:flex max-sm:min-w-0 ${selected ? 'border-l-2 border-accent-teal bg-accent-teal/5 pl-2' : 'hover:bg-accent-teal/5'}`}
     >
       <StatusDot state={objective.introduced ? 'completed' : 'available'} />
       <span className="min-w-0 max-sm:flex-1">
-        <strong className="block overflow-wrap-anywhere text-xs font-semibold">
+        <strong className="block overflow-wrap-anywhere text-sm font-semibold">
           {objective.title}
         </strong>
-        <small className="mt-1 block text-2xs capitalize text-faint">
-          {objective.moduleId.replaceAll('-', ' ')}
-        </small>
+        {/*
+          This previously de-slugified objective.moduleId and capitalised it, which produced
+          prose-shaped text that was still an identifier. The module's real title is used instead,
+          and nothing is shown when it is not available yet.
+        */}
+        {moduleTitle ? (
+          <small className="mt-1 block text-sm text-faint">{moduleTitle}</small>
+        ) : null}
       </span>
       <Badge tone={objective.introduced ? 'teal' : 'neutral'}>
         {objective.introduced ? 'Introduced' : 'Not introduced'}
@@ -285,9 +312,9 @@ function Dimension({
 }) {
   return (
     <div className="grid grid-cols-[85px_1fr_100px] items-center gap-3 border-b border-line py-3 max-sm:grid-cols-[72px_1fr_84px]">
-      <span className="text-2xs text-muted">{label}</span>
+      <span className="text-sm text-muted">{label}</span>
       <span className={`h-1 rounded-full ${dimensionToneStyles[state]}`} />
-      <strong className="text-right text-2xs font-semibold">{value}</strong>
+      <strong className="text-right text-sm font-semibold">{value}</strong>
     </div>
   )
 }
@@ -298,7 +325,7 @@ function ProgressState({ title, detail }: { title: string; detail: string }) {
       <PageIntro compact title="Progress" />
       <Card muted>
         <h2 className="text-base tracking-tight text-ink">{title}</h2>
-        <p className="mt-2 text-xs leading-relaxed text-muted">{detail}</p>
+        <p className="mt-2 text-sm leading-relaxed text-muted">{detail}</p>
       </Card>
     </div>
   )

@@ -13,6 +13,7 @@ import {
 } from '../../api/generated/endpoints'
 import { lessonPath, modulePath } from '../../app/routes'
 import { Badge, Button, Card, PageIntro, SectionHeading } from '../../components/ui'
+import { HighlightedCode } from '../../components/HighlightedCode'
 import { useTutor } from '../tutor/TutorContext'
 import { CodeEditor } from './CodeEditor'
 import { LatestTaskQueue } from './LatestTaskQueue'
@@ -243,7 +244,7 @@ export function Exercise() {
     return <Card className="p-8 text-sm text-muted">Loading exercise workspace…</Card>
   }
   if (!exercise) {
-    return <Card className="p-8 text-sm text-brand-coral">Exercise not found.</Card>
+    return <Card className="p-8 text-sm text-accent-coral">Exercise not found.</Card>
   }
 
   const output = checkResult ?? runResult
@@ -257,7 +258,7 @@ export function Exercise() {
 
   return (
     <div className="grid max-w-6xl gap-7 max-sm:gap-5">
-      <div className="flex flex-wrap gap-2 text-xs text-muted">
+      <div className="flex flex-wrap gap-2 text-sm text-muted">
         <Link className="font-bold no-underline hover:text-ink" to={modulePath(courseId, moduleId)}>
           ← {module?.title ?? moduleId}
         </Link>
@@ -281,7 +282,7 @@ export function Exercise() {
             <div className="flex border-b border-line px-5">
               {(['prompt', 'tests'] as const).map((tab) => (
                 <button
-                  className={`mr-4 border-0 border-b-2 bg-transparent px-2 py-3 text-xs ${activeTab === tab ? 'border-brand-coral text-ink' : 'border-transparent text-faint'}`}
+                  className={`mr-4 border-0 border-b-2 bg-transparent px-2 py-3 text-sm ${activeTab === tab ? 'border-accent-coral text-ink' : 'border-transparent text-faint'}`}
                   key={tab}
                   onClick={() => setActiveTab(tab)}
                   type="button"
@@ -298,8 +299,12 @@ export function Exercise() {
                   {exercise.visibleTests.map((test) => (
                     <div key={test.id}>
                       <p className="mb-2 font-semibold text-ink">{test.title}</p>
-                      <pre className="overflow-x-auto rounded-lg bg-slate-950 p-3 text-xs text-slate-200">
-                        <code>{test.code}</code>
+                      <pre className="overflow-x-auto overscroll-x-contain rounded-lg bg-code-surface p-3 text-sm text-code-ink">
+                        <code>
+                          {/* Exercise tests are Python by construction: Pyodide is the only
+                              interpreter in the learning app. */}
+                          <HighlightedCode code={test.code} language="python" />
+                        </code>
                       </pre>
                     </div>
                   ))}
@@ -310,10 +315,10 @@ export function Exercise() {
           <Card className="overflow-hidden p-0">
             <div className="border-b border-line px-5 py-3.5">
               <div>
-                <p className="mb-1 font-mono text-xs text-ink">workspace.py</p>
+                <p className="mb-1 font-mono text-sm text-ink">workspace.py</p>
                 <span
                   className={
-                    saveState === 'failed' ? 'text-2xs text-brand-coral' : 'text-2xs text-faint'
+                    saveState === 'failed' ? 'text-sm text-accent-coral' : 'text-sm text-faint'
                   }
                 >
                   {saveLabels[saveState]}
@@ -331,7 +336,7 @@ export function Exercise() {
                 </Button>
               </div>
               <button
-                className="border-0 bg-transparent p-0 text-xs text-brand-gold"
+                className="border-0 bg-transparent p-0 text-sm text-accent-gold"
                 onClick={() =>
                   openTutorWithContext({
                     type: 'exercise',
@@ -369,18 +374,18 @@ export function Exercise() {
                 }
               />
             </div>
-            <div className="min-h-44 px-5 pb-5 pt-3 text-xs leading-relaxed">
-              {executionError ? <p className="text-brand-coral">{executionError}</p> : null}
+            <div className="min-h-44 px-5 pb-5 pt-3 text-sm leading-relaxed">
+              {executionError ? <p className="text-accent-coral">{executionError}</p> : null}
               {output?.stdout ? (
                 <pre className="whitespace-pre-wrap font-mono text-muted">{output.stdout}</pre>
               ) : null}
               {output?.stderr ? (
-                <pre className="whitespace-pre-wrap font-mono text-brand-coral">
+                <pre className="whitespace-pre-wrap font-mono text-accent-coral">
                   {output.stderr}
                 </pre>
               ) : null}
               {runResult?.error ? (
-                <p className="text-brand-coral">
+                <p className="text-accent-coral">
                   {runResult.error.name}: {runResult.error.message}
                 </p>
               ) : null}
@@ -393,7 +398,7 @@ export function Exercise() {
                     >
                       <span
                         className={
-                          test.status === 'passed' ? 'text-brand-teal' : 'text-brand-coral'
+                          test.status === 'passed' ? 'text-accent-teal' : 'text-accent-coral'
                         }
                       >
                         {test.status === 'passed' ? '✓' : '×'}
@@ -418,10 +423,10 @@ export function Exercise() {
         </main>
         <aside className="grid content-start gap-3.5 max-xl:grid-cols-2 max-sm:grid-cols-1">
           <Card>
-            <p className="text-2xs font-bold uppercase tracking-widest text-faint">
+            <p className="text-xs font-bold uppercase tracking-widest text-faint">
               Learning objectives
             </p>
-            <ul className="mt-3 grid gap-2 text-xs text-muted">
+            <ul className="mt-3 grid gap-2 text-sm text-muted">
               {objectives.map((objective) => (
                 <li key={objective.id}>{objective.title}</li>
               ))}

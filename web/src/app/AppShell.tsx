@@ -8,12 +8,12 @@ import { TutorOverlay } from '../features/tutor/TutorOverlay'
 
 const navLinkStyles = {
   compact: {
-    active: 'text-brand-teal',
+    active: 'text-accent-teal',
     inactive: 'text-muted',
   },
   desktop: {
-    active: 'border-l-2 border-brand-teal bg-brand-slate/10 text-ink',
-    inactive: 'text-muted hover:bg-brand-slate/10 hover:text-ink',
+    active: 'border-l-2 border-accent-teal bg-accent-slate/10 text-ink',
+    inactive: 'text-muted hover:bg-accent-slate/10 hover:text-ink',
   },
 } as const
 
@@ -33,7 +33,7 @@ export function AppShell({ children }: PropsWithChildren) {
           <strong className="text-base tracking-tight">Fonzytooter</strong>
         </Link>
 
-        <div className="mb-2 px-3 text-2xs font-bold uppercase tracking-widest text-faint">
+        <div className="mb-2 px-3 text-xs font-bold uppercase tracking-widest text-faint">
           Workspace
         </div>
         <nav className="grid gap-1" aria-label="Primary navigation">
@@ -45,12 +45,13 @@ export function AppShell({ children }: PropsWithChildren) {
         <div className="min-h-24 flex-1" />
         <ThemeToggle theme={theme} onClick={toggleTheme} />
         <div className="mt-4 flex items-center gap-2 border-t border-line px-2 pt-3">
+          {/* A single initial inside a 28px circle, so it stays on the label tier. */}
           <span className="grid size-7 place-items-center rounded-full bg-avatar text-xs font-bold">
             F
           </span>
           <span>
-            <strong className="block text-xs">Fonzy</strong>
-            <small className="mt-0.5 block text-2xs text-faint">Learning mode</small>
+            <strong className="block text-sm">Fonzy</strong>
+            <small className="mt-0.5 block text-sm text-faint">Learning mode</small>
           </span>
           <span className="ml-auto text-faint">···</span>
         </div>
@@ -64,7 +65,7 @@ export function AppShell({ children }: PropsWithChildren) {
           </Link>
           <div className="flex items-center gap-2">
             <button
-              className="grid size-8 place-items-center rounded-full border border-line-strong bg-brand-gold/10 text-brand-gold"
+              className="grid size-8 place-items-center rounded-full border border-line-strong bg-accent-gold/10 text-accent-gold pointer-coarse:size-11"
               onClick={toggleTheme}
               type="button"
               aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
@@ -105,12 +106,12 @@ function BrandMark() {
 function ThemeToggle({ theme, onClick }: { theme: Theme; onClick: () => void }) {
   return (
     <button
-      className="mt-2 flex w-full items-center gap-2 rounded-lg border border-line px-3 py-2.5 text-left text-xs text-muted transition hover:bg-brand-teal/10 hover:text-ink"
+      className="mt-2 flex w-full items-center gap-2 rounded-lg border border-line px-3 py-2.5 text-left text-sm text-muted transition hover:bg-accent-teal/10 hover:text-ink"
       type="button"
       onClick={onClick}
       aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
     >
-      <span className="text-base leading-none text-brand-gold" aria-hidden="true">
+      <span className="text-base leading-none text-accent-gold" aria-hidden="true">
         {theme === 'dark' ? '☼' : '☾'}
       </span>
       <span>{theme === 'dark' ? 'Light theme' : 'Dark theme'}</span>
@@ -132,7 +133,9 @@ function ShellNavLink({ item, compact = false }: { item: NavItem; compact?: bool
             (pathname === item.activePathPrefix ||
               pathname.startsWith(`${item.activePathPrefix}/`)))
 
-        return `${compact ? 'flex min-w-0 flex-col items-center gap-1 rounded-lg px-1 py-1.5 text-2xs' : 'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm'} no-underline transition ${navLinkStyles[compact ? 'compact' : 'desktop'][isSectionActive ? 'active' : 'inactive']}`
+        // The compact bar is a tab-bar label tier, not body copy: five columns on a narrow phone
+        // cannot fit "Curriculum" at 14px.
+        return `${compact ? 'flex min-w-0 flex-col items-center gap-1 rounded-lg px-1 py-1.5 text-xs' : 'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm'} no-underline transition ${navLinkStyles[compact ? 'compact' : 'desktop'][isSectionActive ? 'active' : 'inactive']}`
       }}
     >
       <span className={navIconStyles[compact ? 'compact' : 'desktop']}>{item.icon}</span>

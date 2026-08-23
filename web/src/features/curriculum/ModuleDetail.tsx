@@ -12,7 +12,7 @@ import { Badge, Button, Card, PageIntro, SectionHeading } from '../../components
 import { useTutor } from '../tutor/TutorContext'
 import { downloadPdf, pdfDownloadErrorMessage } from '../worksheets/downloadPdf'
 import { hasWorkbook } from '../worksheets/workbookAvailability'
-import { safeExternalUrl } from './externalLinks'
+import { externalHost, safeExternalUrl } from './externalLinks'
 
 export function ModuleDetail() {
   const { courseId, moduleId } = useParams()
@@ -124,7 +124,7 @@ function ModuleContent({ course, module }: { course: CourseResource; module: Mod
   return (
     <div className="grid max-w-6xl gap-7 max-sm:gap-5">
       <Link
-        className="justify-self-start text-xs font-bold text-muted no-underline hover:text-ink"
+        className="justify-self-start text-sm font-bold text-muted no-underline hover:text-ink"
         to={coursePath(course.id)}
       >
         ← {course.title}
@@ -142,36 +142,39 @@ function ModuleContent({ course, module }: { course: CourseResource; module: Mod
           <div className="grid gap-2">
             {module.objectives.map((objective) => (
               <div key={objective.id} className="border-t border-line py-3">
-                <strong className="block text-xs">{objective.title}</strong>
-                <span className="mt-1 block text-2xs leading-normal text-muted">
+                <strong className="block text-sm">{objective.title}</strong>
+                <span className="mt-1 block text-sm leading-normal text-muted">
                   {objective.description}
                 </span>
-                <span className="mt-2 block text-2xs text-faint">{objective.id}</span>
                 {objective.prerequisites.length > 0 ? (
                   <div className="mt-3 border-t border-line pt-2">
-                    <span className="text-2xs font-bold uppercase tracking-wide text-faint">
+                    <span className="text-xs font-bold uppercase tracking-wide text-faint">
                       Prerequisites
                     </span>
-                    <ul className="mt-1 grid gap-1 pl-4 text-2xs text-muted">
+                    <ul className="mt-1 grid gap-1 pl-4 text-sm text-muted">
                       {objective.prerequisites.map((prerequisite) => (
                         <li key={prerequisite}>
-                          {objectiveTitles.get(prerequisite) ?? prerequisite}
-                          {objectiveTitles.has(prerequisite) ? (
-                            <span className="ml-1 text-faint">({prerequisite})</span>
-                          ) : null}
+                          {/*
+                            Prerequisites are authored as objective IDs. Only ones defined in this
+                            module can be resolved to a title here, so the rest say where they live
+                            rather than falling back to printing the raw identifier.
+                          */}
+                          {objectiveTitles.get(prerequisite) ?? (
+                            <span className="text-faint">Defined in another module</span>
+                          )}
                         </li>
                       ))}
                     </ul>
                   </div>
                 ) : (
-                  <span className="mt-2 block text-2xs text-faint">No prerequisites</span>
+                  <span className="mt-2 block text-sm text-faint">No prerequisites</span>
                 )}
               </div>
             ))}
           </div>
         ) : (
           <Card muted>
-            <p className="text-xs leading-relaxed text-muted">
+            <p className="text-sm leading-relaxed text-muted">
               No objectives are recorded for this module.
             </p>
           </Card>
@@ -185,13 +188,12 @@ function ModuleContent({ course, module }: { course: CourseResource; module: Mod
             {module.lessons.map((lesson, index) => (
               <Link
                 key={lesson.id}
-                className="grid grid-cols-[35px_minmax(0,1fr)_17px] items-center gap-3 border-t border-line py-3 text-left text-ink no-underline hover:text-brand-teal"
+                className="grid grid-cols-[35px_minmax(0,1fr)_17px] items-center gap-3 border-t border-line py-3 text-left text-ink no-underline hover:text-accent-teal"
                 to={lessonPath(course.id, module.id, lesson.id)}
               >
-                <span className="text-2xs text-faint">{String(index + 1).padStart(2, '0')}</span>
+                <span className="text-sm text-faint">{String(index + 1).padStart(2, '0')}</span>
                 <span>
-                  <strong className="block text-xs">{lesson.title}</strong>
-                  <small className="mt-1 block text-2xs text-faint">{lesson.id}</small>
+                  <strong className="block text-sm">{lesson.title}</strong>
                 </span>
                 <span className="text-right text-base text-faint" aria-hidden="true">
                   →
@@ -201,7 +203,7 @@ function ModuleContent({ course, module }: { course: CourseResource; module: Mod
           </div>
         ) : (
           <Card muted>
-            <p className="text-xs leading-relaxed text-muted">
+            <p className="text-sm leading-relaxed text-muted">
               No lessons are published for this module yet.
             </p>
           </Card>
@@ -218,7 +220,7 @@ function ModuleContent({ course, module }: { course: CourseResource; module: Mod
           <div className="mb-4 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-line bg-panel px-5 py-4 shadow-lg">
             <div>
               <strong className="block text-sm text-ink">Module workbook</strong>
-              <span className="mt-1 block text-2xs leading-relaxed text-muted">
+              <span className="mt-1 block text-sm leading-relaxed text-muted">
                 Download every worksheet in this module as one printable PDF.
               </span>
             </div>
@@ -240,7 +242,7 @@ function ModuleContent({ course, module }: { course: CourseResource; module: Mod
               </Button>
             </div>
             {workbookError ? (
-              <p className="w-full text-xs text-brand-coral" role="alert">
+              <p className="w-full text-sm text-accent-coral" role="alert">
                 {workbookError}
               </p>
             ) : null}
@@ -251,13 +253,13 @@ function ModuleContent({ course, module }: { course: CourseResource; module: Mod
               return (
                 <Link
                   key={worksheet.id}
-                  className="flex items-center gap-3 rounded-lg border border-line bg-panel px-4 py-4 text-ink no-underline transition hover:border-line-strong hover:text-brand-teal"
+                  className="flex items-center gap-3 rounded-lg border border-line bg-panel px-4 py-4 text-ink no-underline transition hover:border-line-strong hover:text-accent-teal"
                   to={worksheetPath(course.id, module.id, worksheet.id)}
                 >
                   <Badge tone="teal">Worksheet</Badge>
                   <span className="min-w-0 flex-1">
-                    <strong className="block text-xs">{worksheet.title}</strong>
-                    <small className="mt-1 block text-2xs text-faint">
+                    <strong className="block text-sm">{worksheet.title}</strong>
+                    <small className="mt-1 block text-sm text-faint">
                       {lesson?.title ?? worksheet.lessonId} · {worksheet.problemCount}{' '}
                       {worksheet.problemCount === 1 ? 'problem' : 'problems'}
                     </small>
@@ -285,13 +287,13 @@ function ModuleContent({ course, module }: { course: CourseResource; module: Mod
               return (
                 <Link
                   key={exercise.id}
-                  className="flex items-center gap-3 rounded-lg border border-line bg-panel px-4 py-4 text-ink no-underline transition hover:border-line-strong hover:text-brand-teal"
+                  className="flex items-center gap-3 rounded-lg border border-line bg-panel px-4 py-4 text-ink no-underline transition hover:border-line-strong hover:text-accent-teal"
                   to={exercisePath(course.id, module.id, exercise.id)}
                 >
                   <Badge tone="gold">Python</Badge>
                   <span className="min-w-0 flex-1">
-                    <strong className="block text-xs">{exercise.title}</strong>
-                    <small className="mt-1 block text-2xs text-faint">
+                    <strong className="block text-sm">{exercise.title}</strong>
+                    <small className="mt-1 block text-sm text-faint">
                       {lesson?.title ?? exercise.lessonId}
                     </small>
                   </span>
@@ -311,6 +313,7 @@ function ModuleContent({ course, module }: { course: CourseResource; module: Mod
           <div className="grid gap-2">
             {module.videos.map((video) => {
               const url = safeExternalUrl(video.url)
+              const host = externalHost(video.url)
               return (
                 <div
                   key={video.id}
@@ -318,12 +321,12 @@ function ModuleContent({ course, module }: { course: CourseResource; module: Mod
                 >
                   <Badge tone="violet">Video</Badge>
                   <span className="min-w-0 flex-1">
-                    <strong className="block text-xs">{video.title}</strong>
-                    <small className="mt-1 block text-2xs text-faint">{video.id}</small>
+                    <strong className="block text-sm">{video.title}</strong>
+                    {host ? <small className="mt-1 block text-sm text-faint">{host}</small> : null}
                   </span>
                   {url ? (
                     <a
-                      className="text-xs font-bold text-brand-teal no-underline hover:text-ink"
+                      className="text-sm font-bold text-accent-teal no-underline hover:text-ink"
                       href={url}
                       target="_blank"
                       rel="noopener noreferrer"
@@ -331,7 +334,7 @@ function ModuleContent({ course, module }: { course: CourseResource; module: Mod
                       Open ↗
                     </a>
                   ) : (
-                    <span className="text-2xs text-faint">Link unavailable</span>
+                    <span className="text-sm text-faint">Link unavailable</span>
                   )}
                 </div>
               )
@@ -355,14 +358,14 @@ function ModuleState({
   return (
     <div className="grid max-w-6xl gap-7 max-sm:gap-5">
       <Link
-        className="justify-self-start text-xs font-bold text-muted no-underline hover:text-ink"
+        className="justify-self-start text-sm font-bold text-muted no-underline hover:text-ink"
         to={courseId ? coursePath(courseId) : '/curriculum'}
       >
         ← Curriculum
       </Link>
       <Card muted>
         <h2 className="text-base tracking-tight text-ink">{title}</h2>
-        <p className="mt-2 text-xs leading-relaxed text-muted">{detail}</p>
+        <p className="mt-2 text-sm leading-relaxed text-muted">{detail}</p>
       </Card>
     </div>
   )
