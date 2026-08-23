@@ -18,6 +18,9 @@ sources:
   python-design-history:
     title: Guido van Rossum — Foreword for Programming Python (1st ed.)
     url: https://www.python.org/doc/essays/foreword/
+  python-floating-point:
+    title: Python Tutorial — Floating-Point Arithmetic — Issues and Limitations
+    url: https://docs.python.org/3/tutorial/floatingpoint.html
   eom-function:
     title: Encyclopedia of Mathematics — Function
     url: https://encyclopediaofmath.org/wiki/Function
@@ -36,3 +39,30 @@ sources:
   deep-learning-book-feedforward:
     title: Deep Learning — Chapter 6 — Deep Feedforward Networks
     url: https://www.deeplearningbook.org/contents/mlp.html
+  numpy-absolute-basics:
+    title: NumPy User Guide — The absolute basics for beginners
+    url: https://numpy.org/doc/stable/user/absolute_beginners.html
+  numpy-quickstart:
+    title: NumPy User Guide — Quickstart
+    url: https://numpy.org/doc/stable/user/quickstart.html
+  numpy-copies-views:
+    title: NumPy User Guide — Copies and views
+    url: https://numpy.org/doc/stable/user/basics.copies.html
+  numpy-ufuncs:
+    title: NumPy User Guide — Universal functions (ufunc) basics
+    url: https://numpy.org/doc/stable/user/basics.ufuncs.html
+  numpy-broadcasting:
+    title: NumPy User Guide — Broadcasting
+    url: https://numpy.org/doc/stable/user/basics.broadcasting.html
+  numpy-random-generator:
+    title: NumPy Reference — Random Generator
+    url: https://numpy.org/doc/stable/reference/random/generator.html
+  jupyter-kernels:
+    title: Jupyter Documentation — Kernels (Programming Languages)
+    url: https://docs.jupyter.org/en/latest/projects/kernels.html
+  jupyter-restart-run-all:
+    title: Jupyter Notebook Documentation — Restart & Run All
+    url: https://jupyter-notebook.readthedocs.io/en/stable/changelog.html
+  matplotlib-quick-start:
+    title: Matplotlib Documentation — Quick start guide
+    url: https://matplotlib.org/stable/users/explain/quick_start.html
