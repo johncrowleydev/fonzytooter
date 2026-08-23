@@ -1,0 +1,247 @@
+id: array-shapes-and-indexing
+title: Array Shapes and Indexing
+lessonId: 03-numpy-arrays-shape-dimension-and-dtype
+order: 1
+objectiveIds:
+  - numpy.arrays
+instructions: |
+  Work these out without running Python first. The point is to make array shape
+  predictable from structure rather than something you discover by printing
+  `.shape` after every line. Show enough reasoning that another person can see
+  which axes remain, which disappear, and why.
+problems:
+  - id: shape-ndim-size
+    prompt: |
+      Consider an array with shape `(4, 3, 2)`.
+
+      1. What is its `ndim`?
+      2. What is its `size`?
+      3. How many positions are available along axis 1?
+    objectiveIds:
+      - numpy.arrays
+    expectedAnswer: |
+      `ndim` is `3`, because the shape contains three axes. `size` is
+      $4\times3\times2=24$. Axis 1 has length `3`.
+    requiresWork: true
+    responseLines: 5
+    rubric:
+      - Identifies three axes.
+      - Computes 24 total elements.
+      - Identifies axis 1 as length 3.
+
+  - id: infer-shape-from-nesting
+    prompt: |
+      Without constructing the array, determine the shape of:
+
+      ```python
+      [
+          [[1, 2], [3, 4], [5, 6]],
+          [[7, 8], [9, 10], [11, 12]],
+      ]
+      ```
+
+      Explain how you read the nesting.
+    objectiveIds:
+      - numpy.arrays
+    expectedAnswer: |
+      The shape is `(2, 3, 2)`: two outer groups, each containing three groups,
+      each containing two values.
+    requiresWork: true
+    responseLines: 5
+    rubric:
+      - Gives shape `(2, 3, 2)`.
+      - Connects each shape dimension to one nesting level.
+
+  - id: scalar-indexing
+    prompt: |
+      Let `x.shape == (5, 4, 3)`. What kind of result does `x[2, 1, 0]`
+      produce, and why are no array axes left in the result?
+    objectiveIds:
+      - numpy.arrays
+    expectedAnswer: |
+      It selects one scalar element. One integer coordinate is supplied for each
+      of the three axes, so all three axes are fixed to a single position.
+    requiresWork: true
+    responseLines: 4
+    rubric:
+      - Identifies a scalar result.
+      - Explains that every axis has been fixed by an integer coordinate.
+
+  - id: partial-indexing
+    prompt: |
+      Let `x.shape == (5, 4, 3)`. Predict the shape of each result:
+
+      1. `x[2]`
+      2. `x[2, 1]`
+      3. `x[:, 1]`
+    objectiveIds:
+      - numpy.arrays
+    expectedAnswer: |
+      1. `x[2]` has shape `(4, 3)`.
+      2. `x[2, 1]` has shape `(3,)`.
+      3. `x[:, 1]` has shape `(5, 3)`.
+
+      Each integer index removes the axis it fixes, while `:` preserves the
+      selected axis.
+    requiresWork: true
+    responseLines: 7
+    rubric:
+      - Gives all three shapes correctly.
+      - Explains integer indexing as fixing/removing an axis.
+      - Explains slicing as preserving an axis.
+
+  - id: one-row-two-ways
+    prompt: |
+      Let `x.shape == (6, 4)`. Compare:
+
+      ```python
+      x[2]
+      x[2:3]
+      ```
+
+      What is the shape of each result? Why do they differ even though both
+      selections contain values from only one position along axis 0?
+    objectiveIds:
+      - numpy.arrays
+    expectedAnswer: |
+      `x[2]` has shape `(4,)` because integer indexing fixes axis 0 and removes
+      it. `x[2:3]` has shape `(1, 4)` because slicing selects a range and keeps
+      axis 0, now with length 1.
+    requiresWork: true
+    responseLines: 6
+    rubric:
+      - Gives `(4,)` for integer indexing.
+      - Gives `(1, 4)` for slicing.
+      - Explains axis removal versus preservation.
+
+  - id: multidimensional-slice
+    prompt: |
+      Let `x.shape == (8, 6, 4)`. Predict the shape of:
+
+      ```python
+      x[1:5, :, 2:4]
+      ```
+
+      Explain the resulting length of every axis.
+    objectiveIds:
+      - numpy.arrays
+    expectedAnswer: |
+      The result shape is `(4, 6, 2)`. The first slice selects indices 1 through
+      4, the full slice preserves all 6 positions of axis 1, and `2:4` selects
+      two positions along axis 2.
+    requiresWork: true
+    responseLines: 6
+    rubric:
+      - Gives `(4, 6, 2)`.
+      - Correctly applies stop-exclusive slicing to both ranged axes.
+
+  - id: preserve-column-axis
+    prompt: |
+      Let `x.shape == (10, 5)`. Write an indexing expression that selects only
+      column 2 while preserving a two-dimensional result of shape `(10, 1)`.
+      Then give the shape produced by `x[:, 2]` for comparison.
+    objectiveIds:
+      - numpy.arrays
+    expectedAnswer: |
+      One correct expression is `x[:, 2:3]`, which has shape `(10, 1)`.
+      `x[:, 2]` has shape `(10,)` because the integer index removes axis 1.
+    requiresWork: true
+    responseLines: 5
+    rubric:
+      - Uses a slice such as `2:3` to preserve the axis.
+      - Gives `(10,)` for integer column indexing.
+
+  - id: dtype-coercion
+    prompt: |
+      Predict the broad dtype category NumPy needs for this array and explain
+      why:
+
+      ```python
+      np.array([1, 2.5, 3])
+      ```
+
+      Would an integer dtype be sufficient without changing a value?
+    objectiveIds:
+      - numpy.arrays
+    expectedAnswer: |
+      NumPy needs a floating-point dtype so all values share one representation
+      without losing the fractional `.5`. An integer dtype would not represent
+      `2.5` exactly as the same value.
+    requiresWork: true
+    responseLines: 4
+    rubric:
+      - Identifies a floating-point dtype.
+      - Connects the choice to preserving `2.5` in a homogeneous array.
+
+  - id: view-mutation
+    prompt: |
+      Predict the final value of `original`:
+
+      ```python
+      original = np.array([10, 20, 30, 40, 50])
+      middle = original[1:4]
+      middle[1] = 999
+      ```
+
+      Explain why changing `middle` can affect `original` even though they are
+      different array objects.
+    objectiveIds:
+      - numpy.arrays
+    expectedAnswer: |
+      `original` becomes `[10, 20, 999, 40, 50]`. A basic slice commonly creates
+      a view that refers to the same underlying numerical storage. `middle[1]`
+      corresponds to `original[2]`.
+    requiresWork: true
+    responseLines: 6
+    rubric:
+      - Gives the final values correctly.
+      - Identifies the slice as a view sharing underlying storage.
+      - Maps `middle[1]` to `original[2]`.
+
+  - id: independent-copy
+    prompt: |
+      Rewrite only the assignment to `middle` so that this mutation cannot
+      modify `original`:
+
+      ```python
+      original = np.array([10, 20, 30, 40, 50])
+      middle = original[1:4]
+      middle[:] = 0
+      ```
+
+      Explain what storage relationship changes.
+    objectiveIds:
+      - numpy.arrays
+    expectedAnswer: |
+      Use:
+
+      ```python
+      middle = original[1:4].copy()
+      ```
+
+      `middle` then owns independent copied data rather than referring to the
+      selected region of `original`'s storage.
+    requiresWork: true
+    responseLines: 6
+    rubric:
+      - Uses `.copy()` on the selected data.
+      - Explains that the resulting array has independent storage.
+
+  - id: semantic-axis-meaning
+    prompt: |
+      Two arrays both have shape `(100, 3)`. One stores 100 RGB colors; the
+      other stores 100 points in three-dimensional space.
+
+      What does NumPy know from the shape alone, and what does it *not* know?
+    objectiveIds:
+      - numpy.arrays
+    expectedAnswer: |
+      NumPy knows there are 100 positions along axis 0 and 3 positions along
+      axis 1. The shape alone does not tell NumPy what those axes mean. The
+      interpretation—colors versus spatial coordinates—comes from the problem
+      and surrounding code.
+    requiresWork: true
+    responseLines: 5
+    rubric:
+      - Separates computational shape from domain meaning.
+      - Correctly describes the two axis lengths.
