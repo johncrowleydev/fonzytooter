@@ -12,7 +12,7 @@ import { Badge, Button, Card, PageIntro, SectionHeading } from '../../components
 import { useTutor } from '../tutor/TutorContext'
 import { downloadPdf, pdfDownloadErrorMessage } from '../worksheets/downloadPdf'
 import { hasWorkbook } from '../worksheets/workbookAvailability'
-import { safeExternalUrl } from './externalLinks'
+import { externalHost, safeExternalUrl } from './externalLinks'
 
 export function ModuleDetail() {
   const { courseId, moduleId } = useParams()
@@ -146,7 +146,6 @@ function ModuleContent({ course, module }: { course: CourseResource; module: Mod
                 <span className="mt-1 block text-sm leading-normal text-muted">
                   {objective.description}
                 </span>
-                <span className="mt-2 block text-sm text-faint">{objective.id}</span>
                 {objective.prerequisites.length > 0 ? (
                   <div className="mt-3 border-t border-line pt-2">
                     <span className="text-xs font-bold uppercase tracking-wide text-faint">
@@ -155,10 +154,14 @@ function ModuleContent({ course, module }: { course: CourseResource; module: Mod
                     <ul className="mt-1 grid gap-1 pl-4 text-sm text-muted">
                       {objective.prerequisites.map((prerequisite) => (
                         <li key={prerequisite}>
-                          {objectiveTitles.get(prerequisite) ?? prerequisite}
-                          {objectiveTitles.has(prerequisite) ? (
-                            <span className="ml-1 text-faint">({prerequisite})</span>
-                          ) : null}
+                          {/*
+                            Prerequisites are authored as objective IDs. Only ones defined in this
+                            module can be resolved to a title here, so the rest say where they live
+                            rather than falling back to printing the raw identifier.
+                          */}
+                          {objectiveTitles.get(prerequisite) ?? (
+                            <span className="text-faint">Defined in another module</span>
+                          )}
                         </li>
                       ))}
                     </ul>
@@ -191,7 +194,6 @@ function ModuleContent({ course, module }: { course: CourseResource; module: Mod
                 <span className="text-sm text-faint">{String(index + 1).padStart(2, '0')}</span>
                 <span>
                   <strong className="block text-sm">{lesson.title}</strong>
-                  <small className="mt-1 block text-sm text-faint">{lesson.id}</small>
                 </span>
                 <span className="text-right text-base text-faint" aria-hidden="true">
                   →
@@ -311,6 +313,7 @@ function ModuleContent({ course, module }: { course: CourseResource; module: Mod
           <div className="grid gap-2">
             {module.videos.map((video) => {
               const url = safeExternalUrl(video.url)
+              const host = externalHost(video.url)
               return (
                 <div
                   key={video.id}
@@ -319,7 +322,7 @@ function ModuleContent({ course, module }: { course: CourseResource; module: Mod
                   <Badge tone="violet">Video</Badge>
                   <span className="min-w-0 flex-1">
                     <strong className="block text-sm">{video.title}</strong>
-                    <small className="mt-1 block text-sm text-faint">{video.id}</small>
+                    {host ? <small className="mt-1 block text-sm text-faint">{host}</small> : null}
                   </span>
                   {url ? (
                     <a

@@ -15,7 +15,7 @@ import type { LessonResource } from '../../api/generated/schemas/lessonResource.
 import { coursePath, lessonPath, modulePath, worksheetPath } from '../../app/routes'
 import { Badge, Card, PageIntro, SectionHeading } from '../../components/ui'
 import { useTutor } from '../tutor/TutorContext'
-import { safeExternalUrl } from '../curriculum/externalLinks'
+import { externalHost, safeExternalUrl } from '../curriculum/externalLinks'
 import { LessonMdx } from './LessonMdx'
 import { LessonCompletionControl } from './LessonCompletionControl'
 
@@ -344,6 +344,7 @@ function LessonSources({ sources }: { sources: LessonResource['sources'] }) {
         <div className="grid">
           {sources.map((source, index) => {
             const url = safeExternalUrl(source.url)
+            const host = externalHost(source.url)
             return (
               <div
                 key={source.id}
@@ -363,7 +364,7 @@ function LessonSources({ sources }: { sources: LessonResource['sources'] }) {
                   ) : (
                     <strong className="block text-sm">{source.title}</strong>
                   )}
-                  <span className="mt-1 block text-sm text-faint">{source.id}</span>
+                  {host ? <span className="mt-1 block text-sm text-faint">{host}</span> : null}
                 </div>
                 <span className="text-sm text-faint">{url ? 'External' : 'Link unavailable'}</span>
               </div>
