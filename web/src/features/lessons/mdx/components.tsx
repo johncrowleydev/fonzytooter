@@ -3,15 +3,23 @@ import type { MDXComponents } from 'mdx/types'
 import { ArrayMentalModelCheck } from '../components/ArrayMentalModelCheck'
 import { ArrayStructureExplorer } from '../components/ArrayStructureExplorer'
 import { HighlightedCode, languageFromClassName } from '../../../components/HighlightedCode'
+import { BroadcastDebugChallenge } from '../components/BroadcastDebugChallenge'
+import { BroadcastShapeLab } from '../components/BroadcastShapeLab'
 import { CompositionPipeline } from '../components/CompositionPipeline'
 import { IndexingShapeVisualizer } from '../components/IndexingShapeVisualizer'
 import { InverseExplorer } from '../components/InverseExplorer'
+import { KernelStateExplorer } from '../components/KernelStateExplorer'
+import { LoopVectorizationExplorer } from '../components/LoopVectorizationExplorer'
 import { MappingLab } from '../components/MappingLab'
 import { MappingPropertiesLab } from '../components/MappingPropertiesLab'
 import { MutableDefaultExplorer } from '../components/MutableDefaultExplorer'
+import { OperationKindCheck } from '../components/OperationKindCheck'
 import { PythonMentalModelCheck } from '../components/PythonMentalModelCheck'
 import { ReferenceBindingExplorer } from '../components/ReferenceBindingExplorer'
+import { ReductionAxisExplorer } from '../components/ReductionAxisExplorer'
+import { SeedReproducibilityExplorer } from '../components/SeedReproducibilityExplorer'
 import { SliceExplorer } from '../components/SliceExplorer'
+import { SingletonExpansionVisualizer } from '../components/SingletonExpansionVisualizer'
 import { ViewCopyExplorer } from '../components/ViewCopyExplorer'
 
 function withClassName(className: string, existingClassName?: string) {
@@ -172,14 +180,22 @@ export const lessonMdxComponents = {
   ul: LessonUnorderedList,
   ArrayMentalModelCheck,
   ArrayStructureExplorer,
+  BroadcastDebugChallenge,
+  BroadcastShapeLab,
   CompositionPipeline,
   IndexingShapeVisualizer,
   InverseExplorer,
+  KernelStateExplorer,
+  LoopVectorizationExplorer,
   MappingLab,
   MappingPropertiesLab,
   MutableDefaultExplorer,
+  OperationKindCheck,
   PythonMentalModelCheck,
   ReferenceBindingExplorer,
+  ReductionAxisExplorer,
+  SeedReproducibilityExplorer,
   SliceExplorer,
+  SingletonExpansionVisualizer,
   ViewCopyExplorer,
 } satisfies MDXComponents
