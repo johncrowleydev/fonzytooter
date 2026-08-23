@@ -25,13 +25,13 @@ export function LessonCompletionControl({
             ? 'This lesson is recorded as complete.'
             : 'Mark this lesson complete when you have finished the material.'}
         </p>
-        {error ? <p className="mt-2 text-2xs text-brand-coral">{error}</p> : null}
+        {error ? <p className="mt-2 text-2xs text-accent-coral">{error}</p> : null}
       </div>
       <button
         type="button"
         disabled={pending}
         onClick={() => onChange(!completed)}
-        className="shrink-0 rounded-lg border border-line-strong bg-brand-slate/10 px-4 py-2.5 text-xs font-bold text-ink transition hover:bg-brand-slate/20 disabled:cursor-wait disabled:opacity-60"
+        className="shrink-0 rounded-lg border border-line-strong bg-accent-slate/10 px-4 py-2.5 text-xs font-bold text-ink transition hover:bg-accent-slate/20 disabled:cursor-wait disabled:opacity-60"
       >
         {pending ? 'Saving…' : completed ? 'Mark incomplete' : 'Mark complete'}
       </button>

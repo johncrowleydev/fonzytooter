@@ -8,12 +8,12 @@ import { TutorOverlay } from '../features/tutor/TutorOverlay'
 
 const navLinkStyles = {
   compact: {
-    active: 'text-brand-teal',
+    active: 'text-accent-teal',
     inactive: 'text-muted',
   },
   desktop: {
-    active: 'border-l-2 border-brand-teal bg-brand-slate/10 text-ink',
-    inactive: 'text-muted hover:bg-brand-slate/10 hover:text-ink',
+    active: 'border-l-2 border-accent-teal bg-accent-slate/10 text-ink',
+    inactive: 'text-muted hover:bg-accent-slate/10 hover:text-ink',
   },
 } as const
 
@@ -64,7 +64,7 @@ export function AppShell({ children }: PropsWithChildren) {
           </Link>
           <div className="flex items-center gap-2">
             <button
-              className="grid size-8 place-items-center rounded-full border border-line-strong bg-brand-gold/10 text-brand-gold"
+              className="grid size-8 place-items-center rounded-full border border-line-strong bg-accent-gold/10 text-accent-gold"
               onClick={toggleTheme}
               type="button"
               aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
@@ -105,12 +105,12 @@ function BrandMark() {
 function ThemeToggle({ theme, onClick }: { theme: Theme; onClick: () => void }) {
   return (
     <button
-      className="mt-2 flex w-full items-center gap-2 rounded-lg border border-line px-3 py-2.5 text-left text-xs text-muted transition hover:bg-brand-teal/10 hover:text-ink"
+      className="mt-2 flex w-full items-center gap-2 rounded-lg border border-line px-3 py-2.5 text-left text-xs text-muted transition hover:bg-accent-teal/10 hover:text-ink"
       type="button"
       onClick={onClick}
       aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
     >
-      <span className="text-base leading-none text-brand-gold" aria-hidden="true">
+      <span className="text-base leading-none text-accent-gold" aria-hidden="true">
         {theme === 'dark' ? '☼' : '☾'}
       </span>
       <span>{theme === 'dark' ? 'Light theme' : 'Dark theme'}</span>

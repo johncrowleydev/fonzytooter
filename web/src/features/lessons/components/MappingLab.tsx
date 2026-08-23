@@ -25,8 +25,8 @@ type Feedback = {
 } | null
 
 const feedbackClasses = {
-  success: 'border-brand-teal/30 bg-brand-teal/10',
-  error: 'border-brand-coral/30 bg-brand-coral/10',
+  success: 'border-accent-teal/30 bg-accent-teal/10',
+  error: 'border-accent-coral/30 bg-accent-coral/10',
 } as const
 
 export function MappingLab() {
@@ -166,8 +166,8 @@ export function MappingLab() {
       </div>
 
       {complete ? (
-        <div className="rounded-lg border border-brand-teal/30 bg-brand-teal/10 p-5">
-          <p className="text-2xs font-bold uppercase tracking-widest text-brand-teal">
+        <div className="rounded-lg border border-accent-teal/30 bg-accent-teal/10 p-5">
+          <p className="text-2xs font-bold uppercase tracking-widest text-accent-teal">
             Final takeaway
           </p>
           <p className="mt-2 text-sm leading-relaxed text-ink">

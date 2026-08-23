@@ -84,10 +84,10 @@ type AnswerState = {
 }
 
 const idleOptionClass =
-  'border-line bg-white/5 text-muted hover:border-brand-teal/50 hover:bg-brand-teal/10 hover:text-ink'
-const selectedOptionClass = 'border-brand-blue/50 bg-brand-blue/10 text-ink'
-const incorrectOptionClass = 'border-brand-coral/50 bg-brand-coral/10 text-ink'
-const correctOptionClass = 'border-brand-teal/50 bg-brand-teal/10 text-ink'
+  'border-line bg-raised text-muted hover:border-accent-teal/50 hover:bg-accent-teal/10 hover:text-ink'
+const selectedOptionClass = 'border-accent-blue/50 bg-accent-blue/10 text-ink'
+const incorrectOptionClass = 'border-accent-coral/50 bg-accent-coral/10 text-ink'
+const correctOptionClass = 'border-accent-teal/50 bg-accent-teal/10 text-ink'
 
 function createInitialAnswers(): AnswerState[] {
   return mentalModelQuestions.map(() => ({
@@ -151,7 +151,7 @@ export function PythonMentalModelCheck() {
           const questionId = `mental-model-question-${questionIndex}`
 
           return (
-            <section key={question.topic} className="rounded-lg border border-line bg-white/5 p-4">
+            <section key={question.topic} className="rounded-lg border border-line bg-raised p-4">
               <div className="flex items-start gap-3">
                 <span className="grid size-7 shrink-0 place-items-center rounded-full border border-line-strong text-xs font-semibold text-ink">
                   {questionIndex + 1}
@@ -176,7 +176,7 @@ export function PythonMentalModelCheck() {
                   return (
                     <button
                       key={option.id}
-                      className={`rounded-lg border px-3 py-2.5 text-left text-xs leading-relaxed transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-teal ${getOptionClass(response, option.id)}`}
+                      className={`rounded-lg border px-3 py-2.5 text-left text-xs leading-relaxed transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-teal ${getOptionClass(response, option.id)}`}
                       type="button"
                       onClick={() => chooseAnswer(questionIndex, option.id)}
                       disabled={response.checked}
@@ -191,7 +191,7 @@ export function PythonMentalModelCheck() {
 
               {response.result === 'incorrect' ? (
                 <div
-                  className="mt-3 rounded-md border border-brand-coral/30 bg-brand-coral/10 p-3 text-xs leading-relaxed text-ink"
+                  className="mt-3 rounded-md border border-accent-coral/30 bg-accent-coral/10 p-3 text-xs leading-relaxed text-ink"
                   role="alert"
                 >
                   <strong>Not quite.</strong> {question.explanation} Try another answer.
@@ -199,7 +199,7 @@ export function PythonMentalModelCheck() {
               ) : null}
               {response.result === 'correct' ? (
                 <div
-                  className="mt-3 rounded-md border border-brand-teal/30 bg-brand-teal/10 p-3 text-xs leading-relaxed text-ink"
+                  className="mt-3 rounded-md border border-accent-teal/30 bg-accent-teal/10 p-3 text-xs leading-relaxed text-ink"
                   role="status"
                   aria-live="polite"
                 >

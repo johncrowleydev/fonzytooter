@@ -13,8 +13,8 @@ import { projects } from '../../prototype/mockData'
 import { useTutor } from '../tutor/TutorContext'
 
 const objectiveStateStyles = {
-  done: 'text-brand-teal',
-  working: 'text-brand-gold',
+  done: 'text-accent-teal',
+  working: 'text-accent-gold',
   todo: 'text-faint',
 } as const
 
@@ -54,7 +54,7 @@ export function ProjectDetail() {
       <div className="grid grid-cols-[minmax(0,1fr)_270px] gap-5 max-lg:grid-cols-1">
         <main className="grid content-start gap-3.5">
           <Card className="flex items-center gap-3 max-sm:items-start max-sm:flex-wrap">
-            <div className="grid size-10 place-items-center rounded-lg bg-brand-teal/10 text-xl text-brand-teal">
+            <div className="grid size-10 place-items-center rounded-lg bg-accent-teal/10 text-xl text-accent-teal">
               ⌘
             </div>
             <div>
@@ -100,7 +100,7 @@ export function ProjectDetail() {
         <aside className="grid content-start gap-3.5">
           <Card className="text-left">
             <p className="text-2xs font-bold uppercase tracking-widest text-faint">Progress</p>
-            <div className="my-3 text-5xl tracking-tight text-brand-coral">
+            <div className="my-3 text-5xl tracking-tight text-accent-coral">
               {Math.round((done / project.objectives.length) * 100)}
               <span className="ml-1 text-xl text-faint">%</span>
             </div>

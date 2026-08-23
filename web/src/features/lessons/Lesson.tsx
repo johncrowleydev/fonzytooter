@@ -176,7 +176,7 @@ export function Lesson() {
     <div className="grid max-w-none gap-7 max-sm:gap-5">
       <div className="flex items-center gap-2.5 text-2xs text-faint max-sm:gap-2">
         <Link
-          className="text-muted no-underline hover:text-brand-teal"
+          className="text-muted no-underline hover:text-accent-teal"
           to={modulePath(course.id, module.id)}
         >
           {module.title}
@@ -234,7 +234,7 @@ export function Lesson() {
       >
         {previousLesson ? (
           <Link
-            className="inline-flex max-w-[45%] items-center gap-2.5 rounded-lg border border-line-strong bg-brand-slate/10 px-4 py-2.5 text-xs font-bold text-ink no-underline transition hover:bg-brand-slate/20"
+            className="inline-flex max-w-[45%] items-center gap-2.5 rounded-lg border border-line-strong bg-accent-slate/10 px-4 py-2.5 text-xs font-bold text-ink no-underline transition hover:bg-accent-slate/20"
             to={lessonPath(course.id, module.id, previousLesson.id)}
           >
             ← <span className="truncate">{previousLesson.title}</span>
@@ -282,7 +282,7 @@ function LessonWorksheets({
         {worksheets.map((worksheet) => (
           <Link
             key={worksheet.id}
-            className="flex items-center gap-4 rounded-xl border border-line bg-panel px-5 py-4 text-ink no-underline shadow-lg transition hover:border-line-strong hover:text-brand-teal"
+            className="flex items-center gap-4 rounded-xl border border-line bg-panel px-5 py-4 text-ink no-underline shadow-lg transition hover:border-line-strong hover:text-accent-teal"
             to={worksheetPath(courseId, moduleId, worksheet.id)}
           >
             <Badge tone="teal">Worksheet</Badge>
@@ -315,10 +315,10 @@ function SelectionPopover({
   onDismiss: () => void
 }) {
   return (
-    <div className="absolute top-40 right-5 z-4 flex items-center gap-2 rounded-lg border border-line-strong bg-slate-800 px-2 py-2 text-2xs shadow-2xl max-sm:top-36 max-sm:left-2.5 max-sm:right-2.5">
+    <div className="absolute top-40 right-5 z-4 flex items-center gap-2 rounded-lg border border-line-strong bg-panel px-2 py-2 text-2xs shadow-2xl max-sm:top-36 max-sm:left-2.5 max-sm:right-2.5">
       <span className="text-faint">Text selected</span>
       <button
-        className="border-0 bg-transparent p-0 text-2xs font-bold text-brand-teal"
+        className="border-0 bg-transparent p-0 text-2xs font-bold text-accent-teal"
         type="button"
         onClick={onAskTutor}
       >
@@ -353,7 +353,7 @@ function LessonSources({ sources }: { sources: LessonResource['sources'] }) {
                 <div>
                   {url ? (
                     <a
-                      className="text-xs font-bold text-brand-teal no-underline hover:text-ink"
+                      className="text-xs font-bold text-accent-teal no-underline hover:text-ink"
                       href={url}
                       target="_blank"
                       rel="noopener noreferrer"

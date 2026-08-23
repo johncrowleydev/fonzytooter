@@ -243,7 +243,7 @@ export function Exercise() {
     return <Card className="p-8 text-sm text-muted">Loading exercise workspace…</Card>
   }
   if (!exercise) {
-    return <Card className="p-8 text-sm text-brand-coral">Exercise not found.</Card>
+    return <Card className="p-8 text-sm text-accent-coral">Exercise not found.</Card>
   }
 
   const output = checkResult ?? runResult
@@ -281,7 +281,7 @@ export function Exercise() {
             <div className="flex border-b border-line px-5">
               {(['prompt', 'tests'] as const).map((tab) => (
                 <button
-                  className={`mr-4 border-0 border-b-2 bg-transparent px-2 py-3 text-xs ${activeTab === tab ? 'border-brand-coral text-ink' : 'border-transparent text-faint'}`}
+                  className={`mr-4 border-0 border-b-2 bg-transparent px-2 py-3 text-xs ${activeTab === tab ? 'border-accent-coral text-ink' : 'border-transparent text-faint'}`}
                   key={tab}
                   onClick={() => setActiveTab(tab)}
                   type="button"
@@ -298,7 +298,7 @@ export function Exercise() {
                   {exercise.visibleTests.map((test) => (
                     <div key={test.id}>
                       <p className="mb-2 font-semibold text-ink">{test.title}</p>
-                      <pre className="overflow-x-auto rounded-lg bg-slate-950 p-3 text-xs text-slate-200">
+                      <pre className="overflow-x-auto rounded-lg bg-code-surface p-3 text-xs text-code-ink">
                         <code>{test.code}</code>
                       </pre>
                     </div>
@@ -313,7 +313,7 @@ export function Exercise() {
                 <p className="mb-1 font-mono text-xs text-ink">workspace.py</p>
                 <span
                   className={
-                    saveState === 'failed' ? 'text-2xs text-brand-coral' : 'text-2xs text-faint'
+                    saveState === 'failed' ? 'text-2xs text-accent-coral' : 'text-2xs text-faint'
                   }
                 >
                   {saveLabels[saveState]}
@@ -331,7 +331,7 @@ export function Exercise() {
                 </Button>
               </div>
               <button
-                className="border-0 bg-transparent p-0 text-xs text-brand-gold"
+                className="border-0 bg-transparent p-0 text-xs text-accent-gold"
                 onClick={() =>
                   openTutorWithContext({
                     type: 'exercise',
@@ -370,17 +370,17 @@ export function Exercise() {
               />
             </div>
             <div className="min-h-44 px-5 pb-5 pt-3 text-xs leading-relaxed">
-              {executionError ? <p className="text-brand-coral">{executionError}</p> : null}
+              {executionError ? <p className="text-accent-coral">{executionError}</p> : null}
               {output?.stdout ? (
                 <pre className="whitespace-pre-wrap font-mono text-muted">{output.stdout}</pre>
               ) : null}
               {output?.stderr ? (
-                <pre className="whitespace-pre-wrap font-mono text-brand-coral">
+                <pre className="whitespace-pre-wrap font-mono text-accent-coral">
                   {output.stderr}
                 </pre>
               ) : null}
               {runResult?.error ? (
-                <p className="text-brand-coral">
+                <p className="text-accent-coral">
                   {runResult.error.name}: {runResult.error.message}
                 </p>
               ) : null}
@@ -393,7 +393,7 @@ export function Exercise() {
                     >
                       <span
                         className={
-                          test.status === 'passed' ? 'text-brand-teal' : 'text-brand-coral'
+                          test.status === 'passed' ? 'text-accent-teal' : 'text-accent-coral'
                         }
                       >
                         {test.status === 'passed' ? '✓' : '×'}

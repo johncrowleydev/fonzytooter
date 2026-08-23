@@ -1,30 +1,41 @@
 import type { PropsWithChildren, ReactNode } from 'react'
 
 const badgeTones = {
-  neutral: 'border-line bg-white/5 text-muted',
-  teal: 'border-brand-teal/30 bg-brand-teal/10 text-brand-teal',
-  gold: 'border-brand-gold/30 bg-brand-gold/10 text-brand-gold',
-  coral: 'border-brand-coral/30 bg-brand-coral/10 text-brand-coral',
-  violet: 'border-brand-violet/30 bg-brand-violet/10 text-brand-violet',
-  blue: 'border-brand-blue/30 bg-brand-blue/10 text-brand-blue',
+  neutral: 'border-line bg-raised text-muted',
+  teal: 'border-accent-teal/30 bg-accent-teal/10 text-accent-teal',
+  gold: 'border-accent-gold/30 bg-accent-gold/10 text-accent-gold',
+  coral: 'border-accent-coral/30 bg-accent-coral/10 text-accent-coral',
+  violet: 'border-accent-violet/30 bg-accent-violet/10 text-accent-violet',
+  blue: 'border-accent-blue/30 bg-accent-blue/10 text-accent-blue',
 } as const
 
+/*
+ * Accent rather than brand: a progress fill carries no text, so it has to contrast with its track
+ * instead. The vivid fill against the light-mode track measures about 1.4:1, which reads as an
+ * empty bar.
+ */
 const progressTones = {
-  teal: 'bg-brand-teal',
-  gold: 'bg-brand-gold',
-  coral: 'bg-brand-coral',
-  violet: 'bg-brand-violet',
-  blue: 'bg-brand-blue',
+  teal: 'bg-accent-teal',
+  gold: 'bg-accent-gold',
+  coral: 'bg-accent-coral',
+  violet: 'bg-accent-violet',
+  blue: 'bg-accent-blue',
 } as const
 
+/*
+ * A status dot carries meaning, so its rim needs to stay perceivable. The empty states use
+ * `border-faint` rather than a line token: `line-strong` is ~1.7:1 on a white panel, which reads
+ * as no dot at all. The filled states pair an accent rim with a vivid fill for the same reason —
+ * the fill alone measures under 2:1 in light mode.
+ */
 const statusStyles = {
-  locked: 'border-slate-600',
-  todo: 'border-slate-600',
-  available: 'border-brand-teal',
-  'in-progress': 'border-brand-gold bg-brand-gold ring-2 ring-inset ring-panel',
-  working: 'border-brand-gold bg-brand-gold ring-2 ring-inset ring-panel',
-  completed: 'border-brand-teal bg-brand-teal',
-  done: 'border-brand-teal bg-brand-teal',
+  locked: 'border-faint',
+  todo: 'border-faint',
+  available: 'border-accent-teal',
+  'in-progress': 'border-accent-gold bg-brand-gold ring-2 ring-inset ring-panel',
+  working: 'border-accent-gold bg-brand-gold ring-2 ring-inset ring-panel',
+  completed: 'border-accent-teal bg-brand-teal',
+  done: 'border-accent-teal bg-brand-teal',
 } as const
 
 export function Button({
@@ -44,9 +55,9 @@ export function Button({
   const variants = {
     primary:
       'border-0 bg-brand-teal text-brand-ink hover:-translate-y-px hover:bg-brand-teal-light',
-    secondary: 'border border-line-strong bg-brand-slate/10 text-ink hover:bg-brand-slate/20',
+    secondary: 'border border-line-strong bg-accent-slate/10 text-ink hover:bg-accent-slate/20',
     quiet: 'border-0 bg-transparent text-muted',
-    outline: 'border border-line bg-transparent text-ink hover:bg-brand-slate/20',
+    outline: 'border border-line bg-transparent text-ink hover:bg-accent-slate/20',
   }
 
   return (
@@ -122,7 +133,7 @@ export function ProgressBar({
 }) {
   return (
     <div
-      className="h-1.5 w-full overflow-hidden rounded-full bg-brand-slate/15"
+      className="h-1.5 w-full overflow-hidden rounded-full bg-accent-slate/15"
       aria-label={`${value}% complete`}
     >
       <span

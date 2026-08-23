@@ -189,19 +189,19 @@ function WorksheetContent({
         className="flex flex-wrap items-center gap-2 text-2xs text-faint"
         aria-label="Worksheet breadcrumbs"
       >
-        <Link className="text-muted no-underline hover:text-brand-teal" to={coursePath(courseId)}>
+        <Link className="text-muted no-underline hover:text-accent-teal" to={coursePath(courseId)}>
           {courseTitle}
         </Link>
         <span>/</span>
         <Link
-          className="text-muted no-underline hover:text-brand-teal"
+          className="text-muted no-underline hover:text-accent-teal"
           to={modulePath(courseId, moduleId)}
         >
           {moduleTitle}
         </Link>
         <span>/</span>
         <Link
-          className="text-muted no-underline hover:text-brand-teal"
+          className="text-muted no-underline hover:text-accent-teal"
           to={lessonPath(courseId, moduleId, lessonId)}
         >
           {lessonTitle}
@@ -244,7 +244,7 @@ function WorksheetContent({
           </div>
         </div>
         {downloadError ? (
-          <p className="mt-3 text-xs text-brand-coral" role="alert">
+          <p className="mt-3 text-xs text-accent-coral" role="alert">
             {downloadError}
           </p>
         ) : null}
