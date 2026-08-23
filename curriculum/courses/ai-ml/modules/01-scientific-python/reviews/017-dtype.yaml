@@ -1,0 +1,7 @@
+id: dtype
+order: 17
+objectiveIds:
+  - numpy.arrays
+sourceLessonId: 03-numpy-arrays-shape-dimension-and-dtype
+prompt: What does a NumPy array's `dtype` describe?
+answer: The common representation used for the array's elements, such as `float32`, `float64`, or an integer type.
