@@ -3,5 +3,5 @@ order: 12
 objectiveIds:
   - python.functions
 sourceLessonId: 02-functions-code-and-mathematics
-prompt: What property must a function have to possess an inverse function on its stated domain and codomain?
-answer: It must be bijective: both injective and surjective.
+prompt: "What property must a function have to possess an inverse function on its stated domain and codomain?"
+answer: "It must be bijective: both injective and surjective."
