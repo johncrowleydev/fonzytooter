@@ -80,7 +80,7 @@ export function LessonMdx({ source, videos, authenticated = false }: LessonMdxPr
   return (
     <LessonMdxErrorBoundary key={source}>
       <LessonVideoCatalogProvider videos={videos} authenticated={authenticated}>
-        <div className="max-w-3xl text-base leading-7 text-body">
+        <div className="w-full text-base leading-7 text-body">
           <currentState.content components={lessonMdxComponents} />
         </div>
       </LessonVideoCatalogProvider>
