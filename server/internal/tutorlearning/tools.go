@@ -8,6 +8,7 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/johncrowleydev/fonzytooter/server/internal/auth"
 	"github.com/johncrowleydev/fonzytooter/server/internal/curriculum"
 	"github.com/johncrowleydev/fonzytooter/server/internal/learner"
 	"github.com/johncrowleydev/fonzytooter/server/internal/review"
@@ -84,7 +85,7 @@ func newSearchTool(catalog *curriculum.Catalog) (tutor.Tool, error) {
 			}
 			return nil
 		},
-		func(_ context.Context, args SearchCurriculumArgs) (SearchCurriculumResult, error) {
+		func(_ context.Context, _ auth.UserID, args SearchCurriculumArgs) (SearchCurriculumResult, error) {
 			course, ok := catalog.CourseByID(args.CourseID)
 			if !ok {
 				return SearchCurriculumResult{}, fmt.Errorf("course %q not found", args.CourseID)
@@ -208,7 +209,7 @@ func newContentTool(catalog *curriculum.Catalog) (tutor.Tool, error) {
 			}
 			return nil
 		},
-		func(_ context.Context, args GetCurriculumContentArgs) (CurriculumContentResult, error) {
+		func(_ context.Context, _ auth.UserID, args GetCurriculumContentArgs) (CurriculumContentResult, error) {
 			course, ok := catalog.CourseByID(args.CourseID)
 			if !ok {
 				return CurriculumContentResult{}, fmt.Errorf("course %q not found", args.CourseID)
@@ -306,8 +307,8 @@ func newObjectiveTool(catalog *curriculum.Catalog, learnerService *learner.Servi
 			}
 			return nil
 		},
-		func(ctx context.Context, args GetObjectiveStateArgs) (ObjectiveStateResult, error) {
-			progress, err := learnerService.CourseProgress(ctx, args.CourseID)
+		func(ctx context.Context, userID auth.UserID, args GetObjectiveStateArgs) (ObjectiveStateResult, error) {
+			progress, err := learnerService.CourseProgress(ctx, userID, args.CourseID)
 			if err != nil {
 				return ObjectiveStateResult{}, err
 			}
@@ -355,12 +356,12 @@ func newActivityTool(catalog *curriculum.Catalog, learnerService *learner.Servic
 			}
 			return nil
 		},
-		func(ctx context.Context, args GetRecentActivityArgs) (RecentActivityResult, error) {
+		func(ctx context.Context, userID auth.UserID, args GetRecentActivityArgs) (RecentActivityResult, error) {
 			limit := args.Limit
 			if limit <= 0 {
 				limit = 10
 			}
-			activities, err := learnerService.Activities(ctx, args.CourseID, limit)
+			activities, err := learnerService.Activities(ctx, userID, args.CourseID, limit)
 			return RecentActivityResult{CourseID: args.CourseID, Activities: activities}, err
 		},
 	)
@@ -386,7 +387,7 @@ func newExerciseHistoryTool(catalog *curriculum.Catalog, learnerService *learner
 		ToolGetExerciseHistory,
 		"Return bounded saved check attempts and deterministic test failures for one course-qualified exercise. Never executes code.",
 		nil,
-		func(ctx context.Context, args GetExerciseHistoryArgs) (ExerciseHistoryResult, error) {
+		func(ctx context.Context, userID auth.UserID, args GetExerciseHistoryArgs) (ExerciseHistoryResult, error) {
 			exercise, ok := catalog.ExerciseByCourse(args.CourseID, args.ModuleID, args.ExerciseID)
 			if !ok {
 				return ExerciseHistoryResult{}, fmt.Errorf("exercise %q not found in course %q module %q", args.ExerciseID, args.CourseID, args.ModuleID)
@@ -395,7 +396,7 @@ func newExerciseHistoryTool(catalog *curriculum.Catalog, learnerService *learner
 			if limit <= 0 {
 				limit = 10
 			}
-			attempts, err := learnerService.ExerciseAttempts(ctx, args.CourseID, args.ModuleID, args.ExerciseID, limit)
+			attempts, err := learnerService.ExerciseAttempts(ctx, userID, args.CourseID, args.ModuleID, args.ExerciseID, limit)
 			if err != nil {
 				return ExerciseHistoryResult{}, err
 			}
@@ -453,7 +454,7 @@ func newReviewHistoryTool(catalog *curriculum.Catalog, reviewService *review.Ser
 			}
 			return nil
 		},
-		func(ctx context.Context, args GetReviewHistoryArgs) (ReviewHistoryResult, error) {
+		func(ctx context.Context, userID auth.UserID, args GetReviewHistoryArgs) (ReviewHistoryResult, error) {
 			if _, ok := catalog.CourseByID(args.CourseID); !ok {
 				return ReviewHistoryResult{}, fmt.Errorf("course %q not found", args.CourseID)
 			}
@@ -482,7 +483,7 @@ func newReviewHistoryTool(catalog *curriculum.Catalog, reviewService *review.Ser
 			}
 			result := ReviewHistoryResult{CourseID: args.CourseID}
 			for _, item := range items {
-				entries, err := reviewService.History(ctx, args.CourseID, item.ModuleID, item.ID, limit)
+				entries, err := reviewService.History(ctx, userID, args.CourseID, item.ModuleID, item.ID, limit)
 				if err != nil {
 					return ReviewHistoryResult{}, err
 				}

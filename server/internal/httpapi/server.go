@@ -729,8 +729,12 @@ func registerTutorTurn(api huma.API, tutorService *tutor.Service) {
 		if tutorService == nil {
 			return nil, huma.Error500InternalServerError("tutor service is unavailable")
 		}
+		userID, err := requireUserID(ctx)
+		if err != nil {
+			return nil, err
+		}
 
-		events, err := tutorService.StreamTurn(ctx, input.Body)
+		events, err := tutorService.StreamTurn(ctx, userID, input.Body)
 		if err != nil {
 			return nil, huma.Error502BadGateway("tutor provider unavailable")
 		}

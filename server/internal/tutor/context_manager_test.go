@@ -55,7 +55,7 @@ func TestContextManagerCompactsOldHistoryAndKeepsRecentTailWithoutDuplication(t 
 	if err != nil {
 		t.Fatalf("create context manager: %v", err)
 	}
-	prepared, err := manager.Prepare(context.Background(), conversation.ID, ContextInput{
+	prepared, err := manager.Prepare(context.Background(), testUserID, conversation.ID, ContextInput{
 		SystemPolicy:       "Always retain this policy.",
 		CurrentPageContext: `{"lessonId":"fresh-page"}`,
 	}, nil)
@@ -85,7 +85,7 @@ func TestContextManagerCompactsOldHistoryAndKeepsRecentTailWithoutDuplication(t 
 	if last := prepared.Messages[len(prepared.Messages)-1]; last.Role != ModelRoleUser || modelMessageText(last) != "current question" {
 		t.Fatalf("current user message was not retained last: %#v", last)
 	}
-	memory, err := store.ConversationMemory(context.Background(), conversation.ID)
+	memory, err := store.ConversationMemory(context.Background(), testUserID, conversation.ID)
 	if err != nil {
 		t.Fatalf("load memory: %v", err)
 	}
@@ -110,24 +110,24 @@ func TestContextManagerRepeatedCompactionAdvancesMarkerAndPreservesMemory(t *tes
 	if err != nil {
 		t.Fatalf("create manager: %v", err)
 	}
-	if _, err := manager.Prepare(context.Background(), conversation.ID, ContextInput{SystemPolicy: "policy"}, nil); err != nil {
+	if _, err := manager.Prepare(context.Background(), testUserID, conversation.ID, ContextInput{SystemPolicy: "policy"}, nil); err != nil {
 		t.Fatalf("first prepare: %v", err)
 	}
-	if _, err := store.AppendTextMessage(context.Background(), conversation.ID, MessageRoleAssistant, "a3"); err != nil {
+	if _, err := store.AppendTextMessage(context.Background(), testUserID, conversation.ID, MessageRoleAssistant, "a3"); err != nil {
 		t.Fatalf("append assistant: %v", err)
 	}
-	if _, err := store.AppendTextMessage(context.Background(), conversation.ID, MessageRoleUser, "q4"); err != nil {
+	if _, err := store.AppendTextMessage(context.Background(), testUserID, conversation.ID, MessageRoleUser, "q4"); err != nil {
 		t.Fatalf("append user: %v", err)
 	}
 	compactor.memory = ConversationMemory{}
-	prepared, err := manager.Prepare(context.Background(), conversation.ID, ContextInput{SystemPolicy: "policy"}, nil)
+	prepared, err := manager.Prepare(context.Background(), testUserID, conversation.ID, ContextInput{SystemPolicy: "policy"}, nil)
 	if err != nil {
 		t.Fatalf("second prepare: %v", err)
 	}
 	if len(compactor.requests) != 2 || compactor.requests[1].Previous.SummarizedThroughSequence != 3 {
 		t.Fatalf("second compaction did not start from prior marker: %#v", compactor.requests)
 	}
-	memory, err := store.ConversationMemory(context.Background(), conversation.ID)
+	memory, err := store.ConversationMemory(context.Background(), testUserID, conversation.ID)
 	if err != nil {
 		t.Fatalf("load memory: %v", err)
 	}
@@ -161,7 +161,7 @@ func TestContextManagerCompactsBeforeHardBudgetAndReservesHeadroom(t *testing.T)
 	if err != nil {
 		t.Fatalf("create manager: %v", err)
 	}
-	prepared, err := manager.Prepare(context.Background(), conversation.ID, ContextInput{SystemPolicy: "policy"}, nil)
+	prepared, err := manager.Prepare(context.Background(), testUserID, conversation.ID, ContextInput{SystemPolicy: "policy"}, nil)
 	if err != nil {
 		t.Fatalf("prepare context: %v", err)
 	}
@@ -194,7 +194,7 @@ func TestContextManagerProgressivelyShrinksRecentTailUntilItFits(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create manager: %v", err)
 	}
-	prepared, err := manager.Prepare(context.Background(), conversation.ID, ContextInput{SystemPolicy: "policy"}, nil)
+	prepared, err := manager.Prepare(context.Background(), testUserID, conversation.ID, ContextInput{SystemPolicy: "policy"}, nil)
 	if err != nil {
 		t.Fatalf("prepare progressively compacted context: %v", err)
 	}
@@ -221,13 +221,13 @@ func TestContextManagerRejectsUnfitCurrentTurnAndToolDefinitions(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create manager: %v", err)
 	}
-	if _, err := manager.Prepare(context.Background(), conversation.ID, ContextInput{SystemPolicy: "policy"}, nil); !errors.Is(err, ErrContextBudgetExceeded) {
+	if _, err := manager.Prepare(context.Background(), testUserID, conversation.ID, ContextInput{SystemPolicy: "policy"}, nil); !errors.Is(err, ErrContextBudgetExceeded) {
 		t.Fatalf("expected current-turn budget error, got %v", err)
 	}
 
 	second := createConversationWithMessages(t, store, messageFixture{MessageRoleUser, "short"})
 	largeTool := ToolDefinition{Name: "large", Description: strings.Repeat("d", 80), InputSchema: json.RawMessage(`{"type":"object"}`)}
-	if _, err := manager.Prepare(context.Background(), second.ID, ContextInput{SystemPolicy: "policy"}, []ToolDefinition{largeTool}); !errors.Is(err, ErrContextBudgetExceeded) {
+	if _, err := manager.Prepare(context.Background(), testUserID, second.ID, ContextInput{SystemPolicy: "policy"}, []ToolDefinition{largeTool}); !errors.Is(err, ErrContextBudgetExceeded) {
 		t.Fatalf("expected tool-definition budget error, got %v", err)
 	}
 }
@@ -239,12 +239,12 @@ type messageFixture struct {
 
 func createConversationWithMessages(t *testing.T, store *ConversationStore, fixtures ...messageFixture) Conversation {
 	t.Helper()
-	conversation, err := store.CreateConversation(context.Background(), CreateConversationParams{CourseID: "ai-ml"})
+	conversation, err := store.CreateConversation(context.Background(), testUserID, CreateConversationParams{CourseID: "ai-ml"})
 	if err != nil {
 		t.Fatalf("create conversation: %v", err)
 	}
 	for _, fixture := range fixtures {
-		if _, err := store.AppendTextMessage(context.Background(), conversation.ID, fixture.role, fixture.text); err != nil {
+		if _, err := store.AppendTextMessage(context.Background(), testUserID, conversation.ID, fixture.role, fixture.text); err != nil {
 			t.Fatalf("append %s message: %v", fixture.role, err)
 		}
 	}

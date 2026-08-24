@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/johncrowleydev/fonzytooter/server/internal/auth"
 	"github.com/johncrowleydev/fonzytooter/server/internal/curriculum"
 )
 
-func (s *Service) addCourseEvidence(ctx context.Context, course curriculum.Course, objectiveIndex map[string]int, result *CourseProgress) error {
+func (s *Service) addCourseEvidence(ctx context.Context, userID auth.UserID, course curriculum.Course, objectiveIndex map[string]int, result *CourseProgress) error {
 	now := s.now().UTC()
 	reviewItems := make(map[string]curriculum.ReviewItem)
 	exercises := make(map[string]curriculum.Exercise)
@@ -31,11 +32,11 @@ func (s *Service) addCourseEvidence(ctx context.Context, course curriculum.Cours
 		}
 	}
 
-	storedDue, err := s.reviewDueTimes(ctx, course.ID)
+	storedDue, err := s.reviewDueTimes(ctx, userID, course.ID)
 	if err != nil {
 		return err
 	}
-	eligibility, err := LoadSourceLessonEligibility(ctx, s.db, course.ID)
+	eligibility, err := LoadSourceLessonEligibility(ctx, s.db, userID, course.ID)
 	if err != nil {
 		return err
 	}
@@ -64,10 +65,10 @@ func (s *Service) addCourseEvidence(ctx context.Context, course curriculum.Cours
 		}
 	}
 
-	if err := s.addReviewHistory(ctx, course.ID, reviewItems, objectiveIndex, result); err != nil {
+	if err := s.addReviewHistory(ctx, userID, course.ID, reviewItems, objectiveIndex, result); err != nil {
 		return err
 	}
-	passedExercises, err := s.addExerciseHistory(ctx, course.ID, exercises, objectiveIndex, result)
+	passedExercises, err := s.addExerciseHistory(ctx, userID, course.ID, exercises, objectiveIndex, result)
 	if err != nil {
 		return err
 	}
@@ -86,8 +87,8 @@ func (s *Service) addCourseEvidence(ctx context.Context, course curriculum.Cours
 	return nil
 }
 
-func (s *Service) reviewDueTimes(ctx context.Context, courseID string) (map[string]time.Time, error) {
-	rows, err := s.db.QueryContext(ctx, `SELECT module_id, review_item_id, due_at FROM review_cards WHERE course_id = ?`, courseID)
+func (s *Service) reviewDueTimes(ctx context.Context, userID auth.UserID, courseID string) (map[string]time.Time, error) {
+	rows, err := s.db.QueryContext(ctx, `SELECT module_id, review_item_id, due_at FROM review_cards WHERE user_id = ? AND course_id = ?`, userID, courseID)
 	if err != nil {
 		return nil, fmt.Errorf("read review evidence: %w", err)
 	}
@@ -110,8 +111,8 @@ func (s *Service) reviewDueTimes(ctx context.Context, courseID string) (map[stri
 	return result, nil
 }
 
-func (s *Service) addReviewHistory(ctx context.Context, courseID string, items map[string]curriculum.ReviewItem, objectiveIndex map[string]int, result *CourseProgress) error {
-	rows, err := s.db.QueryContext(ctx, `SELECT module_id, review_item_id, reviewed_at FROM review_logs WHERE course_id = ?`, courseID)
+func (s *Service) addReviewHistory(ctx context.Context, userID auth.UserID, courseID string, items map[string]curriculum.ReviewItem, objectiveIndex map[string]int, result *CourseProgress) error {
+	rows, err := s.db.QueryContext(ctx, `SELECT module_id, review_item_id, reviewed_at FROM review_logs WHERE user_id = ? AND course_id = ?`, userID, courseID)
 	if err != nil {
 		return fmt.Errorf("read review history evidence: %w", err)
 	}
@@ -143,8 +144,8 @@ func (s *Service) addReviewHistory(ctx context.Context, courseID string, items m
 	return nil
 }
 
-func (s *Service) addExerciseHistory(ctx context.Context, courseID string, exercises map[string]curriculum.Exercise, objectiveIndex map[string]int, result *CourseProgress) (map[string]bool, error) {
-	rows, err := s.db.QueryContext(ctx, `SELECT module_id, exercise_id, created_at, all_passed FROM exercise_attempts WHERE course_id = ?`, courseID)
+func (s *Service) addExerciseHistory(ctx context.Context, userID auth.UserID, courseID string, exercises map[string]curriculum.Exercise, objectiveIndex map[string]int, result *CourseProgress) (map[string]bool, error) {
+	rows, err := s.db.QueryContext(ctx, `SELECT module_id, exercise_id, created_at, all_passed FROM exercise_attempts WHERE user_id = ? AND course_id = ?`, userID, courseID)
 	if err != nil {
 		return nil, fmt.Errorf("read exercise evidence: %w", err)
 	}

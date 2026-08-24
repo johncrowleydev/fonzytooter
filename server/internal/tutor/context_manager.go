@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/johncrowleydev/fonzytooter/server/internal/auth"
 )
 
 var ErrContextBudgetExceeded = errors.New("tutor context budget exceeded")
@@ -98,22 +100,22 @@ func NewContextManager(store *ConversationStore, estimator TokenEstimator, compa
 	return &ContextManager{store: store, estimator: estimator, compactor: compactor, config: config}, nil
 }
 
-func (m *ContextManager) Prepare(ctx context.Context, conversationID string, input ContextInput, tools []ToolDefinition) (PreparedContext, error) {
+func (m *ContextManager) Prepare(ctx context.Context, userID auth.UserID, conversationID string, input ContextInput, tools []ToolDefinition) (PreparedContext, error) {
 	if strings.TrimSpace(input.SystemPolicy) == "" {
 		return PreparedContext{}, errors.New("tutor system policy is empty")
 	}
-	messages, err := m.store.Messages(ctx, conversationID)
+	messages, err := m.store.Messages(ctx, userID, conversationID)
 	if err != nil {
 		return PreparedContext{}, err
 	}
 	if len(messages) == 0 || messages[len(messages)-1].Role != MessageRoleUser {
 		return PreparedContext{}, errors.New("tutor conversation does not end with the current user message")
 	}
-	toolCalls, err := m.store.ToolCalls(ctx, conversationID)
+	toolCalls, err := m.store.ToolCalls(ctx, userID, conversationID)
 	if err != nil {
 		return PreparedContext{}, err
 	}
-	memory, err := m.store.ConversationMemory(ctx, conversationID)
+	memory, err := m.store.ConversationMemory(ctx, userID, conversationID)
 	if err != nil {
 		return PreparedContext{}, err
 	}
@@ -154,7 +156,7 @@ func (m *ContextManager) Prepare(ctx context.Context, conversationID string, inp
 		updated.SummarizedThroughSequence = compactable[len(compactable)-1].Sequence
 		updated.FormatVersion = ConversationMemoryFormatVersion
 		normalizeMemory(&updated, m.config)
-		memory, err = m.store.SaveConversationMemory(ctx, updated)
+		memory, err = m.store.SaveConversationMemory(ctx, userID, updated)
 		if err != nil {
 			return PreparedContext{}, err
 		}

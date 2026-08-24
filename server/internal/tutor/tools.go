@@ -13,6 +13,7 @@ import (
 	"sync"
 
 	"github.com/danielgtaylor/huma/v2"
+	"github.com/johncrowleydev/fonzytooter/server/internal/auth"
 )
 
 var (
@@ -24,7 +25,7 @@ var (
 
 type Tool interface {
 	Definition() ToolDefinition
-	Execute(ctx context.Context, arguments json.RawMessage) (json.RawMessage, error)
+	Execute(ctx context.Context, userID auth.UserID, arguments json.RawMessage) (json.RawMessage, error)
 }
 
 type ProvenanceTool interface {
@@ -80,7 +81,7 @@ func (r *ToolRegistry) Definitions(allowed []string) ([]ToolDefinition, error) {
 	return definitions, nil
 }
 
-func (r *ToolRegistry) Execute(ctx context.Context, name string, arguments json.RawMessage, allowed []string) (json.RawMessage, error) {
+func (r *ToolRegistry) Execute(ctx context.Context, userID auth.UserID, name string, arguments json.RawMessage, allowed []string) (json.RawMessage, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	tool, exists := r.tools[name]
@@ -90,7 +91,7 @@ func (r *ToolRegistry) Execute(ctx context.Context, name string, arguments json.
 	if allowed != nil && !containsString(allowed, name) {
 		return nil, fmt.Errorf("%w: %s", ErrToolNotAllowed, name)
 	}
-	return tool.Execute(ctx, arguments)
+	return tool.Execute(ctx, userID, arguments)
 }
 
 func (r *ToolRegistry) SourceIDs(name string, result json.RawMessage) []string {
@@ -148,7 +149,7 @@ type typedTool[Arguments any, Result any] struct {
 	registry   huma.Registry
 	schema     *huma.Schema
 	validate   func(Arguments) error
-	execute    func(context.Context, Arguments) (Result, error)
+	execute    func(context.Context, auth.UserID, Arguments) (Result, error)
 	provenance func(Result) []string
 }
 
@@ -156,7 +157,7 @@ func NewTypedTool[Arguments any, Result any](
 	name string,
 	description string,
 	validate func(Arguments) error,
-	execute func(context.Context, Arguments) (Result, error),
+	execute func(context.Context, auth.UserID, Arguments) (Result, error),
 ) (Tool, error) {
 	return newTypedTool(name, description, validate, execute, nil)
 }
@@ -165,7 +166,7 @@ func NewTypedToolWithProvenance[Arguments any, Result any](
 	name string,
 	description string,
 	validate func(Arguments) error,
-	execute func(context.Context, Arguments) (Result, error),
+	execute func(context.Context, auth.UserID, Arguments) (Result, error),
 	provenance func(Result) []string,
 ) (Tool, error) {
 	return newTypedTool(name, description, validate, execute, provenance)
@@ -175,7 +176,7 @@ func newTypedTool[Arguments any, Result any](
 	name string,
 	description string,
 	validate func(Arguments) error,
-	execute func(context.Context, Arguments) (Result, error),
+	execute func(context.Context, auth.UserID, Arguments) (Result, error),
 	provenance func(Result) []string,
 ) (Tool, error) {
 	if execute == nil {
@@ -212,7 +213,7 @@ func (t *typedTool[Arguments, Result]) Definition() ToolDefinition {
 	return definition
 }
 
-func (t *typedTool[Arguments, Result]) Execute(ctx context.Context, raw json.RawMessage) (json.RawMessage, error) {
+func (t *typedTool[Arguments, Result]) Execute(ctx context.Context, userID auth.UserID, raw json.RawMessage) (json.RawMessage, error) {
 	if !json.Valid(raw) {
 		return nil, fmt.Errorf("%w: malformed JSON", ErrToolArgumentsInvalid)
 	}
@@ -241,7 +242,7 @@ func (t *typedTool[Arguments, Result]) Execute(ctx context.Context, raw json.Raw
 			return nil, fmt.Errorf("%w: %v", ErrToolArgumentsInvalid, err)
 		}
 	}
-	result, err := t.execute(ctx, arguments)
+	result, err := t.execute(ctx, userID, arguments)
 	if err != nil {
 		return nil, err
 	}

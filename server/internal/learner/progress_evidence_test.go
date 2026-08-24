@@ -17,21 +17,21 @@ func TestCourseProgressAggregatesReviewAndExerciseEvidence(t *testing.T) {
 	now := time.Date(2026, time.August, 20, 12, 0, 0, 0, time.UTC)
 	service.now = func() time.Time { return now }
 
-	insertEvidenceRow(t, db, `INSERT INTO lesson_progress VALUES (?, ?, ?, 1, ?, ?)`, "course", "module", "lesson-one", timestamp(now.Add(-2*time.Hour)), timestamp(now.Add(-2*time.Hour)))
+	insertEvidenceRow(t, db, `INSERT INTO lesson_progress VALUES (?, ?, ?, ?, 1, ?, ?)`, testUserID, "course", "module", "lesson-one", timestamp(now.Add(-2*time.Hour)), timestamp(now.Add(-2*time.Hour)))
 	insertReviewCard(t, db, "review-future", now.Add(24*time.Hour), now.Add(-time.Hour))
 	insertEvidenceRow(t, db, `
 		INSERT INTO review_logs (
-			course_id, module_id, review_item_id, reviewed_at, rating, previous_due, next_due,
+			user_id, course_id, module_id, review_item_id, reviewed_at, rating, previous_due, next_due,
 			before_stability, after_stability, before_difficulty, after_difficulty,
 			before_scheduled_days, after_scheduled_days, before_reps, after_reps,
 			before_lapses, after_lapses, before_state, after_state,
 			before_last_review_at, after_last_review_at, before_remaining_steps, after_remaining_steps
-		) VALUES ('course', 'module', 'review-future', ?, 'good', ?, ?, 0, 1, 0, 5, 0, 1, 0, 1, 0, 0, 0, 1, NULL, ?, 0, 0)
-	`, timestamp(now.Add(-time.Hour)), timestamp(now.Add(-time.Hour)), timestamp(now.Add(24*time.Hour)), timestamp(now.Add(-time.Hour)))
+		) VALUES (?, 'course', 'module', 'review-future', ?, 'good', ?, ?, 0, 1, 0, 5, 0, 1, 0, 1, 0, 0, 0, 1, NULL, ?, 0, 0)
+	`, testUserID, timestamp(now.Add(-time.Hour)), timestamp(now.Add(-time.Hour)), timestamp(now.Add(24*time.Hour)), timestamp(now.Add(-time.Hour)))
 	insertAttempt(t, db, "exercise-one", now.Add(-30*time.Minute), false)
 	insertAttempt(t, db, "exercise-two", now.Add(-15*time.Minute), true)
 
-	progress, err := service.CourseProgress(context.Background(), "course")
+	progress, err := service.CourseProgress(context.Background(), testUserID, "course")
 	if err != nil {
 		t.Fatalf("course progress: %v", err)
 	}
@@ -62,7 +62,7 @@ func TestCourseProgressUsesSourceLessonEligibilityForVirtualReviewEvidence(t *te
 	service.now = func() time.Time { return now }
 	insertReviewCard(t, db, "review-future", now.Add(24*time.Hour), now.Add(-time.Hour))
 
-	progress, err := service.CourseProgress(context.Background(), "course")
+	progress, err := service.CourseProgress(context.Background(), testUserID, "course")
 	if err != nil {
 		t.Fatalf("course progress before source lesson: %v", err)
 	}
@@ -74,8 +74,8 @@ func TestCourseProgressUsesSourceLessonEligibilityForVirtualReviewEvidence(t *te
 		t.Fatalf("persisted schedule was not preserved while virtual item was gated: %#v", recall)
 	}
 
-	insertEvidenceRow(t, db, `INSERT INTO lesson_progress VALUES (?, ?, ?, 1, ?, ?)`, "course", "module", "lesson-one", timestamp(now), timestamp(now))
-	progress, err = service.CourseProgress(context.Background(), "course")
+	insertEvidenceRow(t, db, `INSERT INTO lesson_progress VALUES (?, ?, ?, ?, 1, ?, ?)`, testUserID, "course", "module", "lesson-one", timestamp(now), timestamp(now))
+	progress, err = service.CourseProgress(context.Background(), testUserID, "course")
 	if err != nil {
 		t.Fatalf("course progress after source lesson: %v", err)
 	}
@@ -89,19 +89,19 @@ func TestCourseProgressUsesRecentCompletionThenFallsBackToFirstIncomplete(t *tes
 	service, db := evidenceTestService(t)
 	now := time.Date(2026, time.August, 20, 12, 0, 0, 0, time.UTC)
 	service.now = func() time.Time { return now }
-	insertEvidenceRow(t, db, `INSERT INTO lesson_progress VALUES (?, ?, ?, 1, ?, ?)`, "course", "module", "lesson-one", timestamp(now.Add(-2*time.Hour)), timestamp(now.Add(-2*time.Hour)))
+	insertEvidenceRow(t, db, `INSERT INTO lesson_progress VALUES (?, ?, ?, ?, 1, ?, ?)`, testUserID, "course", "module", "lesson-one", timestamp(now.Add(-2*time.Hour)), timestamp(now.Add(-2*time.Hour)))
 
-	progress, err := service.CourseProgress(context.Background(), "course")
+	progress, err := service.CourseProgress(context.Background(), testUserID, "course")
 	if err != nil || progress.NextLesson == nil || progress.NextLesson.LessonID != "lesson-two" {
 		t.Fatalf("expected lesson after most recent completion, got %#v, %v", progress.NextLesson, err)
 	}
-	insertEvidenceRow(t, db, `INSERT INTO lesson_progress VALUES (?, ?, ?, 1, ?, ?)`, "course", "module", "lesson-three", timestamp(now), timestamp(now))
-	progress, err = service.CourseProgress(context.Background(), "course")
+	insertEvidenceRow(t, db, `INSERT INTO lesson_progress VALUES (?, ?, ?, ?, 1, ?, ?)`, testUserID, "course", "module", "lesson-three", timestamp(now), timestamp(now))
+	progress, err = service.CourseProgress(context.Background(), testUserID, "course")
 	if err != nil || progress.NextLesson == nil || progress.NextLesson.LessonID != "lesson-two" {
 		t.Fatalf("expected first incomplete fallback, got %#v, %v", progress.NextLesson, err)
 	}
-	insertEvidenceRow(t, db, `INSERT INTO lesson_progress VALUES (?, ?, ?, 1, ?, ?)`, "course", "module", "lesson-two", timestamp(now.Add(time.Hour)), timestamp(now.Add(time.Hour)))
-	progress, err = service.CourseProgress(context.Background(), "course")
+	insertEvidenceRow(t, db, `INSERT INTO lesson_progress VALUES (?, ?, ?, ?, 1, ?, ?)`, testUserID, "course", "module", "lesson-two", timestamp(now.Add(time.Hour)), timestamp(now.Add(time.Hour)))
+	progress, err = service.CourseProgress(context.Background(), testUserID, "course")
 	if err != nil || progress.NextLesson != nil {
 		t.Fatalf("expected all-lessons-complete state, got %#v, %v", progress.NextLesson, err)
 	}
@@ -144,20 +144,20 @@ func insertReviewCard(t *testing.T, db *sql.DB, itemID string, dueAt, reviewedAt
 	t.Helper()
 	insertEvidenceRow(t, db, `
 		INSERT INTO review_cards (
-			course_id, module_id, review_item_id, due_at, stability, difficulty,
+			user_id, course_id, module_id, review_item_id, due_at, stability, difficulty,
 			scheduled_days, reps, lapses, state, last_review_at, remaining_steps, updated_at
-		) VALUES ('course', 'module', ?, ?, 1, 5, 1, 1, 0, 1, ?, 0, ?)
-	`, itemID, timestamp(dueAt), timestamp(reviewedAt), timestamp(reviewedAt))
+		) VALUES (?, 'course', 'module', ?, ?, 1, 5, 1, 1, 0, 1, ?, 0, ?)
+	`, testUserID, itemID, timestamp(dueAt), timestamp(reviewedAt), timestamp(reviewedAt))
 }
 
 func insertAttempt(t *testing.T, db *sql.DB, exerciseID string, createdAt time.Time, allPassed bool) {
 	t.Helper()
 	insertEvidenceRow(t, db, `
 		INSERT INTO exercise_attempts (
-			course_id, module_id, exercise_id, created_at, passed_count, failed_count,
+			user_id, course_id, module_id, exercise_id, created_at, passed_count, failed_count,
 			duration_ms, all_passed, code_snapshot
-		) VALUES ('course', 'module', ?, ?, ?, ?, 10, ?, 'pass')
-	`, exerciseID, timestamp(createdAt), boolInt(allPassed), boolInt(!allPassed), boolInt(allPassed))
+		) VALUES (?, 'course', 'module', ?, ?, ?, ?, 10, ?, 'pass')
+	`, testUserID, exerciseID, timestamp(createdAt), boolInt(allPassed), boolInt(!allPassed), boolInt(allPassed))
 }
 
 func insertEvidenceRow(t *testing.T, db *sql.DB, query string, args ...any) {

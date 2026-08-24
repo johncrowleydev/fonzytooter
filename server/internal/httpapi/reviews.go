@@ -77,7 +77,11 @@ func registerReviews(api huma.API, service *review.Service) {
 		if service == nil {
 			return nil, huma.Error500InternalServerError("review service is unavailable")
 		}
-		cards, err := service.Cards(ctx, input.CourseID, input.Due)
+		userID, err := requireUserID(ctx)
+		if err != nil {
+			return nil, err
+		}
+		cards, err := service.Cards(ctx, userID, input.CourseID, input.Due)
 		if err != nil {
 			return nil, reviewError("list review cards", err)
 		}
@@ -108,7 +112,11 @@ func registerReviews(api huma.API, service *review.Service) {
 		if service == nil {
 			return nil, huma.Error500InternalServerError("review service is unavailable")
 		}
-		result, err := service.Submit(ctx, input.CourseID, input.ModuleID, input.ReviewItemID, input.Body.Rating)
+		userID, err := requireUserID(ctx)
+		if err != nil {
+			return nil, err
+		}
+		result, err := service.Submit(ctx, userID, input.CourseID, input.ModuleID, input.ReviewItemID, input.Body.Rating)
 		if err != nil {
 			return nil, reviewError("create review", err)
 		}

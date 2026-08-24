@@ -8,6 +8,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/johncrowleydev/fonzytooter/server/internal/auth"
 	"github.com/johncrowleydev/fonzytooter/server/internal/curriculum"
 	"github.com/johncrowleydev/fonzytooter/server/internal/learner"
 	"github.com/johncrowleydev/fonzytooter/server/internal/tutor"
@@ -101,7 +102,7 @@ type courseProgressSummary struct {
 	NextLesson       *learner.NextLesson `json:"nextLesson,omitempty"`
 }
 
-func (b *ContextBuilder) Build(ctx context.Context, request tutor.TurnRequest) (tutor.TurnContext, error) {
+func (b *ContextBuilder) Build(ctx context.Context, userID auth.UserID, request tutor.TurnRequest) (tutor.TurnContext, error) {
 	mode := request.Mode
 	if mode == "" {
 		mode = "explain"
@@ -116,7 +117,7 @@ func (b *ContextBuilder) Build(ctx context.Context, request tutor.TurnRequest) (
 	if request.PageContext == nil {
 		return result, nil
 	}
-	page, lesson, exercise, progress, err := b.resolvePage(ctx, *request.PageContext)
+	page, lesson, exercise, progress, err := b.resolvePage(ctx, userID, *request.PageContext)
 	if err != nil {
 		return tutor.TurnContext{}, err
 	}
@@ -167,7 +168,7 @@ func (b *ContextBuilder) Build(ctx context.Context, request tutor.TurnRequest) (
 	return result, nil
 }
 
-func (b *ContextBuilder) resolvePage(ctx context.Context, input tutor.PageContext) (authoritativePage, *curriculum.Lesson, *curriculum.Exercise, *learner.CourseProgress, error) {
+func (b *ContextBuilder) resolvePage(ctx context.Context, userID auth.UserID, input tutor.PageContext) (authoritativePage, *curriculum.Lesson, *curriculum.Exercise, *learner.CourseProgress, error) {
 	switch input.Type {
 	case "dashboard", "curriculum", "lesson", "exercise", "review", "progress", "project":
 	default:
@@ -249,7 +250,7 @@ func (b *ContextBuilder) resolvePage(ctx context.Context, input tutor.PageContex
 			return page, nil, nil, nil, fmt.Errorf("unknown tutor objective %q in course %q", objectiveID, course.ID)
 		}
 	}
-	progress, err := b.learner.CourseProgress(ctx, course.ID)
+	progress, err := b.learner.CourseProgress(ctx, userID, course.ID)
 	if err != nil {
 		return page, nil, nil, nil, fmt.Errorf("build tutor learner context: %w", err)
 	}

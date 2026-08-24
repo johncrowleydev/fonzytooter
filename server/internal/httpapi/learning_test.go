@@ -125,7 +125,7 @@ func testLearningAPI(t *testing.T) *API {
 		t.Fatalf("open test database: %v", err)
 	}
 	t.Cleanup(func() { _ = db.Close() })
-	return NewAPI(tutor.NewService(tutor.NewUnavailableProvider()), catalog, learner.NewService(db, catalog), nil)
+	return newAuthenticatedTestAPI(t, tutor.NewService(tutor.NewUnavailableProvider()), catalog, learner.NewService(db, catalog), nil)
 }
 
 func serveJSON(t *testing.T, handler http.Handler, method, path, body string) *httptest.ResponseRecorder {

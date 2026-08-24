@@ -24,7 +24,7 @@ func TestContextBuilderInjectsAuthoritativeLessonAndExerciseState(t *testing.T) 
 	if err != nil {
 		t.Fatalf("new context builder: %v", err)
 	}
-	turn, err := builder.Build(context.Background(), tutor.TurnRequest{
+	turn, err := builder.Build(context.Background(), testUserID, tutor.TurnRequest{
 		Mode: "exercise",
 		PageContext: &tutor.PageContext{
 			Type: "exercise", CourseID: "course", CourseTitle: "Spoofed course",
@@ -72,7 +72,7 @@ func TestContextBuilderRejectsInvalidOwnership(t *testing.T) {
 		{Type: "lesson", CourseID: "course", ModuleID: "module", LessonID: "lesson", ObjectiveIDs: []string{"secondary"}},
 	}
 	for index, page := range tests {
-		if _, err := builder.Build(context.Background(), tutor.TurnRequest{Message: "help", PageContext: &page}); err == nil {
+		if _, err := builder.Build(context.Background(), testUserID, tutor.TurnRequest{Message: "help", PageContext: &page}); err == nil {
 			t.Fatalf("case %d: expected invalid ownership error", index)
 		}
 	}
@@ -109,7 +109,7 @@ func TestCurriculumSearchAndContentAreDeterministicBoundedAndGrounded(t *testing
 		`{"courseId":"other","moduleId":"module","kind":"exercise","id":"double"}`,
 		`{"courseId":"other","kind":"source","id":"source"}`,
 	} {
-		if _, err := registry.Execute(context.Background(), ToolGetCurriculumContent, json.RawMessage(args), nil); err == nil {
+		if _, err := registry.Execute(context.Background(), testUserID, ToolGetCurriculumContent, json.RawMessage(args), nil); err == nil {
 			t.Fatalf("expected scoped content error for %s", args)
 		}
 	}
@@ -128,7 +128,7 @@ func TestLearningEvidenceAndHistoriesAreFactualScopedAndBounded(t *testing.T) {
 	if len(objective.Objectives) != 1 || !objective.Objectives[0].Progress.Introduced || objective.Objectives[0].Progress.Application.Attempts != 12 || objective.Objectives[0].Progress.Recall.ReviewsCompleted != 12 {
 		t.Fatalf("unexpected objective evidence: %#v", objective)
 	}
-	if _, err := registry.Execute(context.Background(), ToolGetObjectiveState, json.RawMessage(`{"courseId":"other","objectiveIds":["objective"]}`), nil); err == nil {
+	if _, err := registry.Execute(context.Background(), testUserID, ToolGetObjectiveState, json.RawMessage(`{"courseId":"other","objectiveIds":["objective"]}`), nil); err == nil {
 		t.Fatal("cross-course objective state should fail")
 	}
 
@@ -155,17 +155,17 @@ func TestLearningEvidenceAndHistoriesAreFactualScopedAndBounded(t *testing.T) {
 	if err := json.Unmarshal(reviewRaw, &history); err != nil || len(history.History) != 3 {
 		t.Fatalf("unexpected review history: %#v, %v", history, err)
 	}
-	if _, err := registry.Execute(context.Background(), ToolGetReviewHistory, json.RawMessage(`{"courseId":"other","objectiveIds":["objective"]}`), nil); err == nil {
+	if _, err := registry.Execute(context.Background(), testUserID, ToolGetReviewHistory, json.RawMessage(`{"courseId":"other","objectiveIds":["objective"]}`), nil); err == nil {
 		t.Fatal("cross-course review history should fail")
 	}
 
-	before, err := environment.learner.Activities(context.Background(), "course", 100)
+	before, err := environment.learner.Activities(context.Background(), testUserID, "course", 100)
 	if err != nil {
 		t.Fatalf("activities before read tools: %v", err)
 	}
 	_ = executeTool(t, registry, ToolGetRecentActivity, `{"courseId":"course","limit":2}`)
 	_ = executeTool(t, registry, ToolGetExerciseHistory, `{"courseId":"course","moduleId":"module","exerciseId":"double","limit":2}`)
-	after, err := environment.learner.Activities(context.Background(), "course", 100)
+	after, err := environment.learner.Activities(context.Background(), testUserID, "course", 100)
 	if err != nil || len(after) != len(before) {
 		t.Fatalf("read tools mutated learner state: before=%d after=%d err=%v", len(before), len(after), err)
 	}
@@ -200,7 +200,7 @@ func TestRuntimeExecutesMultiToolSequenceAndEmitsAuthoritativeCitations(t *testi
 	if err != nil {
 		t.Fatalf("runtime: %v", err)
 	}
-	events, err := service.StreamTurn(context.Background(), tutor.TurnRequest{
+	events, err := service.StreamTurn(context.Background(), testUserID, tutor.TurnRequest{
 		Message:     "Connect the lesson to my objective state.",
 		PageContext: &tutor.PageContext{Type: "lesson", CourseID: "course", CourseTitle: "spoof", ModuleID: "module", LessonID: "lesson"},
 	})
@@ -236,7 +236,7 @@ func TestRuntimeExecutesMultiToolSequenceAndEmitsAuthoritativeCitations(t *testi
 			t.Fatalf("request exceeded context budget: %d", estimated)
 		}
 	}
-	messages, err := store.Messages(context.Background(), collected[len(collected)-1].ConversationID)
+	messages, err := store.Messages(context.Background(), testUserID, collected[len(collected)-1].ConversationID)
 	if err != nil || len(messages) < 4 {
 		t.Fatalf("conversation was not persisted: %#v, %v", messages, err)
 	}
@@ -263,7 +263,7 @@ func estimateRequest(request tutor.ModelRequest) int {
 func TestUnknownToolCannotBypassLearningRegistry(t *testing.T) {
 	environment := newTestEnvironment(t)
 	registry := environment.registry(t)
-	if _, err := registry.Execute(context.Background(), "delete_learner_state", json.RawMessage(`{}`), InitialToolNames); err == nil || !strings.Contains(err.Error(), "unknown tutor tool") {
+	if _, err := registry.Execute(context.Background(), testUserID, "delete_learner_state", json.RawMessage(`{}`), InitialToolNames); err == nil || !strings.Contains(err.Error(), "unknown tutor tool") {
 		t.Fatalf("unknown write-like tool bypassed registry: %v", err)
 	}
 }
@@ -318,19 +318,19 @@ func (e testEnvironment) registry(t *testing.T) *tutor.ToolRegistry {
 
 func seedEvidence(t *testing.T, environment testEnvironment, count int) {
 	t.Helper()
-	if _, err := environment.learner.SetLessonProgress(context.Background(), "course", "module", "lesson", true); err != nil {
+	if _, err := environment.learner.SetLessonProgress(context.Background(), testUserID, "course", "module", "lesson", true); err != nil {
 		t.Fatalf("complete lesson: %v", err)
 	}
 	for index := 0; index < count; index++ {
 		code := strings.Repeat("x", 5_000) + fmt.Sprint(index)
-		_, err := environment.learner.CreateExerciseAttempt(context.Background(), "course", "module", "double", code, 5, []learner.ExerciseTestResult{
+		_, err := environment.learner.CreateExerciseAttempt(context.Background(), testUserID, "course", "module", "double", code, 5, []learner.ExerciseTestResult{
 			{TestID: "visible", Status: "passed", Message: "", DurationMS: 1},
 			{TestID: "hidden", Status: "failed", Message: strings.Repeat("failure ", 300), DurationMS: 1},
 		})
 		if err != nil {
 			t.Fatalf("create exercise attempt: %v", err)
 		}
-		if _, err := environment.review.Submit(context.Background(), "course", "module", "review", review.RatingGood); err != nil {
+		if _, err := environment.review.Submit(context.Background(), testUserID, "course", "module", "review", review.RatingGood); err != nil {
 			t.Fatalf("submit review: %v", err)
 		}
 	}
@@ -338,7 +338,7 @@ func seedEvidence(t *testing.T, environment testEnvironment, count int) {
 
 func executeTool(t *testing.T, registry *tutor.ToolRegistry, name, arguments string) json.RawMessage {
 	t.Helper()
-	result, err := registry.Execute(context.Background(), name, json.RawMessage(arguments), InitialToolNames)
+	result, err := registry.Execute(context.Background(), testUserID, name, json.RawMessage(arguments), InitialToolNames)
 	if err != nil {
 		t.Fatalf("execute %s: %v", name, err)
 	}

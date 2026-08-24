@@ -132,3 +132,11 @@ func authenticatedSession(user auth.User) SessionResource {
 		},
 	}
 }
+
+func requireUserID(ctx context.Context) (auth.UserID, error) {
+	user, err := auth.RequireUser(ctx)
+	if err != nil {
+		return "", huma.Error401Unauthorized("authentication required")
+	}
+	return user.ID, nil
+}
