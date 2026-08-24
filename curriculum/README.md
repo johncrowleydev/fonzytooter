@@ -31,7 +31,7 @@ curriculum/
 - Objectives require descriptions and may reference prerequisite objective IDs. Objective IDs remain globally unique in the current catalog model.
 - Lessons are MDX.
 - Lesson metadata is YAML frontmatter at the beginning of each MDX file. The Go loader preserves the remaining MDX source body and does not execute or compile it.
-- Videos are curated resources attached to modules/objectives.
+- Videos are module-owned YouTube curriculum entities with stable IDs, explicit playlist order, authored title/channel/duration metadata, and module-local objective/lesson associations.
 - Optional `worksheets/`, `exercises/`, and `reviews/` directories are closed-world: every direct child must be a regular `.yaml` file.
 - Reference arrays do not allow duplicate IDs.
 - Technical lesson content must cite reputable sources from the shared `sources.yaml` registry.

@@ -85,32 +85,61 @@
     "VideoAuthoring": {
       "additionalProperties": false,
       "properties": {
+        "channel": {
+          "description": "Authored YouTube channel or creator name.",
+          "type": "string"
+        },
+        "durationMinutes": {
+          "description": "Approximate authored duration in whole minutes.",
+          "format": "int64",
+          "minimum": 1,
+          "type": "integer"
+        },
         "id": {
           "description": "Stable video ID within this module.",
           "type": "string"
         },
-        "objectiveIds": {
-          "description": "Objective IDs supported by this video.",
+        "lessonIds": {
+          "description": "Lesson IDs in this module associated with this video.",
           "items": {
             "type": "string"
           },
           "type": "array",
           "uniqueItems": true
         },
+        "objectiveIds": {
+          "description": "Objective IDs owned by this module and supported by this video.",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "order": {
+          "description": "Canonical non-negative playlist order within this module.",
+          "format": "int64",
+          "minimum": 0,
+          "type": "integer"
+        },
         "title": {
           "description": "Video title shown to the learner.",
           "type": "string"
         },
-        "url": {
-          "description": "HTTP or HTTPS URL for the video.",
-          "format": "uri",
+        "youtubeId": {
+          "description": "The 11-character YouTube video ID, not a URL or embed markup.",
+          "pattern": "^[A-Za-z0-9_-]{11}$",
           "type": "string"
         }
       },
       "required": [
         "id",
+        "youtubeId",
         "title",
-        "url"
+        "channel",
+        "durationMinutes",
+        "order",
+        "objectiveIds"
       ],
       "type": "object"
     }

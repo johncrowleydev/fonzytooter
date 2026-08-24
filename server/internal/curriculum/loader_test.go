@@ -111,7 +111,7 @@ func TestLoadAggregatesDeterministicAuthoringErrors(t *testing.T) {
 	fsys := fstest.MapFS{
 		"sources.yaml":                                 &fstest.MapFile{Data: []byte("sources:\n  bad source:\n    title: \"\"\n    url: ftp://example.com\n")},
 		"courses/ai-ml/course.yaml":                    &fstest.MapFile{Data: []byte(courseYAML("ai-ml", 0))},
-		"courses/ai-ml/modules/01-invalid/module.yaml": &fstest.MapFile{Data: []byte("id: Invalid\ntitle: \"\"\norder: 0\nobjectives: []\nvideos:\n  - id: bad video\n    title: \"\"\n    url: ftp://example.com\nlessons:\n  - missing.lesson\n")},
+		"courses/ai-ml/modules/01-invalid/module.yaml": &fstest.MapFile{Data: []byte("id: Invalid\ntitle: \"\"\norder: 0\nobjectives: []\nvideos:\n  - id: bad video\n    youtubeId: not-embed-html\n    title: \"\"\n    channel: \"\"\n    durationMinutes: 0\n    order: -1\n    objectiveIds: []\nlessons:\n  - missing.lesson\n")},
 		"courses/ai-ml/modules/01-invalid/orphan.mdx":  &fstest.MapFile{Data: []byte("---\nid: orphan.lesson\ntitle: Orphan\nobjectiveIds:\n  - missing.objective\nsourceIds:\n  - missing.source\n---\n   \n")},
 	}
 
@@ -241,14 +241,57 @@ func TestLoadRejectsUnknownPrerequisite(t *testing.T) {
 
 func TestLoadRejectsUnknownVideoObjective(t *testing.T) {
 	expectLoadError(t, curriculumFS(map[string]string{
-		"courses/ai-ml/modules/one/module.yaml": moduleYAML("one", 0, "objectives: []\nvideos:\n  - id: intro\n    title: Intro\n    url: https://example.com/intro\n    objectiveIds:\n      - missing\nlessons: []\n"),
-	}), `video "intro" has unknown objective id "missing"`)
+		"courses/ai-ml/modules/one/module.yaml": moduleYAML("one", 0, "objectives: []\nvideos:\n  - id: intro\n    youtubeId: dQw4w9WgXcQ\n    title: Intro\n    channel: Creator\n    durationMinutes: 4\n    order: 0\n    objectiveIds:\n      - missing\nlessons: []\n"),
+	}), `video "intro" has unknown objective id "missing" in this module`)
 }
 
 func TestLoadRejectsDuplicateVideoIDsWithinModule(t *testing.T) {
 	expectLoadError(t, curriculumFS(map[string]string{
-		"courses/ai-ml/modules/one/module.yaml": moduleYAML("one", 0, "objectives: []\nvideos:\n  - id: intro\n    title: Intro\n    url: https://example.com/intro\n    objectiveIds: []\n  - id: intro\n    title: Another intro\n    url: https://example.com/another-intro\n    objectiveIds: []\nlessons: []\n"),
+		"courses/ai-ml/modules/one/module.yaml": moduleYAML("one", 0, "objectives: []\nvideos:\n  - id: intro\n    youtubeId: dQw4w9WgXcQ\n    title: Intro\n    channel: Creator\n    durationMinutes: 4\n    order: 0\n    objectiveIds: []\n  - id: intro\n    youtubeId: 9bZkp7q19f0\n    title: Another intro\n    channel: Creator\n    durationMinutes: 5\n    order: 1\n    objectiveIds: []\nlessons: []\n"),
 	}), `duplicate video id "intro"`)
+}
+
+func TestLoadValidatesAndOrdersCuratedYouTubeVideos(t *testing.T) {
+	fsy := curriculumFS(map[string]string{
+		"courses/ai-ml/modules/one/module.yaml": moduleYAML("one", 0, "objectives:\n  - id: objective\n    title: Objective\n    description: Objective description.\n    prerequisites: []\nvideos:\n  - id: second\n    youtubeId: 9bZkp7q19f0\n    title: Second video\n    channel: Second creator\n    durationMinutes: 12\n    order: 1\n    objectiveIds: [objective]\n    lessonIds: [lesson]\n  - id: first\n    youtubeId: dQw4w9WgXcQ\n    title: First video\n    channel: First creator\n    durationMinutes: 7\n    order: 0\n    objectiveIds: [objective]\n    lessonIds: [lesson]\nlessons: [lesson]\n"),
+		"courses/ai-ml/modules/one/lesson.mdx":  lessonMDX("lesson"),
+	})
+
+	catalog, err := Load(fsy)
+	if err != nil {
+		t.Fatalf("load videos: %v", err)
+	}
+	module, ok := catalog.ModuleByCourse("ai-ml", "one")
+	if !ok || len(module.Videos) != 2 {
+		t.Fatalf("unexpected module videos: %#v, %v", module.Videos, ok)
+	}
+	first := module.Videos[0]
+	if first.CourseID != "ai-ml" || first.ModuleID != "one" || first.ID != "first" || first.YouTubeID != "dQw4w9WgXcQ" || first.Channel != "First creator" || first.DurationMinutes != 7 || first.Order != 0 || len(first.ObjectiveIDs) != 1 || len(first.LessonIDs) != 1 {
+		t.Fatalf("unexpected first video: %#v", first)
+	}
+}
+
+func TestLoadRejectsMalformedCuratedYouTubeVideos(t *testing.T) {
+	base := "objectives:\n  - id: objective\n    title: Objective\n    description: Objective description.\n    prerequisites: []\n%s\nlessons: [lesson]\n"
+	tests := map[string]struct {
+		videos   string
+		contains string
+	}{
+		"invalid youtube id": {"videos:\n  - id: video\n    youtubeId: '<iframe>'\n    title: Video\n    channel: Creator\n    durationMinutes: 1\n    order: 0\n    objectiveIds: [objective]\n", "invalid youtubeId"},
+		"blank channel":      {"videos:\n  - id: video\n    youtubeId: dQw4w9WgXcQ\n    title: Video\n    channel: '  '\n    durationMinutes: 1\n    order: 0\n    objectiveIds: [objective]\n", "empty channel"},
+		"missing duration":   {"videos:\n  - id: video\n    youtubeId: dQw4w9WgXcQ\n    title: Video\n    channel: Creator\n    order: 0\n    objectiveIds: [objective]\n", "missing required durationMinutes"},
+		"no objectives":      {"videos:\n  - id: video\n    youtubeId: dQw4w9WgXcQ\n    title: Video\n    channel: Creator\n    durationMinutes: 1\n    order: 0\n    objectiveIds: []\n", "has no objectiveIds"},
+		"unknown lesson":     {"videos:\n  - id: video\n    youtubeId: dQw4w9WgXcQ\n    title: Video\n    channel: Creator\n    durationMinutes: 1\n    order: 0\n    objectiveIds: [objective]\n    lessonIds: [missing]\n", "unknown lesson id \"missing\" in this module"},
+		"duplicate order":    {"videos:\n  - id: first\n    youtubeId: dQw4w9WgXcQ\n    title: First\n    channel: Creator\n    durationMinutes: 1\n    order: 0\n    objectiveIds: [objective]\n  - id: second\n    youtubeId: 9bZkp7q19f0\n    title: Second\n    channel: Creator\n    durationMinutes: 1\n    order: 0\n    objectiveIds: [objective]\n", "duplicate video order 0"},
+	}
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			expectLoadError(t, curriculumFS(map[string]string{
+				"courses/ai-ml/modules/one/module.yaml": fmt.Sprintf(base, test.videos),
+				"courses/ai-ml/modules/one/lesson.mdx":  lessonMDX("lesson"),
+			}), test.contains)
+		})
+	}
 }
 
 func TestLoadRejectsDuplicateFrontmatterLessonIDs(t *testing.T) {

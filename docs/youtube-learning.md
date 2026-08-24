@@ -63,6 +63,7 @@ videos:
     title: Gradient Descent, Step-by-Step
     channel: StatQuest
     durationMinutes: 23
+    order: 0
     objectiveIds:
       - optimization.gradient-descent
     lessonIds:
@@ -80,6 +81,8 @@ The exact validated schema is an implementation concern and may evolve, but the 
 - one or more lesson associations when applicable.
 
 Do not treat YouTube titles, thumbnails, descriptions, or other remotely fetched metadata as application identity.
+
+Playlist order is an explicit non-negative `order` authored for each module video. Values are unique within the module, and the validated catalog sorts by that value. This keeps the learning sequence stable and independent of YAML incidental order or YouTube ranking.
 
 ### Objective associations
 

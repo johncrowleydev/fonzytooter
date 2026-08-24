@@ -1665,27 +1665,60 @@
       "VideoResource": {
         "additionalProperties": false,
         "properties": {
+          "channel": {
+            "type": "string"
+          },
+          "courseId": {
+            "type": "string"
+          },
+          "durationMinutes": {
+            "format": "int64",
+            "minimum": 1,
+            "type": "integer"
+          },
           "id": {
+            "type": "string"
+          },
+          "lessonIds": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "moduleId": {
             "type": "string"
           },
           "objectiveIds": {
             "items": {
               "type": "string"
             },
+            "minItems": 1,
             "type": "array"
+          },
+          "order": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
           },
           "title": {
             "type": "string"
           },
-          "url": {
+          "youtubeId": {
+            "pattern": "^[A-Za-z0-9_-]{11}$",
             "type": "string"
           }
         },
         "required": [
+          "courseId",
+          "moduleId",
           "id",
+          "youtubeId",
           "title",
-          "url",
-          "objectiveIds"
+          "channel",
+          "durationMinutes",
+          "order",
+          "objectiveIds",
+          "lessonIds"
         ],
         "type": "object"
       },

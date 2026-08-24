@@ -21,9 +21,26 @@ func TestSnapshotContainsPersistenceSensitiveAuthoredIDs(t *testing.T) {
 		"lesson ai-ml/module/lesson",
 		"module ai-ml/module",
 		"review-item ai-ml/module/review",
+		"video ai-ml/module/video",
 	}
 	if strings.Join(identities, "\n") != strings.Join(want, "\n") {
 		t.Fatalf("unexpected identity policy:\n%s", strings.Join(identities, "\n"))
+	}
+}
+
+func TestCompareAppliesExplicitVideoRename(t *testing.T) {
+	base := []Identity{identity(VideoKind, "course", "module", "old-video")}
+	head := []Identity{identity(VideoKind, "course", "module", "new-video")}
+	migrations := parse(t, `version: 1
+migrations:
+  - entity: video
+    from: course/module/old-video
+    to: course/module/new-video
+`)
+
+	result := Compare(base, head, migrations)
+	if len(result.BreakingChanges) != 0 || len(result.Additions) != 0 || len(result.AppliedMigrations) != 1 {
+		t.Fatalf("expected video rename to preserve identity, got %#v", result)
 	}
 }
 
@@ -225,7 +242,7 @@ func moduleFiles(lessonID, exerciseID, reviewID, testID string) fstest.MapFS {
 	return fstest.MapFS{
 		"sources.yaml":                                         &fstest.MapFile{Data: []byte("sources: {}\n")},
 		"courses/ai-ml/course.yaml":                            &fstest.MapFile{Data: []byte("id: ai-ml\ntitle: AI ML\ndescription: Course\norder: 0\n")},
-		"courses/ai-ml/modules/module/module.yaml":             &fstest.MapFile{Data: []byte("id: module\ntitle: Module\norder: 0\nobjectives:\n  - id: objective\n    title: Objective\n    description: Objective description\n    prerequisites: []\nvideos: []\nlessons:\n  - " + lessonID + "\n")},
+		"courses/ai-ml/modules/module/module.yaml":             &fstest.MapFile{Data: []byte("id: module\ntitle: Module\norder: 0\nobjectives:\n  - id: objective\n    title: Objective\n    description: Objective description\n    prerequisites: []\nvideos:\n  - id: video\n    youtubeId: dQw4w9WgXcQ\n    title: Video\n    channel: Creator\n    durationMinutes: 4\n    order: 0\n    objectiveIds: [objective]\n    lessonIds: [" + lessonID + "]\nlessons:\n  - " + lessonID + "\n")},
 		"courses/ai-ml/modules/module/lesson.mdx":              &fstest.MapFile{Data: []byte("---\nid: " + lessonID + "\ntitle: Lesson\nobjectiveIds:\n  - objective\nsourceIds: []\n---\n# Lesson\n")},
 		"courses/ai-ml/modules/module/exercises/exercise.yaml": &fstest.MapFile{Data: []byte("id: " + exerciseID + "\ntitle: Exercise\nlessonId: " + lessonID + "\norder: 0\nobjectiveIds:\n  - objective\nprompt: Prompt\nstarterCode: pass\ntests:\n  - id: " + testID + "\n    title: Test\n    visibility: visible\n    code: assert True\n")},
 		"courses/ai-ml/modules/module/reviews/review.yaml":     &fstest.MapFile{Data: []byte("id: " + reviewID + "\norder: 0\nobjectiveIds:\n  - objective\nsourceLessonId: " + lessonID + "\nprompt: Prompt\nanswer: Answer\n")},

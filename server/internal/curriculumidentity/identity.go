@@ -9,7 +9,8 @@ import (
 )
 
 // Kind identifies an authored curriculum entity whose ID is persisted in
-// learner state. The qualified identity includes all owning entities.
+// learner state or deliberately protected ahead of imminent persistence. The
+// qualified identity includes all owning entities.
 type Kind string
 
 const (
@@ -19,6 +20,7 @@ const (
 	ExerciseKind     Kind = "exercise"
 	ExerciseTestKind Kind = "exercise-test"
 	ReviewItemKind   Kind = "review-item"
+	VideoKind        Kind = "video"
 )
 
 var kindArity = map[Kind]int{
@@ -28,6 +30,7 @@ var kindArity = map[Kind]int{
 	ExerciseKind:     3,
 	ExerciseTestKind: 4,
 	ReviewItemKind:   3,
+	VideoKind:        3,
 }
 
 type Identity struct {
@@ -44,14 +47,18 @@ func (i Identity) key() string {
 }
 
 // Snapshot derives persistence-sensitive identity from a validated catalog.
-// It deliberately excludes authored entities that are not currently stored in
-// SQLite, such as worksheets and objectives.
+// It deliberately excludes authored entities with no persistence plan, such
+// as worksheets and objectives. Videos are protected before learner video
+// state begins storing their identity.
 func Snapshot(catalog *curriculum.Catalog) []Identity {
 	identities := make([]Identity, 0)
 	for _, course := range catalog.Courses() {
 		identities = append(identities, identity(CourseKind, course.ID))
 		for _, module := range course.Modules {
 			identities = append(identities, identity(ModuleKind, course.ID, module.ID))
+			for _, video := range module.Videos {
+				identities = append(identities, identity(VideoKind, course.ID, module.ID, video.ID))
+			}
 			for _, lesson := range module.Lessons {
 				identities = append(identities, identity(LessonKind, course.ID, module.ID, lesson.ID))
 			}

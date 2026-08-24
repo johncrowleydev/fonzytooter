@@ -12,7 +12,7 @@ import { Badge, Button, Card, PageIntro, SectionHeading } from '../../components
 import { useTutor } from '../tutor/TutorContext'
 import { downloadPdf, pdfDownloadErrorMessage } from '../worksheets/downloadPdf'
 import { hasWorkbook } from '../worksheets/workbookAvailability'
-import { externalHost, safeExternalUrl } from './externalLinks'
+import { safeExternalUrl } from './externalLinks'
 
 export function ModuleDetail() {
   const { courseId, moduleId } = useParams()
@@ -312,8 +312,9 @@ function ModuleContent({ course, module }: { course: CourseResource; module: Mod
           <SectionHeading title="Videos" />
           <div className="grid gap-2">
             {module.videos.map((video) => {
-              const url = safeExternalUrl(video.url)
-              const host = externalHost(video.url)
+              const url = safeExternalUrl(
+                `https://www.youtube.com/watch?v=${encodeURIComponent(video.youtubeId)}`,
+              )
               return (
                 <div
                   key={video.id}
@@ -322,7 +323,7 @@ function ModuleContent({ course, module }: { course: CourseResource; module: Mod
                   <Badge tone="violet">Video</Badge>
                   <span className="min-w-0 flex-1">
                     <strong className="block text-sm">{video.title}</strong>
-                    {host ? <small className="mt-1 block text-sm text-faint">{host}</small> : null}
+                    <small className="mt-1 block text-sm text-faint">{video.channel}</small>
                   </span>
                   {url ? (
                     <a

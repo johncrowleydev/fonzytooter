@@ -45,7 +45,7 @@ func TestLoadRejectsUnexpectedEntriesInAuthoredContentDirectories(t *testing.T) 
 
 func TestLoadRejectsDuplicateAuthoredReferences(t *testing.T) {
 	fsys := curriculumFS(map[string]string{
-		"courses/ai-ml/modules/one/module.yaml":               moduleYAML("one", 0, "objectives:\n  - id: first\n    title: First\n    description: First objective.\n    prerequisites: []\n  - id: second\n    title: Second\n    description: Second objective.\n    prerequisites:\n      - first\n      - first\nvideos:\n  - id: video\n    title: Video\n    url: https://example.com/video\n    objectiveIds:\n      - first\n      - first\nlessons:\n  - lesson\n"),
+		"courses/ai-ml/modules/one/module.yaml":               moduleYAML("one", 0, "objectives:\n  - id: first\n    title: First\n    description: First objective.\n    prerequisites: []\n  - id: second\n    title: Second\n    description: Second objective.\n    prerequisites:\n      - first\n      - first\nvideos:\n  - id: video\n    youtubeId: dQw4w9WgXcQ\n    title: Video\n    channel: Creator\n    durationMinutes: 5\n    order: 0\n    objectiveIds:\n      - first\n      - first\n    lessonIds:\n      - lesson\n      - lesson\nlessons:\n  - lesson\n"),
 		"courses/ai-ml/modules/one/lesson.mdx":                "---\nid: lesson\ntitle: Lesson\nobjectiveIds:\n  - first\n  - first\nsourceIds:\n  - source\n  - source\n---\n# Lesson\n",
 		"courses/ai-ml/modules/one/worksheets/worksheet.yaml": "id: worksheet\ntitle: Worksheet\nlessonId: lesson\norder: 0\nobjectiveIds:\n  - first\n  - first\ninstructions: Answer.\nproblems:\n  - id: problem\n    prompt: Answer.\n    objectiveIds:\n      - first\n      - first\n    expectedAnswer: Yes.\n    requiresWork: true\n    responseLines: 1\n    rubric:\n      - Correct.\n",
 		"courses/ai-ml/modules/one/exercises/exercise.yaml":   "id: exercise\ntitle: Exercise\nlessonId: lesson\norder: 0\nobjectiveIds:\n  - first\n  - first\nprompt: Implement it.\nstarterCode: pass\ntests:\n  - id: test\n    title: Test\n    visibility: visible\n    code: assert True\n",
@@ -60,6 +60,7 @@ func TestLoadRejectsDuplicateAuthoredReferences(t *testing.T) {
 	for _, expected := range []string{
 		`objective "second" field prerequisites contains duplicate value "first"`,
 		`video "video" field objectiveIds contains duplicate value "first"`,
+		`video "video" field lessonIds contains duplicate value "lesson"`,
 		`lesson "lesson" field objectiveIds contains duplicate value "first"`,
 		`lesson "lesson" field sourceIds contains duplicate value "source"`,
 		`worksheet "worksheet" field objectiveIds contains duplicate value "first"`,
