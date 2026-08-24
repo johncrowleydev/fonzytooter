@@ -5,6 +5,7 @@ import type { TutorMessage, TutorMode } from './types'
 import { Button } from '../../components/ui'
 import { useAuth } from '../authentication/AuthContext'
 import { SignInLink } from '../authentication/SignInLink'
+import { useGetTutorAccess } from '../../api/generated/endpoints'
 
 const FOCUSABLE_SELECTOR =
   'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
@@ -34,6 +35,11 @@ export function TutorOverlay() {
   const [isThinking, setIsThinking] = useState(false)
   const panelRef = useRef<HTMLElement>(null)
   const promptRef = useRef<HTMLTextAreaElement>(null)
+  const accessQuery = useGetTutorAccess({
+    query: { enabled: isOpen && auth.isAuthenticated, staleTime: 30_000 },
+  })
+  const access = accessQuery.data?.data
+  const tutorAllowed = auth.isAuthenticated && access?.status === 'allowed'
 
   useEffect(() => {
     if (!isOpen) return
@@ -103,7 +109,7 @@ export function TutorOverlay() {
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
 
-    if (!auth.isAuthenticated) return
+    if (!tutorAllowed) return
 
     const message = input.trim()
     if (!message || isThinking) return
@@ -176,7 +182,7 @@ export function TutorOverlay() {
           </button>
         </header>
 
-        {auth.isAuthenticated ? (
+        {tutorAllowed ? (
           <div className="flex flex-wrap gap-1.5 px-5 pb-3.5 pt-4 max-sm:px-4">
             {(
               [
@@ -212,6 +218,26 @@ export function TutorOverlay() {
                 Sign in and return here
               </SignInLink>
             </div>
+          ) : accessQuery.isPending ? (
+            <TutorAccessState
+              title="Checking tutor access"
+              detail="Reading your current allowance…"
+            />
+          ) : accessQuery.isError || access?.status === 'unavailable' ? (
+            <TutorAccessState
+              title="Tutor is temporarily unavailable"
+              detail="Tutor access could not be verified safely. Try again later."
+            />
+          ) : access?.status === 'not_entitled' ? (
+            <TutorAccessState
+              title="Tutor is unavailable for this account"
+              detail="Your learner account does not currently include metered tutor access."
+            />
+          ) : access?.status === 'limit_exhausted' ? (
+            <TutorAccessState
+              title="Tutor usage limit reached"
+              detail="Your configured tutor allowance for this month has been used."
+            />
           ) : messages.length === 0 ? (
             <div className="p-10 text-center">
               <span className="block text-2xl text-accent-gold">✦</span>
@@ -255,7 +281,7 @@ export function TutorOverlay() {
           ))}
         </div>
 
-        {auth.isAuthenticated ? (
+        {tutorAllowed ? (
           <form onSubmit={handleSubmit} className="border-t border-line px-5 pb-5 pt-4 max-sm:px-4">
             <textarea
               ref={promptRef}
@@ -276,6 +302,16 @@ export function TutorOverlay() {
           </form>
         ) : null}
       </section>
+    </div>
+  )
+}
+
+function TutorAccessState({ title, detail }: { title: string; detail: string }) {
+  return (
+    <div className="grid min-h-full place-items-center content-center p-8 text-center">
+      <span className="text-2xl text-accent-gold">✦</span>
+      <h3 className="mt-4 text-xl tracking-tight">{title}</h3>
+      <p className="mt-3 max-w-sm text-sm leading-relaxed text-muted">{detail}</p>
     </div>
   )
 }

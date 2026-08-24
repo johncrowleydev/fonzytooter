@@ -26,10 +26,10 @@ func TestOpenCreatesParentAndMigratesFreshDatabase(t *testing.T) {
 	}
 
 	var migrationCount int
-	if err := db.QueryRow("SELECT COUNT(*) FROM goose_db_version WHERE version_id BETWEEN 1 AND 10 AND is_applied = 1").Scan(&migrationCount); err != nil {
+	if err := db.QueryRow("SELECT COUNT(*) FROM goose_db_version WHERE version_id BETWEEN 1 AND 11 AND is_applied = 1").Scan(&migrationCount); err != nil {
 		t.Fatalf("query migration state: %v", err)
 	}
-	if migrationCount != 10 {
+	if migrationCount != 11 {
 		t.Fatalf("expected all migrations, got %d rows", migrationCount)
 	}
 	for _, table := range []string{
@@ -47,6 +47,7 @@ func TestOpenCreatesParentAndMigratesFreshDatabase(t *testing.T) {
 		"tutor_conversation_memory",
 		"users",
 		"auth_sessions",
+		"tutor_usage_windows",
 	} {
 		var tableCount int
 		if err := db.QueryRow("SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = ?", table).Scan(&tableCount); err != nil {
@@ -136,10 +137,10 @@ func TestOpenMigratesIdempotently(t *testing.T) {
 	t.Cleanup(func() { _ = second.Close() })
 
 	var migrationCount int
-	if err := second.QueryRow("SELECT COUNT(*) FROM goose_db_version WHERE version_id BETWEEN 1 AND 10 AND is_applied = 1").Scan(&migrationCount); err != nil {
+	if err := second.QueryRow("SELECT COUNT(*) FROM goose_db_version WHERE version_id BETWEEN 1 AND 11 AND is_applied = 1").Scan(&migrationCount); err != nil {
 		t.Fatalf("query migration state: %v", err)
 	}
-	if migrationCount != 10 {
+	if migrationCount != 11 {
 		t.Fatalf("expected all migrations after reopening, got %d", migrationCount)
 	}
 }
@@ -153,7 +154,7 @@ func TestUserScopedMigrationPreservesExistingLearnerState(t *testing.T) {
 		t.Fatalf("read embedded migrations: %v", err)
 	}
 	for _, entry := range entries {
-		if entry.IsDir() || strings.HasPrefix(entry.Name(), "00010_") {
+		if entry.IsDir() || entry.Name() >= "00010_" {
 			continue
 		}
 		data, err := fs.ReadFile(embeddedMigrations, "migrations/"+entry.Name())
@@ -227,7 +228,7 @@ func TestOpenNormalizesLegacyHistoryTimestamps(t *testing.T) {
 		t.Fatalf("read embedded migrations: %v", err)
 	}
 	for _, entry := range entries {
-		if entry.IsDir() || strings.HasPrefix(entry.Name(), "00008_") || strings.HasPrefix(entry.Name(), "00009_") || strings.HasPrefix(entry.Name(), "00010_") {
+		if entry.IsDir() || entry.Name() >= "00008_" {
 			continue
 		}
 		data, err := fs.ReadFile(embeddedMigrations, "migrations/"+entry.Name())

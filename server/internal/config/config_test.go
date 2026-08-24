@@ -90,3 +90,25 @@ func TestFromEnvConfiguresAuthenticationExplicitly(t *testing.T) {
 		t.Fatalf("unexpected authentication settings: %#v", cfg.Authentication)
 	}
 }
+
+func TestFromEnvDefaultsTutorAccessToDenied(t *testing.T) {
+	t.Setenv("FONZYTOOTER_TUTOR_ENTITLED", "")
+	t.Setenv("FONZYTOOTER_TUTOR_MONTHLY_TURN_LIMIT", "")
+
+	cfg := FromEnv()
+
+	if cfg.TutorAccess.Entitled || cfg.TutorAccess.MonthlyTurnLimit != 0 {
+		t.Fatalf("unexpected default tutor access: %#v", cfg.TutorAccess)
+	}
+}
+
+func TestFromEnvConfiguresTutorTurnAllowance(t *testing.T) {
+	t.Setenv("FONZYTOOTER_TUTOR_ENTITLED", "true")
+	t.Setenv("FONZYTOOTER_TUTOR_MONTHLY_TURN_LIMIT", "25")
+
+	cfg := FromEnv()
+
+	if !cfg.TutorAccess.Entitled || cfg.TutorAccess.MonthlyTurnLimit != 25 {
+		t.Fatalf("unexpected tutor access: %#v", cfg.TutorAccess)
+	}
+}

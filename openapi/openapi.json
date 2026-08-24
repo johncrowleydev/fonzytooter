@@ -1561,6 +1561,56 @@
         ],
         "type": "object"
       },
+      "TutorAccessResource": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/TutorAccessResource.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "monthlyTurnLimit": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "remainingTurns": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "allowed",
+              "not_entitled",
+              "limit_exhausted",
+              "unavailable"
+            ],
+            "type": "string"
+          },
+          "usedTurns": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "windowEndsAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "monthlyTurnLimit",
+          "usedTurns",
+          "remainingTurns",
+          "windowEndsAt"
+        ],
+        "type": "object"
+      },
       "Usage": {
         "additionalProperties": false,
         "properties": {
@@ -3639,6 +3689,62 @@
         ]
       }
     },
+    "/api/tutor-access": {
+      "get": {
+        "operationId": "getTutorAccess",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TutorAccessResource"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "summary": "Get the current learner's tutor access",
+        "tags": [
+          "tutor-access"
+        ]
+      }
+    },
     "/api/tutor/turns": {
       "post": {
         "operationId": "createTutorTurn",
@@ -3687,6 +3793,16 @@
             },
             "description": "Unauthorized"
           },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
           "422": {
             "content": {
               "application/problem+json": {
@@ -3696,6 +3812,16 @@
               }
             },
             "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Too Many Requests"
           },
           "500": {
             "content": {
@@ -3716,6 +3842,16 @@
               }
             },
             "description": "Bad Gateway"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Service Unavailable"
           }
         },
         "security": [

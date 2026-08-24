@@ -11,7 +11,13 @@ type Config struct {
 	DatabasePath   string
 	CurriculumPath string
 	Authentication AuthenticationConfig
+	TutorAccess    TutorAccessConfig
 	OpenRouter     OpenRouterConfig
+}
+
+type TutorAccessConfig struct {
+	Entitled         bool
+	MonthlyTurnLimit int
 }
 
 type AuthenticationConfig struct {
@@ -45,6 +51,10 @@ func FromEnv() Config {
 			SecureCookie: boolOrDefault("FONZYTOOTER_AUTH_SECURE_COOKIE", true),
 			SessionTTL:   durationOrDefault("FONZYTOOTER_AUTH_SESSION_TTL", 24*time.Hour),
 		},
+		TutorAccess: TutorAccessConfig{
+			Entitled:         boolOrDefault("FONZYTOOTER_TUTOR_ENTITLED", false),
+			MonthlyTurnLimit: intOrDefault("FONZYTOOTER_TUTOR_MONTHLY_TURN_LIMIT", 0),
+		},
 		OpenRouter: OpenRouterConfig{
 			APIKey:  os.Getenv("OPENROUTER_API_KEY"),
 			Model:   os.Getenv("FONZYTOOTER_TUTOR_MODEL"),
@@ -52,6 +62,18 @@ func FromEnv() Config {
 			Timeout: durationOrDefault("OPENROUTER_HTTP_TIMEOUT", 90*time.Second),
 		},
 	}
+}
+
+func intOrDefault(name string, fallback int) int {
+	value := os.Getenv(name)
+	if value == "" {
+		return fallback
+	}
+	parsed, err := strconv.Atoi(value)
+	if err != nil || parsed < 0 {
+		return fallback
+	}
+	return parsed
 }
 
 func boolOrDefault(name string, fallback bool) bool {

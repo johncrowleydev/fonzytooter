@@ -456,6 +456,7 @@ func newRuntimeForTest(t *testing.T, provider Provider, tools []Tool, maxRounds 
 			Reasoning:            ReasoningLow,
 		}},
 		MaxModelRounds: maxRounds,
+		CostGate:       testCostGate(t, CostGateConfig{Entitled: true, MonthlyTurnLimit: 100}),
 	})
 	if err != nil {
 		t.Fatalf("create runtime: %v", err)

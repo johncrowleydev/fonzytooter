@@ -37,6 +37,7 @@ import {
   ReviewCardResource,
   ReviewItemResource,
   SessionResource,
+  TutorAccessResource,
   WorksheetResource,
 } from './schemas'
 import type {
@@ -4488,6 +4489,166 @@ export function useGetHealth<
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
   const queryOptions = getGetHealthQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+export type getTutorAccessResponse200 = {
+  data: TutorAccessResource
+  status: 200
+}
+
+export type getTutorAccessResponse401 = {
+  data: ErrorModel
+  status: 401
+}
+
+export type getTutorAccessResponse500 = {
+  data: ErrorModel
+  status: 500
+}
+
+export type getTutorAccessResponse503 = {
+  data: ErrorModel
+  status: 503
+}
+
+export type getTutorAccessResponseSuccess = getTutorAccessResponse200 & {
+  headers: Record<string, string>
+}
+export type getTutorAccessResponseError = (
+  getTutorAccessResponse401 | getTutorAccessResponse500 | getTutorAccessResponse503
+) & {
+  headers: Record<string, string>
+}
+
+export const getGetTutorAccessUrl = () => {
+  return `/api/tutor-access`
+}
+
+/**
+ * @summary Get the current learner's tutor access
+ */
+export const getTutorAccess = async (
+  options?: RequestInit,
+): Promise<getTutorAccessResponseSuccess> => {
+  const res = await fetch(getGetTutorAccessUrl(), {
+    ...options,
+    method: 'GET',
+  })
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text()
+  if (!res.ok) {
+    const err: globalThis.Error & { info?: getTutorAccessResponseError['data']; status?: number } =
+      new globalThis.Error()
+    const data: getTutorAccessResponseError['data'] = body ? JSON.parse(body) : {}
+    err.info = data
+    err.status = res.status
+    throw err
+  }
+  const data = TutorAccessResource.parse(body ? JSON.parse(body) : {})
+  return {
+    data,
+    status: res.status,
+    headers: Object.fromEntries(
+      [...res.headers.entries()].filter(([name]) => name !== 'set-cookie'),
+    ),
+  } as getTutorAccessResponseSuccess
+}
+
+export const getGetTutorAccessQueryKey = () => {
+  return [`/api/tutor-access`] as const
+}
+
+export const getGetTutorAccessQueryOptions = <
+  TData = Awaited<ReturnType<typeof getTutorAccess>>,
+  TError = globalThis.Error & { info?: ErrorModel; status?: number },
+>(options?: {
+  query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getTutorAccess>>, TError, TData>>
+  fetch?: RequestInit
+}) => {
+  const { query: queryOptions, fetch: fetchOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getGetTutorAccessQueryKey()
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getTutorAccess>>> = ({ signal }) =>
+    getTutorAccess({ signal, ...fetchOptions })
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getTutorAccess>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetTutorAccessQueryResult = NonNullable<Awaited<ReturnType<typeof getTutorAccess>>>
+export type GetTutorAccessQueryError = globalThis.Error & { info?: ErrorModel; status?: number }
+
+export function useGetTutorAccess<
+  TData = Awaited<ReturnType<typeof getTutorAccess>>,
+  TError = globalThis.Error & { info?: ErrorModel; status?: number },
+>(
+  options: {
+    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof getTutorAccess>>, TError, TData>> &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getTutorAccess>>,
+          TError,
+          Awaited<ReturnType<typeof getTutorAccess>>
+        >,
+        'initialData'
+      >
+    fetch?: RequestInit
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetTutorAccess<
+  TData = Awaited<ReturnType<typeof getTutorAccess>>,
+  TError = globalThis.Error & { info?: ErrorModel; status?: number },
+>(
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getTutorAccess>>, TError, TData>> &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getTutorAccess>>,
+          TError,
+          Awaited<ReturnType<typeof getTutorAccess>>
+        >,
+        'initialData'
+      >
+    fetch?: RequestInit
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetTutorAccess<
+  TData = Awaited<ReturnType<typeof getTutorAccess>>,
+  TError = globalThis.Error & { info?: ErrorModel; status?: number },
+>(
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getTutorAccess>>, TError, TData>>
+    fetch?: RequestInit
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Get the current learner's tutor access
+ */
+
+export function useGetTutorAccess<
+  TData = Awaited<ReturnType<typeof getTutorAccess>>,
+  TError = globalThis.Error & { info?: ErrorModel; status?: number },
+>(
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getTutorAccess>>, TError, TData>>
+    fetch?: RequestInit
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getGetTutorAccessQueryOptions(options)
 
   const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
     queryKey: DataTag<QueryKey, TData, TError>

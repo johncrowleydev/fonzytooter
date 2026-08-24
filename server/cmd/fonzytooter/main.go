@@ -108,9 +108,16 @@ func prepareServer(ctx context.Context, cfg config.Config, openDatabase database
 		_ = db.Close()
 		return nil, nil, err
 	}
+	tutorCostGate, err := tutor.NewCostGate(db, tutor.CostGateConfig{
+		Entitled: cfg.TutorAccess.Entitled, MonthlyTurnLimit: cfg.TutorAccess.MonthlyTurnLimit,
+	})
+	if err != nil {
+		_ = db.Close()
+		return nil, nil, fmt.Errorf("configure tutor cost gate: %w", err)
+	}
 	learnerService := learner.NewService(db, catalog)
 	reviewService := review.NewService(db, catalog, review.SystemClock{})
-	tutorService, err := configuredTutorService(tutorProvider, conversationStore, catalog, learnerService, reviewService)
+	tutorService, err := configuredTutorService(tutorProvider, conversationStore, catalog, learnerService, reviewService, tutorCostGate)
 	if err != nil {
 		_ = db.Close()
 		return nil, nil, err
@@ -119,7 +126,7 @@ func prepareServer(ctx context.Context, cfg config.Config, openDatabase database
 	return server, db, nil
 }
 
-func configuredTutorService(provider tutor.Provider, conversations *tutor.ConversationStore, catalog *curriculum.Catalog, learnerService *learner.Service, reviewService *review.Service) (*tutor.Service, error) {
+func configuredTutorService(provider tutor.Provider, conversations *tutor.ConversationStore, catalog *curriculum.Catalog, learnerService *learner.Service, reviewService *review.Service, costGate *tutor.CostGate) (*tutor.Service, error) {
 	builder, err := tutorlearning.NewContextBuilder(catalog, learnerService)
 	if err != nil {
 		return nil, fmt.Errorf("configure tutor context: %w", err)
@@ -143,7 +150,7 @@ func configuredTutorService(provider tutor.Provider, conversations *tutor.Conver
 	}
 	service, err := tutor.NewRuntimeService(tutor.RuntimeConfig{
 		Provider: provider, Store: conversations, Tools: registry, ContextManager: manager,
-		ContextBuilder: builder, MaxModelRounds: tutor.DefaultMaxModelRounds,
+		ContextBuilder: builder, MaxModelRounds: tutor.DefaultMaxModelRounds, CostGate: costGate,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("configure tutor runtime: %w", err)

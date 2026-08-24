@@ -193,9 +193,13 @@ func TestRuntimeExecutesMultiToolSequenceAndEmitsAuthoritativeCitations(t *testi
 	if err != nil {
 		t.Fatalf("context manager: %v", err)
 	}
+	costGate, err := tutor.NewCostGate(environment.db, tutor.CostGateConfig{Entitled: true, MonthlyTurnLimit: 10})
+	if err != nil {
+		t.Fatalf("cost gate: %v", err)
+	}
 	service, err := tutor.NewRuntimeService(tutor.RuntimeConfig{
 		Provider: provider, Store: store, Tools: registry, ContextManager: manager,
-		ContextBuilder: builder, MaxModelRounds: 4,
+		ContextBuilder: builder, MaxModelRounds: 4, CostGate: costGate,
 	})
 	if err != nil {
 		t.Fatalf("runtime: %v", err)

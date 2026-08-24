@@ -46,7 +46,7 @@ func TestHealthReturnsTypedRepresentation(t *testing.T) {
 }
 
 func TestTutorTurnRouteUsesResourcePathAndStreamsEvents(t *testing.T) {
-	app := newAuthenticatedTestAPI(t, tutor.NewService(tutor.NewUnavailableProvider()), curriculum.NewEmptyCatalog(), nil, nil)
+	app := newAuthenticatedTestAPI(t, tutor.NewService(tutor.NewUnavailableProvider(), httpCostGate(t, true, 10)), curriculum.NewEmptyCatalog(), nil, nil)
 	req := httptest.NewRequest(http.MethodPost, "/api/tutor/turns", strings.NewReader(`{"message":"hello"}`))
 	req.Header.Set("Content-Type", "application/json")
 	response := httptest.NewRecorder()
@@ -126,7 +126,7 @@ func TestTutorTurnMalformedJSONUsesBadRequestProblem(t *testing.T) {
 }
 
 func TestTutorTurnProviderFailureUsesBadGatewayProblem(t *testing.T) {
-	app := newAuthenticatedTestAPI(t, tutor.NewService(failingProvider{}), curriculum.NewEmptyCatalog(), nil, nil)
+	app := newAuthenticatedTestAPI(t, tutor.NewService(failingProvider{}, httpCostGate(t, true, 10)), curriculum.NewEmptyCatalog(), nil, nil)
 	req := httptest.NewRequest(http.MethodPost, "/api/tutor/turns", strings.NewReader(`{"message":"hello"}`))
 	req.Header.Set("Content-Type", "application/json")
 	response := httptest.NewRecorder()
