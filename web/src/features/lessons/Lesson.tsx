@@ -200,7 +200,7 @@ export function Lesson() {
           <SelectionPopover onAskTutor={openSelectionTutor} onDismiss={() => setSelectedText('')} />
         ) : null}
 
-        <div className="mx-auto mt-12 max-w-3xl text-base leading-loose text-body max-sm:mt-9 max-sm:text-sm max-sm:leading-8">
+        <div className="mt-12 w-full text-base leading-loose text-body max-sm:mt-9 max-sm:text-sm max-sm:leading-8">
           <LessonMdx source={lesson.content} />
           <LessonSources sources={lesson.sources} />
           <LessonWorksheets
@@ -229,7 +229,7 @@ export function Lesson() {
       </article>
 
       <nav
-        className="mx-auto flex w-full max-w-3xl items-center justify-between gap-3 border-t border-line pt-5 max-sm:gap-2"
+        className="flex w-full items-center justify-between gap-3 border-t border-line pt-5 max-sm:gap-2"
         aria-label="Lesson navigation"
       >
         {previousLesson ? (

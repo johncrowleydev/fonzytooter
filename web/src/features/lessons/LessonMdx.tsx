@@ -75,7 +75,7 @@ export function LessonMdx({ source }: LessonMdxProps) {
 
   return (
     <LessonMdxErrorBoundary key={source}>
-      <div className="max-w-3xl text-base leading-7 text-body">
+      <div className="w-full text-base leading-7 text-body">
         <currentState.content components={lessonMdxComponents} />
       </div>
     </LessonMdxErrorBoundary>
