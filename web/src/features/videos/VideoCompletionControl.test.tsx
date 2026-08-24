@@ -17,6 +17,7 @@ vi.mock('../../api/generated/endpoints', () => ({
     videoId,
   ],
   getListActivitiesQueryKey: () => ['activities'],
+  getListVideoRecommendationsQueryKey: () => ['video-recommendations'],
   useGetVideoProgress: (...args: unknown[]) => mocks.progress(...args),
   usePutVideoProgress: () => ({ isError: false, isPending: false, mutate: mocks.mutate }),
 }))

@@ -39,6 +39,7 @@ import {
   SessionResource,
   TutorAccessResource,
   VideoProgressResource,
+  VideoRecommendationList,
   WorksheetResource,
 } from './schemas'
 import type {
@@ -4704,6 +4705,203 @@ export function useListReviewCards<
   queryClient?: QueryClient,
 ): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
   const queryOptions = getListReviewCardsQueryOptions(courseId, params, options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+export type listVideoRecommendationsResponse200 = {
+  data: VideoRecommendationList
+  status: 200
+}
+
+export type listVideoRecommendationsResponse401 = {
+  data: ErrorModel
+  status: 401
+}
+
+export type listVideoRecommendationsResponse404 = {
+  data: ErrorModel
+  status: 404
+}
+
+export type listVideoRecommendationsResponse422 = {
+  data: ErrorModel
+  status: 422
+}
+
+export type listVideoRecommendationsResponse500 = {
+  data: ErrorModel
+  status: 500
+}
+
+export type listVideoRecommendationsResponseSuccess = listVideoRecommendationsResponse200 & {
+  headers: Record<string, string>
+}
+export type listVideoRecommendationsResponseError = (
+  | listVideoRecommendationsResponse401
+  | listVideoRecommendationsResponse404
+  | listVideoRecommendationsResponse422
+  | listVideoRecommendationsResponse500
+) & {
+  headers: Record<string, string>
+}
+
+export const getListVideoRecommendationsUrl = (courseId: string) => {
+  return `/api/courses/${courseId}/video-recommendations`
+}
+
+/**
+ * @summary List learner video recommendations
+ */
+export const listVideoRecommendations = async (
+  courseId: string,
+  options?: RequestInit,
+): Promise<listVideoRecommendationsResponseSuccess> => {
+  const res = await fetch(getListVideoRecommendationsUrl(courseId), {
+    ...options,
+    method: 'GET',
+  })
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text()
+  if (!res.ok) {
+    const err: globalThis.Error & {
+      info?: listVideoRecommendationsResponseError['data']
+      status?: number
+    } = new globalThis.Error()
+    const data: listVideoRecommendationsResponseError['data'] = body ? JSON.parse(body) : {}
+    err.info = data
+    err.status = res.status
+    throw err
+  }
+  const data = VideoRecommendationList.parse(body ? JSON.parse(body) : {})
+  return {
+    data,
+    status: res.status,
+    headers: Object.fromEntries(
+      [...res.headers.entries()].filter(([name]) => name !== 'set-cookie'),
+    ),
+  } as listVideoRecommendationsResponseSuccess
+}
+
+export const getListVideoRecommendationsQueryKey = (courseId: string) => {
+  return [`/api/courses/${courseId}/video-recommendations`] as const
+}
+
+export const getListVideoRecommendationsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listVideoRecommendations>>,
+  TError = globalThis.Error & { info?: ErrorModel; status?: number },
+>(
+  courseId: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof listVideoRecommendations>>, TError, TData>
+    >
+    fetch?: RequestInit
+  },
+) => {
+  const { query: queryOptions, fetch: fetchOptions } = options ?? {}
+
+  const queryKey = queryOptions?.queryKey ?? getListVideoRecommendationsQueryKey(courseId)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listVideoRecommendations>>> = ({
+    signal,
+  }) => listVideoRecommendations(courseId, { signal, ...fetchOptions })
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: courseId !== null && courseId !== undefined,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof listVideoRecommendations>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+}
+
+export type ListVideoRecommendationsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listVideoRecommendations>>
+>
+export type ListVideoRecommendationsQueryError = globalThis.Error & {
+  info?: ErrorModel
+  status?: number
+}
+
+export function useListVideoRecommendations<
+  TData = Awaited<ReturnType<typeof listVideoRecommendations>>,
+  TError = globalThis.Error & { info?: ErrorModel; status?: number },
+>(
+  courseId: string,
+  options: {
+    query: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof listVideoRecommendations>>, TError, TData>
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listVideoRecommendations>>,
+          TError,
+          Awaited<ReturnType<typeof listVideoRecommendations>>
+        >,
+        'initialData'
+      >
+    fetch?: RequestInit
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListVideoRecommendations<
+  TData = Awaited<ReturnType<typeof listVideoRecommendations>>,
+  TError = globalThis.Error & { info?: ErrorModel; status?: number },
+>(
+  courseId: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof listVideoRecommendations>>, TError, TData>
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof listVideoRecommendations>>,
+          TError,
+          Awaited<ReturnType<typeof listVideoRecommendations>>
+        >,
+        'initialData'
+      >
+    fetch?: RequestInit
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useListVideoRecommendations<
+  TData = Awaited<ReturnType<typeof listVideoRecommendations>>,
+  TError = globalThis.Error & { info?: ErrorModel; status?: number },
+>(
+  courseId: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof listVideoRecommendations>>, TError, TData>
+    >
+    fetch?: RequestInit
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary List learner video recommendations
+ */
+
+export function useListVideoRecommendations<
+  TData = Awaited<ReturnType<typeof listVideoRecommendations>>,
+  TError = globalThis.Error & { info?: ErrorModel; status?: number },
+>(
+  courseId: string,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<Awaited<ReturnType<typeof listVideoRecommendations>>, TError, TData>
+    >
+    fetch?: RequestInit
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getListVideoRecommendationsQueryOptions(courseId, options)
 
   const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
     queryKey: DataTag<QueryKey, TData, TError>

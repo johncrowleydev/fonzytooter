@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
   lessonProgressOptions: vi.fn(),
   courseProgressOptions: vi.fn(),
   activityOptions: vi.fn(),
+  recommendationOptions: vi.fn(),
   courseQuery: {
     data: {
       data: {
@@ -77,6 +78,10 @@ vi.mock('../../api/generated/endpoints', () => ({
     mocks.activityOptions(args.at(-1))
     return { isPending: false }
   },
+  useListVideoRecommendations: (...args: unknown[]) => {
+    mocks.recommendationOptions(args.at(-1))
+    return { isPending: false }
+  },
 }))
 
 function renderRoute(path: string, element: React.ReactNode) {
@@ -122,6 +127,9 @@ describe('anonymous curriculum boundary', () => {
       expect.objectContaining({ query: expect.objectContaining({ enabled: false }) }),
     )
     expect(mocks.activityOptions).toHaveBeenCalledWith(
+      expect.objectContaining({ query: expect.objectContaining({ enabled: false }) }),
+    )
+    expect(mocks.recommendationOptions).toHaveBeenCalledWith(
       expect.objectContaining({ query: expect.objectContaining({ enabled: false }) }),
     )
     await waitFor(() => expect(screen.getByRole('link', { name: 'Sign in' })).toBeDefined())

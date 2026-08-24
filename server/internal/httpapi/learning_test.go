@@ -108,6 +108,23 @@ func TestLearningAPIVideoCompletionIsIdempotentExposureOnly(t *testing.T) {
 	}
 }
 
+func TestLearningAPIVideoRecommendationsUseCuratedResources(t *testing.T) {
+	app := testLearningAPI(t)
+	response := serve(t, app.Handler, http.MethodGet, "/api/courses/ai-ml/video-recommendations")
+	if response.Code != http.StatusOK {
+		t.Fatalf("recommendations = %d: %s", response.Code, response.Body.String())
+	}
+	var recommendations []VideoRecommendationResource
+	decodeJSON(t, response, &recommendations)
+	if len(recommendations) != 1 {
+		t.Fatalf("expected one curated recommendation, got %#v", recommendations)
+	}
+	got := recommendations[0]
+	if got.VideoID != "python-video" || got.YouTubeID != "dQw4w9WgXcQ" || got.ReasonKind != learner.VideoRecommendationCurrentLesson || got.Watched {
+		t.Fatalf("unexpected recommendation: %#v", got)
+	}
+}
+
 func TestLearningAPIMissingIdentityReturnsNotFound(t *testing.T) {
 	app := testLearningAPI(t)
 	paths := []string{
@@ -116,6 +133,7 @@ func TestLearningAPIMissingIdentityReturnsNotFound(t *testing.T) {
 		"/api/courses/ai-ml/modules/python/lessons/missing/progress",
 		"/api/courses/ai-ml/modules/python/videos/missing/progress",
 		"/api/courses/missing/progress",
+		"/api/courses/missing/video-recommendations",
 		"/api/activities?courseId=missing",
 	}
 	for _, path := range paths {
@@ -155,6 +173,10 @@ func TestLearningOpenAPIContract(t *testing.T) {
 	videoPath := app.Spec.Paths["/api/courses/{courseId}/modules/{moduleId}/videos/{videoId}/progress"]
 	if videoPath == nil || videoPath.Get == nil || videoPath.Get.OperationID != "getVideoProgress" || videoPath.Put == nil || videoPath.Put.OperationID != "putVideoProgress" {
 		t.Fatalf("missing video progress resource operations: %#v", videoPath)
+	}
+	recommendationPath := app.Spec.Paths["/api/courses/{courseId}/video-recommendations"]
+	if recommendationPath == nil || recommendationPath.Get == nil || recommendationPath.Get.OperationID != "listVideoRecommendations" {
+		t.Fatalf("missing video recommendation collection: %#v", recommendationPath)
 	}
 }
 
