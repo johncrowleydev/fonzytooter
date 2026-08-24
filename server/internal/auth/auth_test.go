@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
@@ -147,6 +148,59 @@ func TestCredentialRotationRevokesExistingSessions(t *testing.T) {
 	}
 	if _, _, ok, err := service.Authenticate(ctx, token); err != nil || ok {
 		t.Fatalf("rotated credentials left an old session valid: ok=%v err=%v", ok, err)
+	}
+}
+
+func TestRemovingBootstrapCredentialsDisablesAuthentication(t *testing.T) {
+	service, db := testService(t)
+	ctx := context.Background()
+	const password = "correct horse battery staple"
+	if err := service.ProvisionBootstrap(ctx, BootstrapConfig{
+		Username: "owner", Password: password, DisplayName: "Fonzy Owner",
+	}); err != nil {
+		t.Fatalf("provision bootstrap credentials: %v", err)
+	}
+	user, token, err := service.SignIn(ctx, "owner", password)
+	if err != nil {
+		t.Fatalf("sign in: %v", err)
+	}
+	if _, _, ok, err := service.Authenticate(ctx, token); err != nil || !ok {
+		t.Fatalf("issued session did not authenticate: ok=%v err=%v", ok, err)
+	}
+
+	if err := service.ProvisionBootstrap(ctx, BootstrapConfig{}); err != nil {
+		t.Fatalf("remove bootstrap credentials: %v", err)
+	}
+	if _, _, err := service.SignIn(ctx, "owner", password); !errors.Is(err, ErrInvalidCredentials) {
+		t.Fatalf("removed credentials still authenticated: %v", err)
+	}
+	if _, _, ok, err := service.Authenticate(ctx, token); err != nil || ok {
+		t.Fatalf("removed credentials left old session valid: ok=%v err=%v", ok, err)
+	}
+
+	var storedID UserID
+	var username sql.NullString
+	var passwordHash []byte
+	var displayName string
+	if err := db.QueryRow(`
+		SELECT id, username, password_hash, display_name
+		FROM users
+		WHERE id = ?
+	`, BootstrapUserID).Scan(&storedID, &username, &passwordHash, &displayName); err != nil {
+		t.Fatalf("load deprovisioned bootstrap user: %v", err)
+	}
+	if storedID != user.ID || storedID != BootstrapUserID {
+		t.Fatalf("bootstrap user ID changed: got %q want %q", storedID, user.ID)
+	}
+	if username.Valid || passwordHash != nil {
+		t.Fatalf("bootstrap credentials were not cleared: username=%#v hash=%x", username, passwordHash)
+	}
+	if displayName != "Fonzy Owner" {
+		t.Fatalf("bootstrap display name changed: got %q", displayName)
+	}
+
+	if err := service.ProvisionBootstrap(ctx, BootstrapConfig{}); err != nil {
+		t.Fatalf("repeat bootstrap deprovisioning: %v", err)
 	}
 }
 

@@ -85,13 +85,31 @@ func NewService(db *sql.DB, config SessionConfig) *Service {
 }
 
 // ProvisionBootstrap configures the personal deployment's durable owner. An
-// empty configuration intentionally leaves authentication unavailable while
-// preserving public curriculum access.
+// empty configuration disables authentication while preserving the owner and
+// public curriculum access.
 func (s *Service) ProvisionBootstrap(ctx context.Context, config BootstrapConfig) error {
 	username := normalizeUsername(config.Username)
 	password := config.Password
 	displayName := strings.TrimSpace(config.DisplayName)
 	if username == "" && password == "" {
+		tx, err := s.db.BeginTx(ctx, nil)
+		if err != nil {
+			return fmt.Errorf("begin bootstrap deprovisioning: %w", err)
+		}
+		defer func() { _ = tx.Rollback() }()
+		if _, err := tx.ExecContext(ctx, `
+			UPDATE users
+			SET username = NULL, password_hash = NULL, updated_at = ?
+			WHERE id = ?
+		`, formatTime(s.now()), BootstrapUserID); err != nil {
+			return fmt.Errorf("clear bootstrap credentials: %w", err)
+		}
+		if _, err := tx.ExecContext(ctx, `DELETE FROM auth_sessions WHERE user_id = ?`, BootstrapUserID); err != nil {
+			return fmt.Errorf("revoke bootstrap sessions: %w", err)
+		}
+		if err := tx.Commit(); err != nil {
+			return fmt.Errorf("commit bootstrap deprovisioning: %w", err)
+		}
 		return nil
 	}
 	if username == "" || password == "" {

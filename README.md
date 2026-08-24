@@ -169,8 +169,10 @@ authenticated owner, set `FONZYTOOTER_AUTH_USERNAME` and
 must contain at least 12 characters and is stored only as a bcrypt hash. The
 owner has the stable application ID `00000000-0000-4000-8000-000000000001`;
 restarting or changing the configured credentials updates that same identity
-rather than creating another learner. If credentials are absent, the public
-site still runs but sign-in is unavailable.
+rather than creating another learner. If both credentials are absent, startup
+clears that identity's sign-in credentials and revokes its existing sessions;
+the durable learner identity and data remain intact, and the public site still
+runs while sign-in is unavailable.
 
 Authentication uses an opaque, database-backed session cookie that is
 `HttpOnly`, `SameSite=Strict`, and secure by default. Production must terminate
