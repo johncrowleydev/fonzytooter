@@ -6,8 +6,15 @@ import { lessonPath } from '../../app/routes'
 import { Badge, SectionHeading } from '../../components/ui'
 import { YouTubePlayer } from '../videos/YouTubePlayer'
 import { youtubeThumbnailUrl, youtubeWatchUrl } from '../videos/youtube'
+import { VideoCompletionControl } from '../videos/VideoCompletionControl'
 
-export function ModuleVideoPlaylist({ module }: { module: ModuleResource }) {
+export function ModuleVideoPlaylist({
+  module,
+  authenticated = false,
+}: {
+  module: ModuleResource
+  authenticated?: boolean
+}) {
   const orderedVideos = [...module.videos].sort(
     (left, right) => left.order - right.order || left.id.localeCompare(right.id),
   )
@@ -48,6 +55,7 @@ export function ModuleVideoPlaylist({ module }: { module: ModuleResource }) {
               </a>
             </div>
             <VideoAssociations module={module} video={selectedVideo} />
+            <VideoCompletionControl authenticated={authenticated} video={selectedVideo} />
           </div>
         </div>
 

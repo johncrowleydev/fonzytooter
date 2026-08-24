@@ -38,6 +38,7 @@ import {
   ReviewItemResource,
   SessionResource,
   TutorAccessResource,
+  VideoProgressResource,
   WorksheetResource,
 } from './schemas'
 import type {
@@ -49,6 +50,7 @@ import type {
   ListReviewCardsParams,
   PutExerciseWorkspaceInputBody,
   ReviewSubmission,
+  VideoProgressUpdate,
 } from './schemas'
 
 // https://stackoverflow.com/questions/49579094/typescript-conditional-types-filter-out-readonly-properties-pick-only-requir/49579497#49579497
@@ -3251,6 +3253,365 @@ export function useGetCourseModuleReviewItem<
   }
 
   return withQueryKey(query, queryOptions.queryKey)
+}
+
+export type getVideoProgressResponse200 = {
+  data: VideoProgressResource
+  status: 200
+}
+
+export type getVideoProgressResponse401 = {
+  data: ErrorModel
+  status: 401
+}
+
+export type getVideoProgressResponse404 = {
+  data: ErrorModel
+  status: 404
+}
+
+export type getVideoProgressResponse422 = {
+  data: ErrorModel
+  status: 422
+}
+
+export type getVideoProgressResponse500 = {
+  data: ErrorModel
+  status: 500
+}
+
+export type getVideoProgressResponseSuccess = getVideoProgressResponse200 & {
+  headers: Record<string, string>
+}
+export type getVideoProgressResponseError = (
+  | getVideoProgressResponse401
+  | getVideoProgressResponse404
+  | getVideoProgressResponse422
+  | getVideoProgressResponse500
+) & {
+  headers: Record<string, string>
+}
+
+export const getGetVideoProgressUrl = (courseId: string, moduleId: string, videoId: string) => {
+  return `/api/courses/${courseId}/modules/${moduleId}/videos/${videoId}/progress`
+}
+
+/**
+ * @summary Get video progress
+ */
+export const getVideoProgress = async (
+  courseId: string,
+  moduleId: string,
+  videoId: string,
+  options?: RequestInit,
+): Promise<getVideoProgressResponseSuccess> => {
+  const res = await fetch(getGetVideoProgressUrl(courseId, moduleId, videoId), {
+    ...options,
+    method: 'GET',
+  })
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text()
+  if (!res.ok) {
+    const err: globalThis.Error & {
+      info?: getVideoProgressResponseError['data']
+      status?: number
+    } = new globalThis.Error()
+    const data: getVideoProgressResponseError['data'] = body ? JSON.parse(body) : {}
+    err.info = data
+    err.status = res.status
+    throw err
+  }
+  const data = VideoProgressResource.parse(body ? JSON.parse(body) : {})
+  return {
+    data,
+    status: res.status,
+    headers: Object.fromEntries(
+      [...res.headers.entries()].filter(([name]) => name !== 'set-cookie'),
+    ),
+  } as getVideoProgressResponseSuccess
+}
+
+export const getGetVideoProgressQueryKey = (
+  courseId: string,
+  moduleId: string,
+  videoId: string,
+) => {
+  return [`/api/courses/${courseId}/modules/${moduleId}/videos/${videoId}/progress`] as const
+}
+
+export const getGetVideoProgressQueryOptions = <
+  TData = Awaited<ReturnType<typeof getVideoProgress>>,
+  TError = globalThis.Error & { info?: ErrorModel; status?: number },
+>(
+  courseId: string,
+  moduleId: string,
+  videoId: string,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getVideoProgress>>, TError, TData>>
+    fetch?: RequestInit
+  },
+) => {
+  const { query: queryOptions, fetch: fetchOptions } = options ?? {}
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetVideoProgressQueryKey(courseId, moduleId, videoId)
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getVideoProgress>>> = ({ signal }) =>
+    getVideoProgress(courseId, moduleId, videoId, { signal, ...fetchOptions })
+
+  return {
+    queryKey,
+    queryFn,
+    enabled:
+      courseId !== null &&
+      courseId !== undefined &&
+      moduleId !== null &&
+      moduleId !== undefined &&
+      videoId !== null &&
+      videoId !== undefined,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof getVideoProgress>>, TError, TData> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+}
+
+export type GetVideoProgressQueryResult = NonNullable<Awaited<ReturnType<typeof getVideoProgress>>>
+export type GetVideoProgressQueryError = globalThis.Error & { info?: ErrorModel; status?: number }
+
+export function useGetVideoProgress<
+  TData = Awaited<ReturnType<typeof getVideoProgress>>,
+  TError = globalThis.Error & { info?: ErrorModel; status?: number },
+>(
+  courseId: string,
+  moduleId: string,
+  videoId: string,
+  options: {
+    query: Partial<UseQueryOptions<Awaited<ReturnType<typeof getVideoProgress>>, TError, TData>> &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getVideoProgress>>,
+          TError,
+          Awaited<ReturnType<typeof getVideoProgress>>
+        >,
+        'initialData'
+      >
+    fetch?: RequestInit
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetVideoProgress<
+  TData = Awaited<ReturnType<typeof getVideoProgress>>,
+  TError = globalThis.Error & { info?: ErrorModel; status?: number },
+>(
+  courseId: string,
+  moduleId: string,
+  videoId: string,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getVideoProgress>>, TError, TData>> &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getVideoProgress>>,
+          TError,
+          Awaited<ReturnType<typeof getVideoProgress>>
+        >,
+        'initialData'
+      >
+    fetch?: RequestInit
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetVideoProgress<
+  TData = Awaited<ReturnType<typeof getVideoProgress>>,
+  TError = globalThis.Error & { info?: ErrorModel; status?: number },
+>(
+  courseId: string,
+  moduleId: string,
+  videoId: string,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getVideoProgress>>, TError, TData>>
+    fetch?: RequestInit
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+/**
+ * @summary Get video progress
+ */
+
+export function useGetVideoProgress<
+  TData = Awaited<ReturnType<typeof getVideoProgress>>,
+  TError = globalThis.Error & { info?: ErrorModel; status?: number },
+>(
+  courseId: string,
+  moduleId: string,
+  videoId: string,
+  options?: {
+    query?: Partial<UseQueryOptions<Awaited<ReturnType<typeof getVideoProgress>>, TError, TData>>
+    fetch?: RequestInit
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+  const queryOptions = getGetVideoProgressQueryOptions(courseId, moduleId, videoId, options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<TData, TError> & {
+    queryKey: DataTag<QueryKey, TData, TError>
+  }
+
+  return withQueryKey(query, queryOptions.queryKey)
+}
+
+export type putVideoProgressResponse200 = {
+  data: VideoProgressResource
+  status: 200
+}
+
+export type putVideoProgressResponse401 = {
+  data: ErrorModel
+  status: 401
+}
+
+export type putVideoProgressResponse404 = {
+  data: ErrorModel
+  status: 404
+}
+
+export type putVideoProgressResponse422 = {
+  data: ErrorModel
+  status: 422
+}
+
+export type putVideoProgressResponse500 = {
+  data: ErrorModel
+  status: 500
+}
+
+export type putVideoProgressResponseSuccess = putVideoProgressResponse200 & {
+  headers: Record<string, string>
+}
+export type putVideoProgressResponseError = (
+  | putVideoProgressResponse401
+  | putVideoProgressResponse404
+  | putVideoProgressResponse422
+  | putVideoProgressResponse500
+) & {
+  headers: Record<string, string>
+}
+
+export const getPutVideoProgressUrl = (courseId: string, moduleId: string, videoId: string) => {
+  return `/api/courses/${courseId}/modules/${moduleId}/videos/${videoId}/progress`
+}
+
+/**
+ * @summary Replace video progress
+ */
+export const putVideoProgress = async (
+  courseId: string,
+  moduleId: string,
+  videoId: string,
+  videoProgressUpdate: NonReadonly<VideoProgressUpdate>,
+  options?: RequestInit,
+): Promise<putVideoProgressResponseSuccess> => {
+  const res = await fetch(getPutVideoProgressUrl(courseId, moduleId, videoId), {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(videoProgressUpdate),
+  })
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text()
+  if (!res.ok) {
+    const err: globalThis.Error & {
+      info?: putVideoProgressResponseError['data']
+      status?: number
+    } = new globalThis.Error()
+    const data: putVideoProgressResponseError['data'] = body ? JSON.parse(body) : {}
+    err.info = data
+    err.status = res.status
+    throw err
+  }
+  const data = VideoProgressResource.parse(body ? JSON.parse(body) : {})
+  return {
+    data,
+    status: res.status,
+    headers: Object.fromEntries(
+      [...res.headers.entries()].filter(([name]) => name !== 'set-cookie'),
+    ),
+  } as putVideoProgressResponseSuccess
+}
+
+export const getPutVideoProgressMutationOptions = <
+  TError = globalThis.Error & { info?: ErrorModel; status?: number },
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof putVideoProgress>>,
+    TError,
+    { courseId: string; moduleId: string; videoId: string; data: NonReadonly<VideoProgressUpdate> },
+    TContext
+  >
+  fetch?: RequestInit
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof putVideoProgress>>,
+  TError,
+  { courseId: string; moduleId: string; videoId: string; data: NonReadonly<VideoProgressUpdate> },
+  TContext
+> => {
+  const mutationKey = ['putVideoProgress']
+  const { mutation: mutationOptions, fetch: fetchOptions } = options
+    ? options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, fetch: undefined }
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof putVideoProgress>>,
+    { courseId: string; moduleId: string; videoId: string; data: NonReadonly<VideoProgressUpdate> }
+  > = (props) => {
+    const { courseId, moduleId, videoId, data } = props ?? {}
+
+    return putVideoProgress(courseId, moduleId, videoId, data, fetchOptions)
+  }
+
+  return { mutationFn, ...mutationOptions }
+}
+
+export type PutVideoProgressMutationResult = NonNullable<
+  Awaited<ReturnType<typeof putVideoProgress>>
+>
+export type PutVideoProgressMutationBody = NonReadonly<VideoProgressUpdate>
+export type PutVideoProgressMutationError = globalThis.Error & {
+  info?: ErrorModel
+  status?: number
+}
+
+/**
+ * @summary Replace video progress
+ */
+export const usePutVideoProgress = <
+  TError = globalThis.Error & { info?: ErrorModel; status?: number },
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof putVideoProgress>>,
+      TError,
+      {
+        courseId: string
+        moduleId: string
+        videoId: string
+        data: NonReadonly<VideoProgressUpdate>
+      },
+      TContext
+    >
+    fetch?: RequestInit
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof putVideoProgress>>,
+  TError,
+  { courseId: string; moduleId: string; videoId: string; data: NonReadonly<VideoProgressUpdate> },
+  TContext
+> => {
+  return useMutation(getPutVideoProgressMutationOptions(options), queryClient)
 }
 
 export type getCourseModuleWorkbookResponse200 = {

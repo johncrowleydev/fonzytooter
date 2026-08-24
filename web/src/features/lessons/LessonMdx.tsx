@@ -9,6 +9,7 @@ import { lessonMdxComponents } from './mdx/components'
 export type LessonMdxProps = {
   source: string
   videos: VideoResource[]
+  authenticated?: boolean
 }
 
 type EvaluationState =
@@ -41,7 +42,7 @@ function evaluateLessonSource(source: string) {
   return evaluation
 }
 
-export function LessonMdx({ source, videos }: LessonMdxProps) {
+export function LessonMdx({ source, videos, authenticated = false }: LessonMdxProps) {
   const [state, setState] = useState<EvaluationState>({ source, status: 'loading' })
 
   useEffect(() => {
@@ -78,7 +79,7 @@ export function LessonMdx({ source, videos }: LessonMdxProps) {
 
   return (
     <LessonMdxErrorBoundary key={source}>
-      <LessonVideoCatalogProvider videos={videos}>
+      <LessonVideoCatalogProvider videos={videos} authenticated={authenticated}>
         <div className="max-w-3xl text-base leading-7 text-body">
           <currentState.content components={lessonMdxComponents} />
         </div>

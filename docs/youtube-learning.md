@@ -184,9 +184,11 @@ Video progress is learner state and therefore follows the authentication boundar
 
 ### Completion semantics
 
-"Completed" should mean that the application has sufficient evidence that the learner watched substantially all of the curated video according to the implemented player behavior. The UI should not imply perfect attention or comprehension.
+The initial completion mechanism is an explicit **Mark watched** action shown only to authenticated learners. YouTube's privacy-enhanced iframe is intentionally treated as playback rather than attention telemetry: Fonzytooter does not infer completion from page presence, elapsed wall time, or brittle embed events.
 
-Manual completion may be appropriate if platform/embed limitations make reliable playback telemetry unavailable. Whatever rule is implemented should be understandable and consistent rather than pretending to measure attention precisely.
+The action replaces the learner's video-progress resource with a completed state. Repeating it is idempotent and does not create duplicate `video_completed` transition activity. The UI describes the state as watched and explicitly avoids implying attention, comprehension, objective progress, or mastery.
+
+Persisted identity is the course/module/video tuple plus the authenticated user. Curriculum identity migrations update `video_progress` and matching activity rows when an authored video ID or owning scope is deliberately renamed. Removed or unknown identities remain preserved and discoverable through the curriculum-state audit until an explicit retirement decision is made.
 
 ## Home-page recommendations
 

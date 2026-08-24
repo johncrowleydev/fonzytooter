@@ -2,20 +2,28 @@ import { createContext, useContext, useId, useMemo, type ReactNode } from 'react
 import type { VideoResource } from '../../../api/generated/schemas/videoResource.zod'
 import { YouTubePlayer } from '../../videos/YouTubePlayer'
 import { youtubeWatchUrl } from '../../videos/youtube'
+import { VideoCompletionControl } from '../../videos/VideoCompletionControl'
 
-const LessonVideoCatalogContext = createContext<ReadonlyMap<string, VideoResource> | null>(null)
+type LessonVideoCatalog = {
+  authenticated: boolean
+  videos: ReadonlyMap<string, VideoResource>
+}
+
+const LessonVideoCatalogContext = createContext<LessonVideoCatalog | null>(null)
 
 export function LessonVideoCatalogProvider({
   children,
   videos,
+  authenticated = false,
 }: {
   children: ReactNode
   videos: VideoResource[]
+  authenticated?: boolean
 }) {
   const catalog = useMemo(() => new Map(videos.map((video) => [video.id, video])), [videos])
 
   return (
-    <LessonVideoCatalogContext.Provider value={catalog}>
+    <LessonVideoCatalogContext.Provider value={{ authenticated, videos: catalog }}>
       {children}
     </LessonVideoCatalogContext.Provider>
   )
@@ -28,7 +36,7 @@ export function YouTubeVideo({ id, children }: { id: string; children?: ReactNod
     throw new Error('YouTubeVideo must render inside a lesson video catalog.')
   }
 
-  const video = catalog.get(id)
+  const video = catalog.videos.get(id)
   if (!video) {
     throw new Error(`Lesson references unknown curated video ${JSON.stringify(id)}.`)
   }
@@ -71,6 +79,7 @@ export function YouTubeVideo({ id, children }: { id: string; children?: ReactNod
           </a>
           .
         </p>
+        <VideoCompletionControl authenticated={catalog.authenticated} video={video} />
       </div>
     </section>
   )

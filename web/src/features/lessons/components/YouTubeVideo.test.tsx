@@ -1,9 +1,13 @@
-import { cleanup, render, screen } from '@testing-library/react'
-import { afterEach, describe, expect, it } from 'vitest'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { cleanup, render, screen, waitFor } from '@testing-library/react'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { VideoResource } from '../../../api/generated/schemas/videoResource.zod'
 import { LessonVideoCatalogProvider, YouTubeVideo } from './YouTubeVideo'
 
-afterEach(cleanup)
+afterEach(() => {
+  cleanup()
+  vi.unstubAllGlobals()
+})
 
 const video: VideoResource = {
   channel: 'Visual Teacher',
@@ -42,6 +46,32 @@ describe('YouTubeVideo', () => {
     expect(
       screen.getByRole('link', { name: /open this video on youtube/i }).getAttribute('href'),
     ).toBe('https://www.youtube.com/watch?v=dQw4w9WgXcQ')
+    expect(screen.queryByRole('button', { name: 'Mark watched' })).toBeNull()
+  })
+
+  it('shows authenticated watched state beside the same lesson embed', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            completed: false,
+            courseId: 'course',
+            moduleId: 'module',
+            videoId: 'shape-lesson',
+          }),
+        ),
+      ),
+    )
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <LessonVideoCatalogProvider videos={[video]} authenticated>
+          <YouTubeVideo id="shape-lesson" />
+        </LessonVideoCatalogProvider>
+      </QueryClientProvider>,
+    )
+
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Mark watched' })).toBeTruthy())
   })
 
   it('fails clearly when authored content references an unknown video', () => {

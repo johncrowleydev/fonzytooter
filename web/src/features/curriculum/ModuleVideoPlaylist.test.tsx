@@ -1,10 +1,14 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { ModuleResource } from '../../api/generated/schemas/moduleResource.zod'
 import { ModuleVideoPlaylist } from './ModuleVideoPlaylist'
 
-afterEach(cleanup)
+afterEach(() => {
+  cleanup()
+  vi.unstubAllGlobals()
+})
 
 const moduleWithVideos: ModuleResource = {
   courseId: 'course',
@@ -86,6 +90,7 @@ describe('ModuleVideoPlaylist', () => {
     expect(screen.getByText('Understand the visual model')).toBeTruthy()
     expect(container.textContent).not.toContain('objective.one')
     expect(container.textContent).not.toContain('lesson-one')
+    expect(container.textContent).not.toContain('Mark watched')
     expect(screen.getByRole('link', { name: 'A human lesson title →' }).getAttribute('href')).toBe(
       '/courses/course/modules/module/lessons/lesson-one',
     )
@@ -98,5 +103,30 @@ describe('ModuleVideoPlaylist', () => {
     expect(choices[1].getAttribute('aria-pressed')).toBe('true')
     expect(screen.getByText('Another lesson →')).toBeTruthy()
     expect(screen.getByText('Apply the visual model')).toBeTruthy()
+  })
+
+  it('shows authenticated watched state in the playlist presentation', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            completed: false,
+            courseId: 'course',
+            moduleId: 'module',
+            videoId: 'first-video',
+          }),
+        ),
+      ),
+    )
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <MemoryRouter>
+          <ModuleVideoPlaylist module={moduleWithVideos} authenticated />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    )
+
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Mark watched' })).toBeTruthy())
   })
 })
