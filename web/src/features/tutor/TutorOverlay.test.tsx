@@ -5,10 +5,33 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { TutorOverlay } from './TutorOverlay'
 import { TutorProvider, useTutor } from './TutorContext'
 
-const authState = vi.hoisted(() => ({ isAuthenticated: true }))
+const authState = vi.hoisted(() => ({
+  isAuthenticated: true,
+  accessStatus: 'allowed',
+  accessOptions: vi.fn(),
+}))
 
 vi.mock('../authentication/AuthContext', () => ({
   useAuth: () => ({ isPending: false, isAuthenticated: authState.isAuthenticated }),
+}))
+
+vi.mock('../../api/generated/endpoints', () => ({
+  useGetTutorAccess: (options: unknown) => {
+    authState.accessOptions(options)
+    return {
+      isPending: false,
+      isError: false,
+      data: {
+        data: {
+          status: authState.accessStatus,
+          monthlyTurnLimit: 10,
+          usedTurns: 1,
+          remainingTurns: 9,
+          windowEndsAt: '2026-09-01T00:00:00Z',
+        },
+      },
+    }
+  },
 }))
 
 afterEach(cleanup)
@@ -50,6 +73,7 @@ const openTutor = async () => {
 describe('TutorOverlay keyboard handling', () => {
   beforeEach(() => {
     authState.isAuthenticated = true
+    authState.accessStatus = 'allowed'
     renderHarness()
   })
 
@@ -131,6 +155,22 @@ describe('TutorOverlay authentication boundary', () => {
 
     expect(screen.getByRole('heading', { name: 'Sign in to ask the tutor' })).toBeDefined()
     expect(screen.getByRole('link', { name: 'Sign in and return here' })).toBeDefined()
+    expect(screen.queryByPlaceholderText('Ask anything about this screen…')).toBeNull()
+    expect(authState.accessOptions).toHaveBeenLastCalledWith(
+      expect.objectContaining({ query: expect.objectContaining({ enabled: false }) }),
+    )
+  })
+
+  it.each([
+    ['not_entitled', 'Tutor is unavailable for this account'],
+    ['limit_exhausted', 'Tutor usage limit reached'],
+  ])('renders the %s access state without an interaction form', async (status, heading) => {
+    authState.isAuthenticated = true
+    authState.accessStatus = status
+    renderHarness()
+    await openTutor()
+
+    expect(screen.getByRole('heading', { name: heading })).toBeDefined()
     expect(screen.queryByPlaceholderText('Ask anything about this screen…')).toBeNull()
   })
 })

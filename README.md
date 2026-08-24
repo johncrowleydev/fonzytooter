@@ -182,6 +182,15 @@ to `false`. `FONZYTOOTER_AUTH_SESSION_TTL` defaults to `24h`; signing out delete
 the server-side session immediately. Keep real credentials in the process or
 service environment and never in tracked `.env` files.
 
+Metered tutor access is denied by default, even for an authenticated owner. To
+enable it, set `FONZYTOOTER_TUTOR_ENTITLED=true` and configure a positive
+`FONZYTOOTER_TUTOR_MONTHLY_TURN_LIMIT`. The allowance is stored per user and UTC
+calendar month in SQLite. A slot is reserved atomically before conversation
+writes or provider execution and remains counted when a provider fails, so
+retries cannot bypass the spending boundary. The allowance counts tutor turns,
+not currency: exact provider cost is not reliably available, and provider work
+inside a turn is already bounded by the tutor runtime's model-round limit.
+
 With Pandoc and Tectonic installed, render every authored student/solutions worksheet and module workbook without storing output:
 
 ```bash

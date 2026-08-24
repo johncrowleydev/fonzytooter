@@ -46,6 +46,7 @@ func TestEveryOperationHasExplicitAccessPolicyAndOpenAPISecurity(t *testing.T) {
 		"listReviewCards":                    accessAuthenticated,
 		"createReviewCardReview":             accessAuthenticated,
 		"createTutorTurn":                    accessAuthenticated,
+		"getTutorAccess":                     accessAuthenticated,
 	}
 	operations := allOperations(app.Spec)
 	if len(operations) != len(want) {
@@ -127,6 +128,7 @@ func TestAnonymousAndAuthenticatedAPIBoundary(t *testing.T) {
 		{http.MethodGet, "/api/courses/ai-ml/review-cards", ""},
 		{http.MethodPost, "/api/courses/ai-ml/modules/python/review-cards/functions.definition/reviews", `{}`},
 		{http.MethodPost, "/api/tutor/turns", `{"message":"hello"}`},
+		{http.MethodGet, "/api/tutor-access", ""},
 	}
 	for _, request := range privateRequests {
 		response := authorizationRequest(t, app.Handler, request.method, request.path, request.body, nil)
@@ -152,6 +154,7 @@ func TestAnonymousAndAuthenticatedAPIBoundary(t *testing.T) {
 		{http.MethodGet, "/api/courses/ai-ml/review-cards", "", http.StatusOK},
 		{http.MethodPost, "/api/courses/ai-ml/modules/python/review-cards/functions.definition/reviews", `{"rating":"good"}`, http.StatusCreated},
 		{http.MethodPost, "/api/tutor/turns", `{"message":"hello"}`, http.StatusOK},
+		{http.MethodGet, "/api/tutor-access", "", http.StatusOK},
 	}
 	for _, request := range authenticatedRequests {
 		response := authorizationRequest(t, app.Handler, request.method, request.path, request.body, cookie)

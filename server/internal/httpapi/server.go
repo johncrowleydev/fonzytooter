@@ -37,6 +37,18 @@ type TutorTurnInput struct {
 	Body tutor.TurnRequest
 }
 
+type TutorAccessResource struct {
+	Status           tutor.AccessStatus `json:"status" enum:"allowed,not_entitled,limit_exhausted,unavailable"`
+	MonthlyTurnLimit int                `json:"monthlyTurnLimit" minimum:"0"`
+	UsedTurns        int                `json:"usedTurns" minimum:"0"`
+	RemainingTurns   int                `json:"remainingTurns" minimum:"0"`
+	WindowEndsAt     time.Time          `json:"windowEndsAt"`
+}
+
+type GetTutorAccessResponse struct {
+	Body TutorAccessResource
+}
+
 type CoursePathInput struct {
 	CourseID string `path:"courseId"`
 }
@@ -702,6 +714,32 @@ func registerHealth(api huma.API) {
 }
 
 func registerTutorTurn(api huma.API, tutorService *tutor.Service) {
+	huma.Register[struct{}, GetTutorAccessResponse](api, authenticatedOperation(huma.Operation{
+		OperationID: "getTutorAccess",
+		Method:      http.MethodGet,
+		Path:        "/api/tutor-access",
+		Summary:     "Get the current learner's tutor access",
+		Tags:        []string{"tutor-access"},
+		Errors:      []int{http.StatusServiceUnavailable},
+	}), func(ctx context.Context, _ *struct{}) (*GetTutorAccessResponse, error) {
+		if tutorService == nil {
+			return nil, huma.Error503ServiceUnavailable("tutor access is unavailable")
+		}
+		userID, err := requireUserID(ctx)
+		if err != nil {
+			return nil, err
+		}
+		access, err := tutorService.TutorAccess(ctx, userID)
+		if err != nil {
+			return nil, huma.Error503ServiceUnavailable("tutor access is unavailable")
+		}
+		return &GetTutorAccessResponse{Body: TutorAccessResource{
+			Status: access.Status, MonthlyTurnLimit: access.MonthlyTurnLimit,
+			UsedTurns: access.UsedTurns, RemainingTurns: access.RemainingTurns,
+			WindowEndsAt: access.WindowEndsAt,
+		}}, nil
+	})
+
 	eventSchema := api.OpenAPI().Components.Schemas.Schema(reflect.TypeOf(tutor.Event{}), true, "TutorEvent")
 	api.OpenAPI().Components.Schemas.Schema(reflect.TypeOf(tutor.TurnRequest{}), true, "TutorTurnRequest")
 	streamSchema := &huma.Schema{
@@ -717,7 +755,10 @@ func registerTutorTurn(api huma.API, tutorService *tutor.Service) {
 		Summary:       "Create a tutor turn and stream its events",
 		Tags:          []string{"tutor"},
 		DefaultStatus: http.StatusOK,
-		Errors:        []int{http.StatusBadRequest, http.StatusBadGateway},
+		Errors: []int{
+			http.StatusBadRequest, http.StatusForbidden, http.StatusTooManyRequests,
+			http.StatusBadGateway, http.StatusServiceUnavailable,
+		},
 		Responses: map[string]*huma.Response{
 			"200": {
 				Description: http.StatusText(http.StatusOK),
@@ -737,7 +778,16 @@ func registerTutorTurn(api huma.API, tutorService *tutor.Service) {
 
 		events, err := tutorService.StreamTurn(ctx, userID, input.Body)
 		if err != nil {
-			return nil, huma.Error502BadGateway("tutor provider unavailable")
+			switch {
+			case errors.Is(err, tutor.ErrTutorNotEntitled):
+				return nil, huma.Error403Forbidden("tutor is unavailable for this account")
+			case errors.Is(err, tutor.ErrTutorLimitExhausted):
+				return nil, huma.NewError(http.StatusTooManyRequests, "tutor usage limit reached")
+			case errors.Is(err, tutor.ErrTutorPolicyUnavailable):
+				return nil, huma.Error503ServiceUnavailable("tutor access is unavailable")
+			default:
+				return nil, huma.Error502BadGateway("tutor provider unavailable")
+			}
 		}
 
 		return &huma.StreamResponse{Body: func(streamContext huma.Context) {

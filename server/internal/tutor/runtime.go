@@ -57,6 +57,7 @@ type RuntimeConfig struct {
 	ContextManager *ContextManager
 	ContextBuilder TurnContextBuilder
 	MaxModelRounds int
+	CostGate       *CostGate
 }
 
 type Service struct {
@@ -66,12 +67,20 @@ type Service struct {
 	contextManager    *ContextManager
 	contextBuilder    TurnContextBuilder
 	maxModelRounds    int
+	costGate          *CostGate
 	conversationLocks sync.Map
 }
 
-func NewService(provider Provider) *Service {
+func NewService(provider Provider, costGates ...*CostGate) *Service {
 	if provider == nil {
 		panic("tutor.NewService: nil provider")
+	}
+	if len(costGates) > 1 {
+		panic("tutor.NewService: multiple cost gates")
+	}
+	var costGate *CostGate
+	if len(costGates) == 1 {
+		costGate = costGates[0]
 	}
 	tools, _ := NewToolRegistry()
 	return &Service{
@@ -79,6 +88,7 @@ func NewService(provider Provider) *Service {
 		tools:          tools,
 		contextBuilder: BasicTurnContextBuilder{},
 		maxModelRounds: DefaultMaxModelRounds,
+		costGate:       costGate,
 	}
 }
 
@@ -136,10 +146,16 @@ func NewRuntimeService(config RuntimeConfig) (*Service, error) {
 		contextManager: config.ContextManager,
 		contextBuilder: config.ContextBuilder,
 		maxModelRounds: config.MaxModelRounds,
+		costGate:       config.CostGate,
 	}, nil
 }
 
 func (s *Service) StreamTurn(ctx context.Context, userID auth.UserID, request TurnRequest) (<-chan Event, error) {
+	if s.costGate != nil {
+		if _, err := s.costGate.ReserveTurn(ctx, userID); err != nil {
+			return nil, err
+		}
+	}
 	if s.conversations == nil {
 		return s.streamUnpersisted(ctx, userID, request)
 	}
@@ -200,6 +216,13 @@ func (s *Service) StreamTurn(ctx context.Context, userID auth.UserID, request Tu
 	releaseLock = false
 	go s.run(ctx, events, userID, conversationID, turnContext.AllowedTools, modelRequest, providerEvents, unlock)
 	return events, nil
+}
+
+func (s *Service) TutorAccess(ctx context.Context, userID auth.UserID) (Access, error) {
+	if s.costGate == nil {
+		return Access{Status: AccessUnavailable}, nil
+	}
+	return s.costGate.Access(ctx, userID)
 }
 
 func (s *Service) lockConversation(ctx context.Context, conversationID string) (func(), error) {
