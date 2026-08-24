@@ -10,6 +10,9 @@ import (
 
 var stableIDPattern = regexp.MustCompile(StableIDPattern)
 var youtubeIDPattern = regexp.MustCompile(`^[A-Za-z0-9_-]{11}$`)
+var youtubeVideoElementPattern = regexp.MustCompile(`<YouTubeVideo\b([^>]*)>`)
+var youtubeVideoIDAttributePattern = regexp.MustCompile(`(?:^|\s)id\s*=\s*["']([^"']+)["']`)
+var arbitraryEmbedElementPattern = regexp.MustCompile(`(?i)<\s*(iframe|embed|object)\b`)
 
 type errorCollector struct {
 	items []error
@@ -529,6 +532,10 @@ func validateModuleLessonReferences(module moduleFile, errors *errorCollector) {
 }
 
 func validateLessonFiles(module moduleFile, objectiveIDs map[string]string, sources map[string]sourceAuthoring, errors *errorCollector) {
+	videosByID := make(map[string]videoAuthoring, len(module.metadata.Videos))
+	for _, video := range module.metadata.Videos {
+		videosByID[video.ID] = video
+	}
 	for _, lesson := range module.lessons {
 		if !lesson.metadataOK {
 			continue
@@ -555,7 +562,60 @@ func validateLessonFiles(module moduleFile, objectiveIDs map[string]string, sour
 				errors.addf(lesson.path, "unknown source id %q", sourceID)
 			}
 		}
+		validateLessonVideoEmbeds(lesson, videosByID, errors)
 	}
+}
+
+func validateLessonVideoEmbeds(lesson lessonFile, videosByID map[string]videoAuthoring, errors *errorCollector) {
+	content := mdxOutsideFencedCode(lesson.content)
+	if element := arbitraryEmbedElementPattern.FindStringSubmatch(content); element != nil {
+		errors.addf(lesson.path, "lesson %q cannot contain arbitrary <%s> markup; use a trusted MDX component such as YouTubeVideo", lesson.metadata.ID, strings.ToLower(element[1]))
+	}
+	for _, element := range youtubeVideoElementPattern.FindAllStringSubmatch(content, -1) {
+		attribute := youtubeVideoIDAttributePattern.FindStringSubmatch(element[1])
+		if attribute == nil {
+			errors.addf(lesson.path, "lesson %q YouTubeVideo must use a static quoted id", lesson.metadata.ID)
+			continue
+		}
+		videoID := attribute[1]
+		video, ok := videosByID[videoID]
+		if !ok {
+			errors.addf(lesson.path, "lesson %q references unknown curated video id %q in this module", lesson.metadata.ID, videoID)
+			continue
+		}
+		if !containsString(video.LessonIDs, lesson.metadata.ID) {
+			errors.addf(lesson.path, "lesson %q embeds video %q but the video does not associate that lesson in lessonIds", lesson.metadata.ID, videoID)
+		}
+	}
+}
+
+func mdxOutsideFencedCode(content string) string {
+	var builder strings.Builder
+	fence := ""
+	for _, line := range strings.SplitAfter(content, "\n") {
+		trimmed := strings.TrimSpace(line)
+		if fence == "" && (strings.HasPrefix(trimmed, "```") || strings.HasPrefix(trimmed, "~~~")) {
+			fence = trimmed[:3]
+			continue
+		}
+		if fence != "" {
+			if strings.HasPrefix(trimmed, fence) {
+				fence = ""
+			}
+			continue
+		}
+		builder.WriteString(line)
+	}
+	return builder.String()
+}
+
+func containsString(values []string, wanted string) bool {
+	for _, value := range values {
+		if value == wanted {
+			return true
+		}
+	}
+	return false
 }
 
 func validateObjectiveReferences(modules []moduleFile, objectiveIDs map[string]string, errors *errorCollector) {

@@ -294,6 +294,54 @@ func TestLoadRejectsMalformedCuratedYouTubeVideos(t *testing.T) {
 	}
 }
 
+func TestLoadValidatesLessonYouTubeVideoReferences(t *testing.T) {
+	moduleYAMLWithVideo := func(lessonIDs string) string {
+		return moduleYAML("one", 0, "objectives:\n  - id: objective\n    title: Objective\n    description: Objective description.\n    prerequisites: []\nvideos:\n  - id: video\n    youtubeId: dQw4w9WgXcQ\n    title: Video\n    channel: Creator\n    durationMinutes: 4\n    order: 0\n    objectiveIds: [objective]\n    lessonIds: "+lessonIDs+"\nlessons: [lesson]\n")
+	}
+	lessonWithBody := func(body string) string {
+		return "---\nid: lesson\ntitle: Lesson\nobjectiveIds: [objective]\nsourceIds: []\n---\n" + body
+	}
+
+	t.Run("accepts a catalog video associated with the lesson", func(t *testing.T) {
+		_, err := Load(curriculumFS(map[string]string{
+			"courses/ai-ml/modules/one/module.yaml": moduleYAMLWithVideo("[lesson]"),
+			"courses/ai-ml/modules/one/lesson.mdx":  lessonWithBody("<YouTubeVideo id=\"video\">Watch the shape change.</YouTubeVideo>\n"),
+		}))
+		if err != nil {
+			t.Fatalf("load lesson video embed: %v", err)
+		}
+	})
+
+	tests := map[string]struct {
+		lessonIDs string
+		body      string
+		contains  string
+	}{
+		"unknown id":          {"[lesson]", "<YouTubeVideo id=\"missing\" />\n", `references unknown curated video id "missing"`},
+		"dynamic id":          {"[lesson]", "<YouTubeVideo id={videoId} />\n", "must use a static quoted id"},
+		"missing association": {"[]", "<YouTubeVideo id='video' />\n", "does not associate that lesson in lessonIds"},
+		"arbitrary iframe":    {"[lesson]", "<iframe src=\"https://example.com\" />\n", "cannot contain arbitrary <iframe> markup"},
+	}
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			expectLoadError(t, curriculumFS(map[string]string{
+				"courses/ai-ml/modules/one/module.yaml": moduleYAMLWithVideo(test.lessonIDs),
+				"courses/ai-ml/modules/one/lesson.mdx":  lessonWithBody(test.body),
+			}), test.contains)
+		})
+	}
+
+	t.Run("ignores examples inside fenced code", func(t *testing.T) {
+		_, err := Load(curriculumFS(map[string]string{
+			"courses/ai-ml/modules/one/module.yaml": moduleYAMLWithVideo("[lesson]"),
+			"courses/ai-ml/modules/one/lesson.mdx":  lessonWithBody("```mdx\n<YouTubeVideo id=\"example-only\" />\n```\n"),
+		}))
+		if err != nil {
+			t.Fatalf("load fenced MDX example: %v", err)
+		}
+	})
+}
+
 func TestLoadRejectsDuplicateFrontmatterLessonIDs(t *testing.T) {
 	expectLoadError(t, curriculumFS(map[string]string{
 		"courses/ai-ml/modules/one/module.yaml": moduleYAML("one", 0, "objectives: []\nvideos: []\nlessons:\n  - lesson\n"),

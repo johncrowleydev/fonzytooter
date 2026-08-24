@@ -2,10 +2,13 @@ import { evaluate } from '@mdx-js/mdx'
 import type { MDXContent } from 'mdx/types'
 import { Component, type ReactNode, useEffect, useState } from 'react'
 import * as runtime from 'react/jsx-runtime'
+import type { VideoResource } from '../../api/generated/schemas/videoResource.zod'
+import { LessonVideoCatalogProvider } from './components/YouTubeVideo'
 import { lessonMdxComponents } from './mdx/components'
 
 export type LessonMdxProps = {
   source: string
+  videos: VideoResource[]
 }
 
 type EvaluationState =
@@ -38,7 +41,7 @@ function evaluateLessonSource(source: string) {
   return evaluation
 }
 
-export function LessonMdx({ source }: LessonMdxProps) {
+export function LessonMdx({ source, videos }: LessonMdxProps) {
   const [state, setState] = useState<EvaluationState>({ source, status: 'loading' })
 
   useEffect(() => {
@@ -75,9 +78,11 @@ export function LessonMdx({ source }: LessonMdxProps) {
 
   return (
     <LessonMdxErrorBoundary key={source}>
-      <div className="max-w-3xl text-base leading-7 text-body">
-        <currentState.content components={lessonMdxComponents} />
-      </div>
+      <LessonVideoCatalogProvider videos={videos}>
+        <div className="max-w-3xl text-base leading-7 text-body">
+          <currentState.content components={lessonMdxComponents} />
+        </div>
+      </LessonVideoCatalogProvider>
     </LessonMdxErrorBoundary>
   )
 }

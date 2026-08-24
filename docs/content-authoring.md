@@ -192,6 +192,16 @@ Vectors ...
 
 Interactive components should be added when they genuinely improve understanding, not because MDX makes them possible.
 
+Curated module videos are embedded at their pedagogical location with the trusted static component:
+
+```mdx
+<YouTubeVideo id="linear-algebra-introduction">
+  Watch how the basis vectors move. The next example uses the same geometric interpretation.
+</YouTubeVideo>
+```
+
+The `id` must be a static quoted ID from the owning module's `videos` catalog, and that video must associate the lesson in `lessonIds`. Title, channel, duration, and YouTube identity stay in `module.yaml`; the component's child prose is placement-specific viewing guidance. The Go curriculum loader validates these references before startup. Arbitrary iframe markup is not part of the trusted component registry.
+
 ## Worksheets
 
 A module may contain an optional direct-child `worksheets/` directory. Worksheet discovery is file-based; do not add a worksheet list to `module.yaml`.

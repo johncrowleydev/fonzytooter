@@ -21,6 +21,7 @@ import { SeedReproducibilityExplorer } from '../components/SeedReproducibilityEx
 import { SliceExplorer } from '../components/SliceExplorer'
 import { SingletonExpansionVisualizer } from '../components/SingletonExpansionVisualizer'
 import { ViewCopyExplorer } from '../components/ViewCopyExplorer'
+import { YouTubeVideo } from '../components/YouTubeVideo'
 
 function withClassName(className: string, existingClassName?: string) {
   return existingClassName ? `${className} ${existingClassName}` : className
@@ -198,4 +199,5 @@ export const lessonMdxComponents = {
   SliceExplorer,
   SingletonExpansionVisualizer,
   ViewCopyExplorer,
+  YouTubeVideo,
 } satisfies MDXComponents
