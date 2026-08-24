@@ -5,6 +5,8 @@ import type { ObjectiveProgressResource } from '../../api/generated/schemas/obje
 import { DEFAULT_COURSE_ID } from '../../app/routes'
 import { Badge, Card, PageIntro, SectionHeading, StatusDot } from '../../components/ui'
 import { useTutor } from '../tutor/TutorContext'
+import { useAuth } from '../authentication/AuthContext'
+import { SignInRequired } from '../authentication/SignInRequired'
 
 const summaryToneStyles = {
   teal: 'border-t-accent-teal',
@@ -25,8 +27,11 @@ const dimensionToneStyles = {
 type EvidenceFilter = 'all' | 'needs-review' | 'application' | 'not-introduced'
 
 export function Progress() {
+  const auth = useAuth()
   const { setPageContext } = useTutor()
-  const progressQuery = useGetCourseProgress(DEFAULT_COURSE_ID)
+  const progressQuery = useGetCourseProgress(DEFAULT_COURSE_ID, {
+    query: { enabled: auth.isAuthenticated },
+  })
   // Objective progress carries a moduleId but no module title, so the names come from the course.
   const courseQuery = useGetCourse(DEFAULT_COURSE_ID)
   const [selectedId, setSelectedId] = useState<string>()
@@ -48,6 +53,19 @@ export function Progress() {
       objectiveTitle: selected?.title,
     })
   }, [selected, setPageContext])
+
+  if (auth.isPending) {
+    return <ProgressState title="Checking learner access" detail="Loading your session…" />
+  }
+  if (!auth.isAuthenticated) {
+    return (
+      <SignInRequired
+        title="Progress is saved to your learner account"
+        detail="Sign in to inspect lesson, recall, and exercise evidence. Public curriculum remains available without signing in."
+        returnTo="/progress"
+      />
+    )
+  }
 
   if (progressQuery.isPending) {
     return <ProgressState title="Loading progress" detail="Reading your saved lesson progress…" />

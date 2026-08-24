@@ -15,12 +15,14 @@ import { lessonPath, modulePath } from '../../app/routes'
 import { Badge, Button, Card, PageIntro, SectionHeading } from '../../components/ui'
 import { HighlightedCode } from '../../components/HighlightedCode'
 import { useTutor } from '../tutor/TutorContext'
+import { useAuth } from '../authentication/AuthContext'
+import { SignInLink } from '../authentication/SignInLink'
 import { CodeEditor } from './CodeEditor'
 import { LatestTaskQueue } from './LatestTaskQueue'
 import { PyodideRunner } from './runtime/PyodideRunner'
 import type { PythonCheckResult, PythonRunResult } from './types'
 
-type SaveState = 'saved' | 'saving' | 'failed'
+type SaveState = 'saved' | 'saving' | 'failed' | 'anonymous'
 
 type LocalDraft = {
   code: string
@@ -43,11 +45,14 @@ function readLocalDraft(key: string): LocalDraft | undefined {
 }
 
 export function Exercise() {
+  const auth = useAuth()
   const { courseId = '', moduleId = '', exerciseId = '' } = useParams()
   const { setPageContext, openTutorWithContext } = useTutor()
   const runner = useMemo(() => new PyodideRunner(), [])
   const exerciseQuery = useGetCourseModuleExercise(courseId, moduleId, exerciseId)
-  const workspaceQuery = useGetExerciseWorkspace(courseId, moduleId, exerciseId)
+  const workspaceQuery = useGetExerciseWorkspace(courseId, moduleId, exerciseId, {
+    query: { enabled: auth.isAuthenticated },
+  })
   const checkDefinitionQuery = useGetExerciseCheckDefinition(courseId, moduleId, exerciseId, {
     query: { enabled: false },
   })
@@ -80,6 +85,7 @@ export function Exercise() {
   const createAttempt = useCreateExerciseAttempt()
 
   function queueWorkspaceSave(codeToSave: string) {
+    if (!auth.isAuthenticated) return
     saveQueue.enqueue(async () => {
       try {
         const response = await saveWorkspaceRef.current({
@@ -109,7 +115,17 @@ export function Exercise() {
   }, [draftKey])
 
   useEffect(() => {
-    if (initialized.current || !workspaceQuery.data) return
+    if (auth.isPending || auth.isAuthenticated || initialized.current || !exerciseQuery.data) return
+    const starterCode = exerciseQuery.data.data.starterCode
+    savedCode.current = starterCode
+    skipNextSave.current = true
+    setCode(starterCode)
+    setSaveState('anonymous')
+    initialized.current = true
+  }, [auth.isAuthenticated, auth.isPending, exerciseQuery.data])
+
+  useEffect(() => {
+    if (!auth.isAuthenticated || initialized.current || !workspaceQuery.data) return
     const serverCode = workspaceQuery.data.data.code
     const local = readLocalDraft(draftKey)
     const recoveredCode = local?.savedCode === serverCode ? local.code : serverCode
@@ -118,10 +134,16 @@ export function Exercise() {
     setCode(recoveredCode)
     setSaveState(recoveredCode === serverCode ? 'saved' : 'saving')
     initialized.current = true
-  }, [draftKey, workspaceQuery.data])
+  }, [auth.isAuthenticated, draftKey, workspaceQuery.data])
 
   useEffect(() => {
-    if (initialized.current || !workspaceQuery.isError || !exerciseQuery.data) return
+    if (
+      !auth.isAuthenticated ||
+      initialized.current ||
+      !workspaceQuery.isError ||
+      !exerciseQuery.data
+    )
+      return
     const local = readLocalDraft(draftKey)
     const fallback = local?.code ?? exerciseQuery.data.data.starterCode
     savedCode.current = local?.savedCode ?? fallback
@@ -129,21 +151,21 @@ export function Exercise() {
     setCode(fallback)
     setSaveState('failed')
     initialized.current = true
-  }, [draftKey, exerciseQuery.data, workspaceQuery.isError])
+  }, [auth.isAuthenticated, draftKey, exerciseQuery.data, workspaceQuery.isError])
 
   useEffect(() => {
     if (skipNextSave.current) {
       skipNextSave.current = false
       return
     }
-    if (!initialized.current || code === savedCode.current) return
+    if (!auth.isAuthenticated || !initialized.current || code === savedCode.current) return
     setSaveState('saving')
     localStorage.setItem(draftKey, JSON.stringify({ code, savedCode: savedCode.current }))
     const timer = window.setTimeout(() => {
       queueWorkspaceSave(code)
     }, 700)
     return () => window.clearTimeout(timer)
-  }, [code, courseId, draftKey, exerciseId, moduleId])
+  }, [auth.isAuthenticated, code, courseId, draftKey, exerciseId, moduleId])
 
   useEffect(() => () => runner.dispose(), [runner])
 
@@ -210,29 +232,34 @@ export function Exercise() {
   }
 
   async function check() {
+    if (!exercise) return
     setExecuting(true)
     setExecutionError(undefined)
     setRunResult(undefined)
     try {
-      const definition = await checkDefinitionQuery.refetch()
-      if (!definition.data) throw new Error('Exercise checks are unavailable')
-      const result = await runner.check({ code, tests: definition.data.data.tests })
+      const tests = auth.isAuthenticated
+        ? (await checkDefinitionQuery.refetch()).data?.data.tests
+        : exercise.visibleTests.map((test) => ({ ...test, visibility: 'visible' as const }))
+      if (!tests) throw new Error('Exercise checks are unavailable')
+      const result = await runner.check({ code, tests })
       setCheckResult(result)
-      await createAttempt.mutateAsync({
-        courseId,
-        moduleId,
-        exerciseId,
-        data: {
-          codeSnapshot: code,
-          durationMs: result.durationMs,
-          results: result.tests.map((test) => ({
-            testId: test.testId,
-            status: test.status,
-            message: test.message,
-            durationMs: test.durationMs,
-          })),
-        },
-      })
+      if (auth.isAuthenticated) {
+        await createAttempt.mutateAsync({
+          courseId,
+          moduleId,
+          exerciseId,
+          data: {
+            codeSnapshot: code,
+            durationMs: result.durationMs,
+            results: result.tests.map((test) => ({
+              testId: test.testId,
+              status: test.status,
+              message: test.message,
+              durationMs: test.durationMs,
+            })),
+          },
+        })
+      }
     } catch (error) {
       setExecutionError(error instanceof Error ? error.message : String(error))
     } finally {
@@ -240,7 +267,11 @@ export function Exercise() {
     }
   }
 
-  if (exerciseQuery.isLoading || workspaceQuery.isLoading) {
+  if (
+    exerciseQuery.isLoading ||
+    auth.isPending ||
+    (auth.isAuthenticated && workspaceQuery.isLoading)
+  ) {
     return <Card className="p-8 text-sm text-muted">Loading exercise workspace…</Card>
   }
   if (!exercise) {
@@ -254,6 +285,7 @@ export function Exercise() {
     saved: 'Saved',
     saving: 'Saving…',
     failed: 'Save failed · local draft kept',
+    anonymous: 'Browser-only · not saved',
   }
 
   return (
@@ -332,9 +364,14 @@ export function Exercise() {
                   Run ▶
                 </Button>
                 <Button disabled={executing} onClick={check} variant="secondary">
-                  Check ✓
+                  {auth.isAuthenticated ? 'Check & save ✓' : 'Check visible tests ✓'}
                 </Button>
               </div>
+              {!auth.isAuthenticated ? (
+                <SignInLink className="text-sm font-bold text-accent-teal no-underline hover:text-ink">
+                  Sign in to save attempts
+                </SignInLink>
+              ) : null}
               <button
                 className="border-0 bg-transparent p-0 text-sm text-accent-gold"
                 onClick={() =>

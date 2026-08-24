@@ -60,6 +60,23 @@ const progress: CourseProgressResource = {
 }
 
 describe('lesson completion UI', () => {
+  it('offers sign-in instead of a progress mutation while anonymous', () => {
+    const onChange = vi.fn()
+    render(
+      <MemoryRouter initialEntries={['/courses/ai-ml/modules/python/lessons/intro']}>
+        <LessonCompletionControl
+          authenticated={false}
+          completed={false}
+          pending={false}
+          onChange={onChange}
+        />
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByRole('link', { name: 'Sign in to track progress' })).toBeDefined()
+    expect(onChange).not.toHaveBeenCalled()
+  })
+
   it('requires an explicit click to mark a lesson complete', async () => {
     const onChange = vi.fn()
     render(<LessonCompletionControl completed={false} pending={false} onChange={onChange} />)

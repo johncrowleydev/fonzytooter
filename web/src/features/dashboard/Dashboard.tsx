@@ -6,14 +6,22 @@ import type { CourseProgressResource } from '../../api/generated/schemas/courseP
 import { coursePath, DEFAULT_COURSE_ID, exercisePath, lessonPath } from '../../app/routes'
 import { Badge, Card, PageIntro, SectionHeading } from '../../components/ui'
 import { useTutor } from '../tutor/TutorContext'
+import { useAuth } from '../authentication/AuthContext'
+import { SignInRequired } from '../authentication/SignInRequired'
 import { formatDashboardDate, formatDashboardGreeting } from './time'
 
 export function Dashboard() {
+  const auth = useAuth()
   const { setPageContext } = useTutor()
   const now = new Date()
   const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone
-  const progressQuery = useGetCourseProgress(DEFAULT_COURSE_ID)
-  const activityQuery = useListActivities({ courseId: DEFAULT_COURSE_ID, limit: 6 })
+  const progressQuery = useGetCourseProgress(DEFAULT_COURSE_ID, {
+    query: { enabled: auth.isAuthenticated },
+  })
+  const activityQuery = useListActivities(
+    { courseId: DEFAULT_COURSE_ID, limit: 6 },
+    { query: { enabled: auth.isAuthenticated } },
+  )
 
   useEffect(() => {
     setPageContext({ type: 'dashboard', title: 'Home', courseId: DEFAULT_COURSE_ID })
@@ -26,6 +34,19 @@ export function Dashboard() {
       detail="A focused place to pick up where you left off."
     />
   )
+
+  if (auth.isPending) {
+    return <DashboardState intro={intro} title="Checking learner access" />
+  }
+  if (!auth.isAuthenticated) {
+    return (
+      <SignInRequired
+        title="Your learning dashboard"
+        detail="Sign in to see saved progress and activity. You can browse the complete curriculum without an account."
+        returnTo="/"
+      />
+    )
+  }
 
   if (progressQuery.isPending || activityQuery.isPending) {
     return <DashboardState intro={intro} title="Loading your learning state" />

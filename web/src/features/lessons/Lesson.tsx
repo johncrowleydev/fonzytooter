@@ -18,8 +18,10 @@ import { useTutor } from '../tutor/TutorContext'
 import { externalHost, safeExternalUrl } from '../curriculum/externalLinks'
 import { LessonMdx } from './LessonMdx'
 import { LessonCompletionControl } from './LessonCompletionControl'
+import { useAuth } from '../authentication/AuthContext'
 
 export function Lesson() {
+  const auth = useAuth()
   const { courseId, moduleId, lessonId } = useParams()
   const courseQuery = useGetCourse(courseId ?? '', {
     query: { enabled: Boolean(courseId) },
@@ -52,7 +54,7 @@ export function Lesson() {
       ? lesson
       : undefined
   const progressQuery = useGetLessonProgress(courseId ?? '', moduleId ?? '', lessonId ?? '', {
-    query: { enabled: Boolean(matchingLesson) },
+    query: { enabled: auth.isAuthenticated && Boolean(matchingLesson) },
   })
   const queryClient = useQueryClient()
   const updateProgress = usePutLessonProgress({
@@ -209,8 +211,9 @@ export function Lesson() {
             worksheets={lesson.worksheets}
           />
           <LessonCompletionControl
+            authenticated={auth.isAuthenticated}
             completed={progressQuery.data?.data.completed ?? false}
-            pending={progressQuery.isPending || updateProgress.isPending}
+            pending={auth.isAuthenticated && (progressQuery.isPending || updateProgress.isPending)}
             error={
               progressQuery.isError || updateProgress.isError
                 ? 'Lesson progress could not be saved. Try again.'

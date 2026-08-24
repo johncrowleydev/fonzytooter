@@ -1,8 +1,15 @@
 import { cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { MemoryRouter } from 'react-router-dom'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { TutorOverlay } from './TutorOverlay'
 import { TutorProvider, useTutor } from './TutorContext'
+
+const authState = vi.hoisted(() => ({ isAuthenticated: true }))
+
+vi.mock('../authentication/AuthContext', () => ({
+  useAuth: () => ({ isPending: false, isAuthenticated: authState.isAuthenticated }),
+}))
 
 afterEach(cleanup)
 
@@ -26,9 +33,11 @@ function TutorHarness() {
 
 function renderHarness() {
   return render(
-    <TutorProvider>
-      <TutorHarness />
-    </TutorProvider>,
+    <MemoryRouter>
+      <TutorProvider>
+        <TutorHarness />
+      </TutorProvider>
+    </MemoryRouter>,
   )
 }
 
@@ -39,7 +48,10 @@ const openTutor = async () => {
 }
 
 describe('TutorOverlay keyboard handling', () => {
-  beforeEach(renderHarness)
+  beforeEach(() => {
+    authState.isAuthenticated = true
+    renderHarness()
+  })
 
   it('names the dialog by its heading rather than leaving it anonymous', async () => {
     const dialog = await openTutor()
@@ -108,5 +120,17 @@ describe('TutorOverlay keyboard handling', () => {
 
     await userEvent.keyboard('{Escape}')
     expect(document.body.style.overflow).toBe('')
+  })
+})
+
+describe('TutorOverlay authentication boundary', () => {
+  it('keeps the tutor discoverable but requires sign-in before interaction', async () => {
+    authState.isAuthenticated = false
+    renderHarness()
+    await openTutor()
+
+    expect(screen.getByRole('heading', { name: 'Sign in to ask the tutor' })).toBeDefined()
+    expect(screen.getByRole('link', { name: 'Sign in and return here' })).toBeDefined()
+    expect(screen.queryByPlaceholderText('Ask anything about this screen…')).toBeNull()
   })
 })
