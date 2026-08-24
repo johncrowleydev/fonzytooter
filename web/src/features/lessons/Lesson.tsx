@@ -175,7 +175,7 @@ export function Lesson() {
   }
 
   return (
-    <div className="grid max-w-none gap-7 max-sm:gap-5">
+    <div className="grid min-w-0 max-w-none gap-7 max-sm:gap-5">
       <div className="flex items-center gap-2.5 text-sm text-faint max-sm:gap-2">
         <Link
           className="text-muted no-underline hover:text-accent-teal"
@@ -190,7 +190,7 @@ export function Lesson() {
         </span>
       </div>
 
-      <article className="relative" onMouseUp={() => handleSelection(setSelectedText)}>
+      <article className="relative min-w-0" onMouseUp={() => handleSelection(setSelectedText)}>
         <PageIntro
           compact
           eyebrow={`Lesson ${String(lessonIndex + 1).padStart(2, '0')} · ${module.title}`}
