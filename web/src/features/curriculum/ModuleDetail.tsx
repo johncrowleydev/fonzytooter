@@ -13,8 +13,10 @@ import { useTutor } from '../tutor/TutorContext'
 import { downloadPdf, pdfDownloadErrorMessage } from '../worksheets/downloadPdf'
 import { hasWorkbook } from '../worksheets/workbookAvailability'
 import { ModuleVideoPlaylist } from './ModuleVideoPlaylist'
+import { useAuth } from '../authentication/AuthContext'
 
 export function ModuleDetail() {
+  const auth = useAuth()
   const { courseId, moduleId } = useParams()
   const courseQuery = useGetCourse(courseId ?? '', {
     query: { enabled: Boolean(courseId) },
@@ -92,10 +94,18 @@ export function ModuleDetail() {
     )
   }
 
-  return <ModuleContent course={course} module={module} />
+  return <ModuleContent course={course} module={module} authenticated={auth.isAuthenticated} />
 }
 
-function ModuleContent({ course, module }: { course: CourseResource; module: ModuleResource }) {
+function ModuleContent({
+  course,
+  module,
+  authenticated,
+}: {
+  course: CourseResource
+  module: ModuleResource
+  authenticated: boolean
+}) {
   const [downloadingWorkbook, setDownloadingWorkbook] = useState<'student' | 'solutions' | null>(
     null,
   )
@@ -307,7 +317,7 @@ function ModuleContent({ course, module }: { course: CourseResource; module: Mod
         </section>
       ) : null}
 
-      <ModuleVideoPlaylist module={module} />
+      <ModuleVideoPlaylist module={module} authenticated={authenticated} />
     </div>
   )
 }

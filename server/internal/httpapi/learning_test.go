@@ -72,12 +72,49 @@ func TestLearningAPICompletionProgressAndActivity(t *testing.T) {
 	}
 }
 
+func TestLearningAPIVideoCompletionIsIdempotentExposureOnly(t *testing.T) {
+	app := testLearningAPI(t)
+	path := "/api/courses/ai-ml/modules/python/videos/python-video/progress"
+
+	response := serve(t, app.Handler, http.MethodGet, path)
+	if response.Code != http.StatusOK {
+		t.Fatalf("default video progress = %d: %s", response.Code, response.Body.String())
+	}
+	var initial VideoProgressResource
+	decodeJSON(t, response, &initial)
+	if initial.Completed || initial.CompletedAt != nil {
+		t.Fatalf("expected incomplete video, got %#v", initial)
+	}
+
+	for range 2 {
+		response = serveJSON(t, app.Handler, http.MethodPut, path, `{"completed":true}`)
+		if response.Code != http.StatusOK {
+			t.Fatalf("complete video = %d: %s", response.Code, response.Body.String())
+		}
+	}
+
+	activityResponse := serve(t, app.Handler, http.MethodGet, "/api/activities?courseId=ai-ml")
+	var activities []ActivityResource
+	decodeJSON(t, activityResponse, &activities)
+	if len(activities) != 1 || activities[0].Kind != learner.ActivityVideoCompleted || activities[0].VideoID == nil || *activities[0].VideoID != "python-video" {
+		t.Fatalf("expected one video completion activity, got %#v", activities)
+	}
+
+	courseResponse := serve(t, app.Handler, http.MethodGet, "/api/courses/ai-ml/progress")
+	var courseProgress CourseProgressResource
+	decodeJSON(t, courseResponse, &courseProgress)
+	if courseProgress.CompletedLessonCount != 0 || len(courseProgress.Objectives) != 1 || courseProgress.Objectives[0].Introduced {
+		t.Fatalf("video exposure changed learning progress: %#v", courseProgress)
+	}
+}
+
 func TestLearningAPIMissingIdentityReturnsNotFound(t *testing.T) {
 	app := testLearningAPI(t)
 	paths := []string{
 		"/api/courses/other/modules/python/lessons/lesson.stable/progress",
 		"/api/courses/ai-ml/modules/extra/lessons/lesson.stable/progress",
 		"/api/courses/ai-ml/modules/python/lessons/missing/progress",
+		"/api/courses/ai-ml/modules/python/videos/missing/progress",
 		"/api/courses/missing/progress",
 		"/api/activities?courseId=missing",
 	}
@@ -114,6 +151,10 @@ func TestLearningOpenAPIContract(t *testing.T) {
 	}
 	if activityPath.Post != nil {
 		t.Fatal("activity API exposes an arbitrary create operation")
+	}
+	videoPath := app.Spec.Paths["/api/courses/{courseId}/modules/{moduleId}/videos/{videoId}/progress"]
+	if videoPath == nil || videoPath.Get == nil || videoPath.Get.OperationID != "getVideoProgress" || videoPath.Put == nil || videoPath.Put.OperationID != "putVideoProgress" {
+		t.Fatalf("missing video progress resource operations: %#v", videoPath)
 	}
 }
 

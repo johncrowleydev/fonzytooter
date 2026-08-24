@@ -37,6 +37,8 @@ func TestEveryOperationHasExplicitAccessPolicyAndOpenAPISecurity(t *testing.T) {
 		"getCourseModuleWorkbook":            accessPublic,
 		"getLessonProgress":                  accessAuthenticated,
 		"putLessonProgress":                  accessAuthenticated,
+		"getVideoProgress":                   accessAuthenticated,
+		"putVideoProgress":                   accessAuthenticated,
 		"getCourseProgress":                  accessAuthenticated,
 		"listActivities":                     accessAuthenticated,
 		"getExerciseCheckDefinition":         accessAuthenticated,
@@ -105,7 +107,7 @@ func TestAnonymousAndAuthenticatedAPIBoundary(t *testing.T) {
 			t.Fatalf("anonymous public GET %s = %d: %s", path, response.Code, response.Body.String())
 		}
 	}
-	for _, table := range []string{"lesson_progress", "activities", "exercise_workspaces", "exercise_attempts", "review_cards", "review_logs", "tutor_conversations"} {
+	for _, table := range []string{"lesson_progress", "video_progress", "activities", "exercise_workspaces", "exercise_attempts", "review_cards", "review_logs", "tutor_conversations"} {
 		var count int
 		if err := stateDB.QueryRow("SELECT COUNT(*) FROM " + table).Scan(&count); err != nil || count != 0 {
 			t.Fatalf("anonymous curriculum reads changed %s: count=%d err=%v", table, count, err)
@@ -119,6 +121,8 @@ func TestAnonymousAndAuthenticatedAPIBoundary(t *testing.T) {
 	}{
 		{http.MethodGet, "/api/courses/ai-ml/modules/python/lessons/lesson.stable/progress", ""},
 		{http.MethodPut, "/api/courses/ai-ml/modules/python/lessons/lesson.stable/progress", `{"completed":true}`},
+		{http.MethodGet, "/api/courses/ai-ml/modules/python/videos/python-video/progress", ""},
+		{http.MethodPut, "/api/courses/ai-ml/modules/python/videos/python-video/progress", `{"completed":true}`},
 		{http.MethodGet, "/api/courses/ai-ml/progress", ""},
 		{http.MethodGet, "/api/activities?courseId=ai-ml", ""},
 		{http.MethodGet, "/api/courses/ai-ml/modules/python/exercises/python.example/check-definition", ""},
@@ -145,6 +149,8 @@ func TestAnonymousAndAuthenticatedAPIBoundary(t *testing.T) {
 	}{
 		{http.MethodGet, "/api/courses/ai-ml/modules/python/lessons/lesson.stable/progress", "", http.StatusOK},
 		{http.MethodPut, "/api/courses/ai-ml/modules/python/lessons/lesson.stable/progress", `{"completed":true}`, http.StatusOK},
+		{http.MethodGet, "/api/courses/ai-ml/modules/python/videos/python-video/progress", "", http.StatusOK},
+		{http.MethodPut, "/api/courses/ai-ml/modules/python/videos/python-video/progress", `{"completed":true}`, http.StatusOK},
 		{http.MethodGet, "/api/courses/ai-ml/progress", "", http.StatusOK},
 		{http.MethodGet, "/api/activities?courseId=ai-ml", "", http.StatusOK},
 		{http.MethodGet, "/api/courses/ai-ml/modules/python/exercises/python.example/check-definition", "", http.StatusOK},

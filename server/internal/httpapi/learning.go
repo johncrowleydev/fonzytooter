@@ -34,6 +34,35 @@ type LessonProgressResponse struct {
 	Body LessonProgressResource
 }
 
+type VideoProgressUpdate struct {
+	Completed bool `json:"completed"`
+}
+
+type PutVideoProgressInput struct {
+	CourseID string `path:"courseId"`
+	ModuleID string `path:"moduleId"`
+	VideoID  string `path:"videoId"`
+	Body     VideoProgressUpdate
+}
+
+type CourseVideoPathInput struct {
+	CourseID string `path:"courseId"`
+	ModuleID string `path:"moduleId"`
+	VideoID  string `path:"videoId"`
+}
+
+type VideoProgressResource struct {
+	CourseID    string     `json:"courseId"`
+	ModuleID    string     `json:"moduleId"`
+	VideoID     string     `json:"videoId"`
+	Completed   bool       `json:"completed"`
+	CompletedAt *time.Time `json:"completedAt,omitempty"`
+}
+
+type VideoProgressResponse struct {
+	Body VideoProgressResource
+}
+
 type ObjectiveProgressResource struct {
 	CourseID             string                      `json:"courseId"`
 	ModuleID             string                      `json:"moduleId"`
@@ -109,6 +138,8 @@ type ActivityResource struct {
 	LessonTitle   *string   `json:"lessonTitle,omitempty"`
 	ExerciseID    *string   `json:"exerciseId,omitempty"`
 	ExerciseTitle *string   `json:"exerciseTitle,omitempty"`
+	VideoID       *string   `json:"videoId,omitempty"`
+	VideoTitle    *string   `json:"videoTitle,omitempty"`
 	ReviewItemID  *string   `json:"reviewItemId,omitempty"`
 	OccurredAt    time.Time `json:"occurredAt"`
 }
@@ -118,6 +149,50 @@ type ActivityListResponse struct {
 }
 
 func registerLearning(api huma.API, service *learner.Service) {
+	huma.Register[CourseVideoPathInput, VideoProgressResponse](api, authenticatedOperation(huma.Operation{
+		OperationID: "getVideoProgress",
+		Method:      http.MethodGet,
+		Path:        "/api/courses/{courseId}/modules/{moduleId}/videos/{videoId}/progress",
+		Summary:     "Get video progress",
+		Tags:        []string{"learner"},
+		Errors:      []int{http.StatusNotFound, http.StatusInternalServerError},
+	}), func(ctx context.Context, input *CourseVideoPathInput) (*VideoProgressResponse, error) {
+		if service == nil {
+			return nil, huma.Error500InternalServerError("learner service is unavailable")
+		}
+		userID, err := requireUserID(ctx)
+		if err != nil {
+			return nil, err
+		}
+		progress, err := service.VideoProgress(ctx, userID, input.CourseID, input.ModuleID, input.VideoID)
+		if err != nil {
+			return nil, learningError("get video progress", err)
+		}
+		return &VideoProgressResponse{Body: videoProgressResource(progress)}, nil
+	})
+
+	huma.Register[PutVideoProgressInput, VideoProgressResponse](api, authenticatedOperation(huma.Operation{
+		OperationID: "putVideoProgress",
+		Method:      http.MethodPut,
+		Path:        "/api/courses/{courseId}/modules/{moduleId}/videos/{videoId}/progress",
+		Summary:     "Replace video progress",
+		Tags:        []string{"learner"},
+		Errors:      []int{http.StatusNotFound, http.StatusInternalServerError},
+	}), func(ctx context.Context, input *PutVideoProgressInput) (*VideoProgressResponse, error) {
+		if service == nil {
+			return nil, huma.Error500InternalServerError("learner service is unavailable")
+		}
+		userID, err := requireUserID(ctx)
+		if err != nil {
+			return nil, err
+		}
+		progress, err := service.SetVideoProgress(ctx, userID, input.CourseID, input.ModuleID, input.VideoID, input.Body.Completed)
+		if err != nil {
+			return nil, learningError("put video progress", err)
+		}
+		return &VideoProgressResponse{Body: videoProgressResource(progress)}, nil
+	})
+
 	huma.Register[CourseLessonPathInput, LessonProgressResponse](api, authenticatedOperation(huma.Operation{
 		OperationID: "getLessonProgress",
 		Method:      http.MethodGet,
@@ -250,6 +325,7 @@ func registerLearning(api huma.API, service *learner.Service) {
 				ModuleTitle: activity.ModuleTitle, LessonID: activity.LessonID,
 				LessonTitle: activity.LessonTitle, ExerciseID: activity.ExerciseID,
 				ExerciseTitle: activity.ExerciseTitle, ReviewItemID: activity.ReviewItemID,
+				VideoID: activity.VideoID, VideoTitle: activity.VideoTitle,
 				OccurredAt: activity.OccurredAt,
 			})
 		}
@@ -271,8 +347,15 @@ func lessonProgressResource(progress learner.LessonProgress) LessonProgressResou
 	}
 }
 
+func videoProgressResource(progress learner.VideoProgress) VideoProgressResource {
+	return VideoProgressResource{
+		CourseID: progress.CourseID, ModuleID: progress.ModuleID, VideoID: progress.VideoID,
+		Completed: progress.Completed, CompletedAt: progress.CompletedAt,
+	}
+}
+
 func learningError(operation string, err error) error {
-	if errors.Is(err, learner.ErrCourseNotFound) || errors.Is(err, learner.ErrLessonNotFound) {
+	if errors.Is(err, learner.ErrCourseNotFound) || errors.Is(err, learner.ErrLessonNotFound) || errors.Is(err, learner.ErrVideoNotFound) {
 		return huma.Error404NotFound(err.Error())
 	}
 	log.Printf("%s: %v", operation, err)

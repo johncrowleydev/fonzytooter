@@ -26,14 +26,15 @@ func TestOpenCreatesParentAndMigratesFreshDatabase(t *testing.T) {
 	}
 
 	var migrationCount int
-	if err := db.QueryRow("SELECT COUNT(*) FROM goose_db_version WHERE version_id BETWEEN 1 AND 11 AND is_applied = 1").Scan(&migrationCount); err != nil {
+	if err := db.QueryRow("SELECT COUNT(*) FROM goose_db_version WHERE version_id BETWEEN 1 AND 12 AND is_applied = 1").Scan(&migrationCount); err != nil {
 		t.Fatalf("query migration state: %v", err)
 	}
-	if migrationCount != 11 {
+	if migrationCount != 12 {
 		t.Fatalf("expected all migrations, got %d rows", migrationCount)
 	}
 	for _, table := range []string{
 		"lesson_progress",
+		"video_progress",
 		"activities",
 		"exercise_workspaces",
 		"exercise_attempts",
@@ -137,10 +138,10 @@ func TestOpenMigratesIdempotently(t *testing.T) {
 	t.Cleanup(func() { _ = second.Close() })
 
 	var migrationCount int
-	if err := second.QueryRow("SELECT COUNT(*) FROM goose_db_version WHERE version_id BETWEEN 1 AND 11 AND is_applied = 1").Scan(&migrationCount); err != nil {
+	if err := second.QueryRow("SELECT COUNT(*) FROM goose_db_version WHERE version_id BETWEEN 1 AND 12 AND is_applied = 1").Scan(&migrationCount); err != nil {
 		t.Fatalf("query migration state: %v", err)
 	}
-	if migrationCount != 11 {
+	if migrationCount != 12 {
 		t.Fatalf("expected all migrations after reopening, got %d", migrationCount)
 	}
 }

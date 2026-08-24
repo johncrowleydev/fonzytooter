@@ -144,6 +144,55 @@ migrations:
 	}
 }
 
+func TestVideoStateAuditAndMigrationPreserveStableIdentity(t *testing.T) {
+	db := openTestDatabase(t)
+	if _, err := db.Exec(`INSERT INTO video_progress (user_id, course_id, module_id, video_id, completed, completed_at, updated_at) VALUES ('00000000-0000-4000-8000-000000000001', 'course', 'module', 'old-video', 1, '2026-01-01', '2026-01-01')`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec(`INSERT INTO activities (user_id, kind, course_id, module_id, video_id, occurred_at) VALUES ('00000000-0000-4000-8000-000000000001', 'video_completed', 'course', 'module', 'old-video', '2026-01-01')`); err != nil {
+		t.Fatal(err)
+	}
+	current := videoCatalog(t, "new-video")
+	report, err := Audit(context.Background(), db, current)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(report.Findings) != 2 {
+		t.Fatalf("expected retired video state findings, got %#v", report.Findings)
+	}
+
+	migrations := parseMigrations(t, `version: 1
+migrations:
+  - entity: video
+    from: course/module/old-video
+    to: course/module/new-video
+`)
+	updates, err := ApplyMigrations(context.Background(), db, current, migrations)
+	if err != nil {
+		t.Fatalf("migrate video identity: %v", err)
+	}
+	if len(updates) != 1 || updates[0].Updates != 2 {
+		t.Fatalf("unexpected video migration updates: %#v", updates)
+	}
+	report, err = Audit(context.Background(), db, current)
+	if err != nil || !report.Clean() {
+		t.Fatalf("migrated video state did not resolve: %#v, %v", report.Findings, err)
+	}
+}
+
+func videoCatalog(t *testing.T, videoID string) *curriculum.Catalog {
+	t.Helper()
+	catalog, err := curriculum.Load(fstest.MapFS{
+		"sources.yaml":                              {Data: []byte("sources: {}\n")},
+		"courses/course/course.yaml":                {Data: []byte("id: course\ntitle: Course\ndescription: Course.\norder: 0\n")},
+		"courses/course/modules/module/module.yaml": {Data: []byte("id: module\ntitle: Module\norder: 0\nobjectives:\n  - id: objective\n    title: Objective\n    description: Objective.\n    prerequisites: []\nvideos:\n  - id: " + videoID + "\n    youtubeId: dQw4w9WgXcQ\n    title: Video\n    channel: Channel\n    durationMinutes: 5\n    order: 0\n    objectiveIds: [objective]\nlessons: []\n")},
+	})
+	if err != nil {
+		t.Fatalf("load video catalog: %v", err)
+	}
+	return catalog
+}
+
 func TestRemovedMigrationNeverDeletesHistoricalRows(t *testing.T) {
 	db := openTestDatabase(t)
 	seedHistory(t, db, identitySet{"lesson", "exercise", "test", "review"})

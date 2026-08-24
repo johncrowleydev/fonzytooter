@@ -34,6 +34,7 @@ func Audit(ctx context.Context, db *sql.DB, catalog *curriculum.Catalog) (Report
 		auditExerciseTestResults,
 		auditExerciseWorkspaces,
 		auditLessonProgress,
+		auditVideoProgress,
 		auditReviewCards,
 		auditReviewLogs,
 	}
@@ -55,6 +56,38 @@ func Audit(ctx context.Context, db *sql.DB, catalog *curriculum.Catalog) (Report
 		return report.Findings[i].Reason < report.Findings[j].Reason
 	})
 	return report, nil
+}
+
+func auditVideoProgress(ctx context.Context, db queryer, catalog *curriculum.Catalog) ([]Finding, error) {
+	rows, err := db.QueryContext(ctx, `SELECT course_id, module_id, video_id FROM video_progress ORDER BY course_id, module_id, video_id`)
+	if err != nil {
+		return nil, fmt.Errorf("audit video_progress: %w", err)
+	}
+	defer rows.Close()
+	var findings []Finding
+	for rows.Next() {
+		var courseID, moduleID, videoID string
+		if err := rows.Scan(&courseID, &moduleID, &videoID); err != nil {
+			return nil, fmt.Errorf("scan video_progress: %w", err)
+		}
+		if !catalogVideoExists(catalog, courseID, moduleID, videoID) {
+			findings = append(findings, Finding{"video_progress", qualified(courseID, moduleID, videoID), "video does not exist in the current curriculum"})
+		}
+	}
+	return findings, rows.Err()
+}
+
+func catalogVideoExists(catalog *curriculum.Catalog, courseID, moduleID, videoID string) bool {
+	module, ok := catalog.ModuleByCourse(courseID, moduleID)
+	if !ok {
+		return false
+	}
+	for _, video := range module.Videos {
+		if video.ID == videoID {
+			return true
+		}
+	}
+	return false
 }
 
 func WriteReport(writer io.Writer, report Report) error {
@@ -227,7 +260,7 @@ func auditReviewLogs(ctx context.Context, db queryer, catalog *curriculum.Catalo
 
 func auditActivities(ctx context.Context, db queryer, catalog *curriculum.Catalog) ([]Finding, error) {
 	rows, err := db.QueryContext(ctx, `
-		SELECT id, kind, course_id, module_id, lesson_id, exercise_id, review_item_id
+		SELECT id, kind, course_id, module_id, lesson_id, exercise_id, video_id, review_item_id
 		FROM activities ORDER BY id`)
 	if err != nil {
 		return nil, fmt.Errorf("audit activities: %w", err)
@@ -237,8 +270,8 @@ func auditActivities(ctx context.Context, db queryer, catalog *curriculum.Catalo
 	for rows.Next() {
 		var id int64
 		var kind, courseID string
-		var moduleID, lessonID, exerciseID, reviewItemID sql.NullString
-		if err := rows.Scan(&id, &kind, &courseID, &moduleID, &lessonID, &exerciseID, &reviewItemID); err != nil {
+		var moduleID, lessonID, exerciseID, videoID, reviewItemID sql.NullString
+		if err := rows.Scan(&id, &kind, &courseID, &moduleID, &lessonID, &exerciseID, &videoID, &reviewItemID); err != nil {
 			return nil, fmt.Errorf("scan activities: %w", err)
 		}
 		var reasons []string
@@ -264,6 +297,13 @@ func auditActivities(ctx context.Context, db queryer, catalog *curriculum.Catalo
 				reasons = append(reasons, "exercise does not exist")
 			}
 		}
+		if videoID.Valid {
+			if !moduleID.Valid {
+				reasons = append(reasons, "video reference has no module_id")
+			} else if !catalogVideoExists(catalog, courseID, moduleID.String, videoID.String) {
+				reasons = append(reasons, "video does not exist")
+			}
+		}
 		if reviewItemID.Valid {
 			if !moduleID.Valid {
 				reasons = append(reasons, "review-item reference has no module_id")
@@ -276,26 +316,33 @@ func auditActivities(ctx context.Context, db queryer, catalog *curriculum.Catalo
 			if !lessonID.Valid {
 				reasons = append(reasons, "lesson_completed activity has no lesson_id")
 			}
-			if exerciseID.Valid || reviewItemID.Valid {
+			if exerciseID.Valid || videoID.Valid || reviewItemID.Valid {
 				reasons = append(reasons, "lesson_completed activity has unrelated identity columns")
 			}
 		case "exercise_checked":
 			if !exerciseID.Valid {
 				reasons = append(reasons, "exercise_checked activity has no exercise_id")
 			}
-			if lessonID.Valid || reviewItemID.Valid {
+			if lessonID.Valid || videoID.Valid || reviewItemID.Valid {
 				reasons = append(reasons, "exercise_checked activity has unrelated identity columns")
 			}
 		case "review_completed":
 			if !reviewItemID.Valid {
 				reasons = append(reasons, "review_completed activity has no review_item_id")
 			}
-			if lessonID.Valid || exerciseID.Valid {
+			if lessonID.Valid || exerciseID.Valid || videoID.Valid {
 				reasons = append(reasons, "review_completed activity has unrelated identity columns")
+			}
+		case "video_completed":
+			if !videoID.Valid {
+				reasons = append(reasons, "video_completed activity has no video_id")
+			}
+			if lessonID.Valid || exerciseID.Valid || reviewItemID.Valid {
+				reasons = append(reasons, "video_completed activity has unrelated identity columns")
 			}
 		}
 		if len(reasons) != 0 {
-			record := fmt.Sprintf("id=%d kind=%s course=%s module=%s lesson=%s exercise=%s review_item=%s", id, kind, courseID, nullable(moduleID), nullable(lessonID), nullable(exerciseID), nullable(reviewItemID))
+			record := fmt.Sprintf("id=%d kind=%s course=%s module=%s lesson=%s exercise=%s video=%s review_item=%s", id, kind, courseID, nullable(moduleID), nullable(lessonID), nullable(exerciseID), nullable(videoID), nullable(reviewItemID))
 			findings = append(findings, Finding{"activities", record, strings.Join(reasons, "; ")})
 		}
 	}

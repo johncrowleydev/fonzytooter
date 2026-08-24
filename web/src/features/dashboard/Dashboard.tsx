@@ -3,7 +3,13 @@ import { Link } from 'react-router-dom'
 import { useGetCourseProgress, useListActivities } from '../../api/generated/endpoints'
 import type { ActivityResource } from '../../api/generated/schemas/activityResource.zod'
 import type { CourseProgressResource } from '../../api/generated/schemas/courseProgressResource.zod'
-import { coursePath, DEFAULT_COURSE_ID, exercisePath, lessonPath } from '../../app/routes'
+import {
+  coursePath,
+  DEFAULT_COURSE_ID,
+  exercisePath,
+  lessonPath,
+  modulePath,
+} from '../../app/routes'
 import { Badge, Card, PageIntro, SectionHeading } from '../../components/ui'
 import { useTutor } from '../tutor/TutorContext'
 import { useAuth } from '../authentication/AuthContext'
@@ -215,6 +221,7 @@ export function ActivityList({ activities }: { activities: ActivityResource[] })
       {activities.map((activity) => {
         const exerciseChecked = activity.kind === 'exercise_checked' && Boolean(activity.exerciseId)
         const reviewCompleted = activity.kind === 'review_completed'
+        const videoCompleted = activity.kind === 'video_completed' && Boolean(activity.videoId)
         const content = (
           <>
             <span className="grid size-6 place-items-center rounded-lg bg-accent-gold/10 text-sm text-accent-gold">
@@ -224,9 +231,11 @@ export function ActivityList({ activities }: { activities: ActivityResource[] })
               <strong className="block text-sm font-semibold">
                 {reviewCompleted
                   ? `Reviewed ${activity.reviewItemId ?? 'recall prompt'}`
-                  : exerciseChecked
-                    ? `Checked ${activity.exerciseTitle ?? activity.exerciseId}`
-                    : `Completed ${activity.lessonTitle ?? 'lesson'}`}
+                  : videoCompleted
+                    ? `Watched ${activity.videoTitle ?? activity.videoId}`
+                    : exerciseChecked
+                      ? `Checked ${activity.exerciseTitle ?? activity.exerciseId}`
+                      : `Completed ${activity.lessonTitle ?? 'lesson'}`}
               </strong>
               <span className="mt-1 block text-sm text-faint">
                 {activity.moduleTitle ?? activity.courseTitle}
@@ -241,6 +250,14 @@ export function ActivityList({ activities }: { activities: ActivityResource[] })
           'grid grid-cols-[24px_1fr_auto] items-center gap-2.5 border-t border-line py-2.5 text-ink no-underline'
         return reviewCompleted ? (
           <Link className={`${className} hover:text-accent-teal`} key={activity.id} to="/review">
+            {content}
+          </Link>
+        ) : videoCompleted && activity.moduleId ? (
+          <Link
+            className={`${className} hover:text-accent-teal`}
+            key={activity.id}
+            to={modulePath(activity.courseId, activity.moduleId)}
+          >
             {content}
           </Link>
         ) : exerciseChecked && activity.moduleId && activity.exerciseId ? (
