@@ -218,7 +218,7 @@ func authorizationTestAPI(t *testing.T) (*API, *http.Cookie, *sql.DB) {
 	catalog := testCatalog(t)
 	learnerService := learner.NewService(db, catalog)
 	reviewService := review.NewService(db, catalog, review.SystemClock{})
-	app, cookie := newTestAPIWithSession(t, tutor.NewService(tutor.NewUnavailableProvider()), catalog, learnerService, reviewService)
+	app, cookie := newTestAPIWithSession(t, tutor.NewService(tutor.NewUnavailableProvider(), httpCostGate(t, true, 10)), catalog, learnerService, reviewService)
 	return app, cookie, db
 }
 

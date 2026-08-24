@@ -54,6 +54,19 @@ func TestTutorCostGateAllowsAndReportsReservedTurn(t *testing.T) {
 	}
 }
 
+func TestTutorTurnReturnsServiceUnavailableWhenCostGateIsMissing(t *testing.T) {
+	provider := &costGateProvider{}
+	app, cookie := newTestAPIWithSession(t, tutor.NewService(provider), curriculum.NewEmptyCatalog(), nil, nil)
+
+	response := authorizationRequest(t, app.Handler, http.MethodPost, "/api/tutor/turns", `{"message":"hello"}`, cookie)
+	if response.Code != http.StatusServiceUnavailable {
+		t.Fatalf("missing cost gate status=%d, want 503: %s", response.Code, response.Body.String())
+	}
+	if provider.calls.Load() != 0 {
+		t.Fatalf("missing cost gate reached provider: calls=%d", provider.calls.Load())
+	}
+}
+
 type costGateProvider struct{ calls atomic.Int32 }
 
 func (p *costGateProvider) Stream(ctx context.Context, _ tutor.ModelRequest) (<-chan tutor.ProviderEvent, error) {

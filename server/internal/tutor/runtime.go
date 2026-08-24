@@ -151,10 +151,11 @@ func NewRuntimeService(config RuntimeConfig) (*Service, error) {
 }
 
 func (s *Service) StreamTurn(ctx context.Context, userID auth.UserID, request TurnRequest) (<-chan Event, error) {
-	if s.costGate != nil {
-		if _, err := s.costGate.ReserveTurn(ctx, userID); err != nil {
-			return nil, err
-		}
+	if s.costGate == nil {
+		return nil, ErrTutorPolicyUnavailable
+	}
+	if _, err := s.costGate.ReserveTurn(ctx, userID); err != nil {
+		return nil, err
 	}
 	if s.conversations == nil {
 		return s.streamUnpersisted(ctx, userID, request)

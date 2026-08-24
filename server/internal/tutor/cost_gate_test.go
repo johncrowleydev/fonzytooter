@@ -103,6 +103,19 @@ func TestTutorServiceCountsProviderFailureAndBlocksRetryAtLimit(t *testing.T) {
 	}
 }
 
+func TestTutorServiceRejectsMissingCostGateBeforeProviderInvocation(t *testing.T) {
+	provider := &countingFailureProvider{}
+	service := NewService(provider)
+
+	_, err := service.StreamTurn(context.Background(), testUserID, TurnRequest{Message: "hello"})
+	if !errors.Is(err, ErrTutorPolicyUnavailable) {
+		t.Fatalf("missing cost gate = %v, want %v", err, ErrTutorPolicyUnavailable)
+	}
+	if provider.calls.Load() != 0 {
+		t.Fatalf("missing cost gate reached provider: calls=%d", provider.calls.Load())
+	}
+}
+
 type countingFailureProvider struct{ calls atomic.Int32 }
 
 func (p *countingFailureProvider) Stream(context.Context, ModelRequest) (<-chan ProviderEvent, error) {
