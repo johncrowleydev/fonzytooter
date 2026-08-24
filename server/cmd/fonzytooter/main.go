@@ -12,6 +12,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/johncrowleydev/fonzytooter/server/internal/auth"
 	"github.com/johncrowleydev/fonzytooter/server/internal/config"
 	"github.com/johncrowleydev/fonzytooter/server/internal/curriculum"
 	"github.com/johncrowleydev/fonzytooter/server/internal/database"
@@ -90,6 +91,18 @@ func prepareServer(ctx context.Context, cfg config.Config, openDatabase database
 	}
 
 	conversationStore := tutor.NewConversationStore(db)
+	authService := auth.NewService(db, auth.SessionConfig{
+		Secure: cfg.Authentication.SecureCookie,
+		TTL:    cfg.Authentication.SessionTTL,
+	})
+	if err := authService.ProvisionBootstrap(ctx, auth.BootstrapConfig{
+		Username:    cfg.Authentication.Username,
+		Password:    cfg.Authentication.Password,
+		DisplayName: cfg.Authentication.DisplayName,
+	}); err != nil {
+		_ = db.Close()
+		return nil, nil, fmt.Errorf("configure authentication: %w", err)
+	}
 	tutorProvider, err := configuredTutorProvider(cfg)
 	if err != nil {
 		_ = db.Close()
@@ -102,7 +115,7 @@ func prepareServer(ctx context.Context, cfg config.Config, openDatabase database
 		_ = db.Close()
 		return nil, nil, err
 	}
-	server := httpapi.NewServer(cfg.Address, tutorService, catalog, learnerService, reviewService)
+	server := httpapi.NewServer(cfg.Address, tutorService, catalog, learnerService, reviewService, authService)
 	return server, db, nil
 }
 

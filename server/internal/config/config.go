@@ -2,6 +2,7 @@ package config
 
 import (
 	"os"
+	"strconv"
 	"time"
 )
 
@@ -9,7 +10,16 @@ type Config struct {
 	Address        string
 	DatabasePath   string
 	CurriculumPath string
+	Authentication AuthenticationConfig
 	OpenRouter     OpenRouterConfig
+}
+
+type AuthenticationConfig struct {
+	Username     string
+	Password     string
+	DisplayName  string
+	SecureCookie bool
+	SessionTTL   time.Duration
 }
 
 type OpenRouterConfig struct {
@@ -28,6 +38,13 @@ func FromEnv() Config {
 		Address:        valueOrDefault("FONZYTOOTER_ADDR", ":8080"),
 		DatabasePath:   valueOrDefault("FONZYTOOTER_DB_PATH", "./data/fonzytooter.db"),
 		CurriculumPath: valueOrDefault("FONZYTOOTER_CURRICULUM_PATH", "../curriculum"),
+		Authentication: AuthenticationConfig{
+			Username:     os.Getenv("FONZYTOOTER_AUTH_USERNAME"),
+			Password:     os.Getenv("FONZYTOOTER_AUTH_PASSWORD"),
+			DisplayName:  valueOrDefault("FONZYTOOTER_AUTH_DISPLAY_NAME", "Owner"),
+			SecureCookie: boolOrDefault("FONZYTOOTER_AUTH_SECURE_COOKIE", true),
+			SessionTTL:   durationOrDefault("FONZYTOOTER_AUTH_SESSION_TTL", 24*time.Hour),
+		},
 		OpenRouter: OpenRouterConfig{
 			APIKey:  os.Getenv("OPENROUTER_API_KEY"),
 			Model:   os.Getenv("FONZYTOOTER_TUTOR_MODEL"),
@@ -35,6 +52,18 @@ func FromEnv() Config {
 			Timeout: durationOrDefault("OPENROUTER_HTTP_TIMEOUT", 90*time.Second),
 		},
 	}
+}
+
+func boolOrDefault(name string, fallback bool) bool {
+	value := os.Getenv(name)
+	if value == "" {
+		return fallback
+	}
+	parsed, err := strconv.ParseBool(value)
+	if err != nil {
+		return fallback
+	}
+	return parsed
 }
 
 func valueOrDefault(name, fallback string) string {

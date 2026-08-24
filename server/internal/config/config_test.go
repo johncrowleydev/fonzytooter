@@ -56,3 +56,37 @@ func TestFromEnvUsesExplicitDatabasePath(t *testing.T) {
 		t.Fatalf("expected explicit database path, got %q", cfg.DatabasePath)
 	}
 }
+
+func TestFromEnvUsesSecureAuthenticationDefaults(t *testing.T) {
+	t.Setenv("FONZYTOOTER_AUTH_USERNAME", "")
+	t.Setenv("FONZYTOOTER_AUTH_PASSWORD", "")
+	t.Setenv("FONZYTOOTER_AUTH_DISPLAY_NAME", "")
+	t.Setenv("FONZYTOOTER_AUTH_SECURE_COOKIE", "")
+	t.Setenv("FONZYTOOTER_AUTH_SESSION_TTL", "")
+
+	cfg := FromEnv()
+
+	if cfg.Authentication.Username != "" || cfg.Authentication.Password != "" {
+		t.Fatal("expected authentication credentials to remain unconfigured")
+	}
+	if cfg.Authentication.DisplayName != "Owner" || !cfg.Authentication.SecureCookie || cfg.Authentication.SessionTTL != 24*time.Hour {
+		t.Fatalf("unexpected authentication defaults: %#v", cfg.Authentication)
+	}
+}
+
+func TestFromEnvConfiguresAuthenticationExplicitly(t *testing.T) {
+	t.Setenv("FONZYTOOTER_AUTH_USERNAME", "learner@example.test")
+	t.Setenv("FONZYTOOTER_AUTH_PASSWORD", "a-long-test-password")
+	t.Setenv("FONZYTOOTER_AUTH_DISPLAY_NAME", "Learner")
+	t.Setenv("FONZYTOOTER_AUTH_SECURE_COOKIE", "false")
+	t.Setenv("FONZYTOOTER_AUTH_SESSION_TTL", "8h")
+
+	cfg := FromEnv()
+
+	if cfg.Authentication.Username != "learner@example.test" || cfg.Authentication.Password != "a-long-test-password" {
+		t.Fatal("authentication credentials were not loaded from the environment")
+	}
+	if cfg.Authentication.DisplayName != "Learner" || cfg.Authentication.SecureCookie || cfg.Authentication.SessionTTL != 8*time.Hour {
+		t.Fatalf("unexpected authentication settings: %#v", cfg.Authentication)
+	}
+}
