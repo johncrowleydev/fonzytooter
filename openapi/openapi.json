@@ -1791,7 +1791,7 @@
     },
     "securitySchemes": {
       "sessionCookie": {
-        "description": "Opaque server-side Fonzytooter session cookie.",
+        "description": "Opaque Fonzytooter authentication session cookie.",
         "in": "cookie",
         "name": "fonzytooter_session",
         "type": "apiKey"
@@ -1841,6 +1841,16 @@
             },
             "description": "OK"
           },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
           "404": {
             "content": {
               "application/problem+json": {
@@ -1872,6 +1882,11 @@
             "description": "Internal Server Error"
           }
         },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
         "summary": "List recent learner activity",
         "tags": [
           "learner"
@@ -2348,6 +2363,16 @@
               }
             }
           },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
           "404": {
             "content": {
               "application/problem+json": {
@@ -2379,6 +2404,11 @@
             "description": "Internal Server Error"
           }
         },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
         "summary": "Create an exercise attempt",
         "tags": [
           "learner"
@@ -2425,6 +2455,16 @@
             },
             "description": "OK"
           },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
           "404": {
             "content": {
               "application/problem+json": {
@@ -2456,6 +2496,11 @@
             "description": "Internal Server Error"
           }
         },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
         "summary": "Get an exercise check definition",
         "tags": [
           "learner"
@@ -2502,6 +2547,16 @@
             },
             "description": "OK"
           },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
           "404": {
             "content": {
               "application/problem+json": {
@@ -2533,6 +2588,11 @@
             "description": "Internal Server Error"
           }
         },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
         "summary": "Get an exercise workspace",
         "tags": [
           "learner"
@@ -2587,6 +2647,16 @@
             },
             "description": "OK"
           },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
           "404": {
             "content": {
               "application/problem+json": {
@@ -2618,6 +2688,11 @@
             "description": "Internal Server Error"
           }
         },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
         "summary": "Replace an exercise workspace",
         "tags": [
           "learner"
@@ -2741,6 +2816,16 @@
             },
             "description": "OK"
           },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
           "404": {
             "content": {
               "application/problem+json": {
@@ -2772,6 +2857,11 @@
             "description": "Internal Server Error"
           }
         },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
         "summary": "Get lesson progress",
         "tags": [
           "learner"
@@ -2826,6 +2916,16 @@
             },
             "description": "OK"
           },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
           "404": {
             "content": {
               "application/problem+json": {
@@ -2857,6 +2957,11 @@
             "description": "Internal Server Error"
           }
         },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
         "summary": "Replace lesson progress",
         "tags": [
           "learner"
@@ -2921,6 +3026,16 @@
               }
             }
           },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
           "404": {
             "content": {
               "application/problem+json": {
@@ -2962,6 +3077,11 @@
             "description": "Internal Server Error"
           }
         },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
         "summary": "Create a review-card rating",
         "tags": [
           "learner"
@@ -3350,6 +3470,16 @@
             },
             "description": "OK"
           },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
           "404": {
             "content": {
               "application/problem+json": {
@@ -3381,6 +3511,11 @@
             "description": "Internal Server Error"
           }
         },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
         "summary": "Get course progress",
         "tags": [
           "learner"
@@ -3421,6 +3556,16 @@
             },
             "description": "OK"
           },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
           "404": {
             "content": {
               "application/problem+json": {
@@ -3452,6 +3597,11 @@
             "description": "Internal Server Error"
           }
         },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
         "summary": "List learner review cards",
         "tags": [
           "learner"
@@ -3527,6 +3677,16 @@
             },
             "description": "Bad Request"
           },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
           "422": {
             "content": {
               "application/problem+json": {
@@ -3558,6 +3718,11 @@
             "description": "Bad Gateway"
           }
         },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
         "summary": "Create a tutor turn and stream its events",
         "tags": [
           "tutor"

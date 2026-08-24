@@ -17,6 +17,17 @@ import (
 
 func newAuthenticatedTestAPI(t *testing.T, tutorService *tutor.Service, catalog *curriculum.Catalog, learnerService *learner.Service, reviewService *review.Service) *API {
 	t.Helper()
+	app, cookie := newTestAPIWithSession(t, tutorService, catalog, learnerService, reviewService)
+	underlying := app.Handler
+	app.Handler = http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
+		request.AddCookie(cookie)
+		underlying.ServeHTTP(response, request)
+	})
+	return app
+}
+
+func newTestAPIWithSession(t *testing.T, tutorService *tutor.Service, catalog *curriculum.Catalog, learnerService *learner.Service, reviewService *review.Service) (*API, *http.Cookie) {
+	t.Helper()
 	db, err := database.Open(context.Background(), filepath.Join(t.TempDir(), "auth.db"))
 	if err != nil {
 		t.Fatalf("open authentication database: %v", err)
@@ -33,11 +44,5 @@ func newAuthenticatedTestAPI(t *testing.T, tutorService *tutor.Service, catalog 
 		t.Fatalf("sign in test owner: %v", err)
 	}
 	app := NewAPIWithAuth(tutorService, catalog, learnerService, reviewService, authService)
-	underlying := app.Handler
-	cookie := authService.SessionCookie(token)
-	app.Handler = http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
-		request.AddCookie(cookie)
-		underlying.ServeHTTP(response, request)
-	})
-	return app
+	return app, authService.SessionCookie(token)
 }

@@ -52,23 +52,13 @@ type DeleteSessionResponse struct {
 }
 
 func registerAuthentication(api huma.API, service *auth.Service) {
-	if api.OpenAPI().Components.SecuritySchemes == nil {
-		api.OpenAPI().Components.SecuritySchemes = make(map[string]*huma.SecurityScheme)
-	}
-	api.OpenAPI().Components.SecuritySchemes[sessionSecurityScheme] = &huma.SecurityScheme{
-		Type:        "apiKey",
-		In:          "cookie",
-		Name:        auth.DefaultCookieName,
-		Description: "Opaque server-side Fonzytooter session cookie.",
-	}
-
-	huma.Register[struct{}, GetSessionResponse](api, huma.Operation{
+	huma.Register[struct{}, GetSessionResponse](api, publicOperation(huma.Operation{
 		OperationID: "getCurrentAuthenticationSession",
 		Method:      http.MethodGet,
 		Path:        "/api/authentication-sessions/current",
 		Summary:     "Get the current authentication session",
 		Tags:        []string{"authentication"},
-	}, func(ctx context.Context, _ *struct{}) (*GetSessionResponse, error) {
+	}), func(ctx context.Context, _ *struct{}) (*GetSessionResponse, error) {
 		user, ok := auth.CurrentUser(ctx)
 		if !ok {
 			return &GetSessionResponse{CacheControl: "no-store", Vary: "Cookie", Body: SessionResource{Authenticated: false}}, nil
@@ -76,7 +66,7 @@ func registerAuthentication(api huma.API, service *auth.Service) {
 		return &GetSessionResponse{CacheControl: "no-store", Vary: "Cookie", Body: authenticatedSession(user)}, nil
 	})
 
-	huma.Register[CreateSessionInput, CreateSessionResponse](api, huma.Operation{
+	huma.Register[CreateSessionInput, CreateSessionResponse](api, publicOperation(huma.Operation{
 		OperationID:   "createAuthenticationSession",
 		Method:        http.MethodPost,
 		Path:          "/api/authentication-sessions",
@@ -84,7 +74,7 @@ func registerAuthentication(api huma.API, service *auth.Service) {
 		Tags:          []string{"authentication"},
 		DefaultStatus: http.StatusCreated,
 		Errors:        []int{http.StatusUnauthorized, http.StatusServiceUnavailable},
-	}, func(ctx context.Context, input *CreateSessionInput) (*CreateSessionResponse, error) {
+	}), func(ctx context.Context, input *CreateSessionInput) (*CreateSessionResponse, error) {
 		if service == nil {
 			return nil, huma.Error503ServiceUnavailable("authentication is unavailable")
 		}
@@ -104,14 +94,14 @@ func registerAuthentication(api huma.API, service *auth.Service) {
 		}, nil
 	})
 
-	huma.Register[struct{}, DeleteSessionResponse](api, huma.Operation{
+	huma.Register[struct{}, DeleteSessionResponse](api, publicOperation(huma.Operation{
 		OperationID: "deleteCurrentAuthenticationSession",
 		Method:      http.MethodDelete,
 		Path:        "/api/authentication-sessions/current",
 		Summary:     "Sign out and delete the current authentication session",
 		Tags:        []string{"authentication"},
 		Errors:      []int{http.StatusServiceUnavailable},
-	}, func(ctx context.Context, _ *struct{}) (*DeleteSessionResponse, error) {
+	}), func(ctx context.Context, _ *struct{}) (*DeleteSessionResponse, error) {
 		if service == nil {
 			return nil, huma.Error503ServiceUnavailable("authentication is unavailable")
 		}

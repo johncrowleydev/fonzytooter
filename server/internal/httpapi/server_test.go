@@ -110,7 +110,7 @@ func TestTutorTurnInvalidInputUsesCommonError(t *testing.T) {
 }
 
 func TestTutorTurnMalformedJSONUsesBadRequestProblem(t *testing.T) {
-	app := NewAPI(tutor.NewService(tutor.NewUnavailableProvider()), curriculum.NewEmptyCatalog(), nil, nil)
+	app := newAuthenticatedTestAPI(t, tutor.NewService(tutor.NewUnavailableProvider()), curriculum.NewEmptyCatalog(), nil, nil)
 	req := httptest.NewRequest(http.MethodPost, "/api/tutor/turns", strings.NewReader("{"))
 	req.Header.Set("Content-Type", "application/json")
 	response := httptest.NewRecorder()
