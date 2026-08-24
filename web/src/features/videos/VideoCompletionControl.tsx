@@ -2,6 +2,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import {
   getGetVideoProgressQueryKey,
   getListActivitiesQueryKey,
+  getListVideoRecommendationsQueryKey,
   useGetVideoProgress,
   usePutVideoProgress,
 } from '../../api/generated/endpoints'
@@ -41,6 +42,9 @@ function AuthenticatedVideoCompletionControl({ video }: { video: VideoResource }
           }),
           queryClient.invalidateQueries({
             queryKey: getListActivitiesQueryKey({ courseId: variables.courseId, limit: 6 }),
+          }),
+          queryClient.invalidateQueries({
+            queryKey: getListVideoRecommendationsQueryKey(variables.courseId),
           }),
         ])
       },

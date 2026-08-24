@@ -1726,6 +1726,74 @@
         ],
         "type": "object"
       },
+      "VideoRecommendationList": {
+        "items": {
+          "$ref": "#/components/schemas/VideoRecommendationResource"
+        },
+        "type": "array"
+      },
+      "VideoRecommendationResource": {
+        "additionalProperties": false,
+        "properties": {
+          "channel": {
+            "type": "string"
+          },
+          "courseId": {
+            "type": "string"
+          },
+          "durationMinutes": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "lessonId": {
+            "type": "string"
+          },
+          "lessonTitle": {
+            "type": "string"
+          },
+          "moduleId": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "reasonKind": {
+            "enum": [
+              "current_lesson",
+              "next_prerequisite",
+              "weak_evidence",
+              "revisit",
+              "current_module"
+            ],
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "videoId": {
+            "type": "string"
+          },
+          "watched": {
+            "type": "boolean"
+          },
+          "youtubeId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "courseId",
+          "moduleId",
+          "videoId",
+          "youtubeId",
+          "title",
+          "channel",
+          "durationMinutes",
+          "reasonKind",
+          "reason",
+          "watched"
+        ],
+        "type": "object"
+      },
       "VideoResource": {
         "additionalProperties": false,
         "properties": {
@@ -3942,6 +4010,82 @@
           }
         ],
         "summary": "List learner review cards",
+        "tags": [
+          "learner"
+        ]
+      }
+    },
+    "/api/courses/{courseId}/video-recommendations": {
+      "get": {
+        "operationId": "listVideoRecommendations",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "courseId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VideoRecommendationList"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "summary": "List learner video recommendations",
         "tags": [
           "learner"
         ]

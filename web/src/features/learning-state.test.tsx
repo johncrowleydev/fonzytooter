@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { CourseProgressResource } from '../api/generated/schemas/courseProgressResource.zod'
-import { ActivityList, DashboardView } from './dashboard/Dashboard'
+import { ActivityList, DashboardView, VideoRecommendations } from './dashboard/Dashboard'
 import { LessonCompletionControl } from './lessons/LessonCompletionControl'
 import { ProgressView } from './progress/Progress'
 
@@ -175,5 +175,62 @@ describe('dashboard learner state', () => {
     expect(link.getAttribute('href')).toBe(
       '/courses/ai-ml/modules/scientific-python/exercises/python.double',
     )
+  })
+})
+
+describe('dashboard video recommendations', () => {
+  it('renders compact explainable curated recommendations with watched state and context links', () => {
+    render(
+      <MemoryRouter>
+        <VideoRecommendations
+          recommendations={[
+            {
+              channel: 'Visual Teacher',
+              courseId: 'ai-ml',
+              durationMinutes: 12,
+              lessonId: 'lesson-two',
+              lessonTitle: 'Second lesson',
+              moduleId: 'foundations',
+              reason: 'Worth watching next — supports Second lesson.',
+              reasonKind: 'current_lesson',
+              title: 'See the concept visually',
+              videoId: 'visual-concept',
+              watched: false,
+              youtubeId: 'dQw4w9WgXcQ',
+            },
+            {
+              channel: 'Practice Teacher',
+              courseId: 'ai-ml',
+              durationMinutes: 8,
+              moduleId: 'foundations',
+              reason: 'Review this visually — recent practice has been difficult.',
+              reasonKind: 'revisit',
+              title: 'Try another explanation',
+              videoId: 'practice-review',
+              watched: true,
+              youtubeId: '9bZkp7q19f0',
+            },
+          ]}
+        />
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByText('See the concept visually')).toBeDefined()
+    expect(screen.getByText('Visual Teacher')).toBeDefined()
+    expect(screen.getByText('12 min')).toBeDefined()
+    expect(screen.getByText('Unwatched')).toBeDefined()
+    expect(screen.getByText('Revisit')).toBeDefined()
+    expect(screen.queryByText(/confidence/i)).toBeNull()
+    expect(screen.getByRole('link', { name: 'Open Second lesson →' }).getAttribute('href')).toBe(
+      '/courses/ai-ml/modules/foundations/lessons/lesson-two',
+    )
+    expect(screen.getByRole('link', { name: 'Open module playlist →' }).getAttribute('href')).toBe(
+      '/courses/ai-ml/modules/foundations',
+    )
+  })
+
+  it('does not add an empty recommendation region when no curated video is eligible', () => {
+    const { container } = render(<VideoRecommendations recommendations={[]} />)
+    expect(container.textContent).toBe('')
   })
 })
