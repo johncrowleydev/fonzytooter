@@ -1,5 +1,7 @@
 import { createContext, useContext, useId, useMemo, type ReactNode } from 'react'
 import type { VideoResource } from '../../../api/generated/schemas/videoResource.zod'
+import { YouTubePlayer } from '../../videos/YouTubePlayer'
+import { youtubeWatchUrl } from '../../videos/youtube'
 
 const LessonVideoCatalogContext = createContext<ReadonlyMap<string, VideoResource> | null>(null)
 
@@ -31,9 +33,6 @@ export function YouTubeVideo({ id, children }: { id: string; children?: ReactNod
     throw new Error(`Lesson references unknown curated video ${JSON.stringify(id)}.`)
   }
 
-  const embedUrl = `https://www.youtube-nocookie.com/embed/${encodeURIComponent(video.youtubeId)}?rel=0`
-  const youtubeUrl = `https://www.youtube.com/watch?v=${encodeURIComponent(video.youtubeId)}`
-
   return (
     <section
       className="my-8 overflow-hidden rounded-xl border border-line bg-panel shadow-lg"
@@ -51,17 +50,7 @@ export function YouTubeVideo({ id, children }: { id: string; children?: ReactNod
         </p>
       </div>
 
-      <div className="aspect-video w-full bg-code-surface">
-        <iframe
-          className="h-full w-full border-0"
-          src={embedUrl}
-          title={`${video.title} by ${video.channel}`}
-          loading="lazy"
-          referrerPolicy="strict-origin-when-cross-origin"
-          allow="encrypted-media; picture-in-picture; web-share"
-          allowFullScreen
-        />
-      </div>
+      <YouTubePlayer video={video} />
 
       <div className="px-5 py-4">
         {children ? (
@@ -74,7 +63,7 @@ export function YouTubeVideo({ id, children }: { id: string; children?: ReactNod
           If the embedded player is unavailable,{' '}
           <a
             className="font-semibold text-accent-teal underline decoration-accent-teal/50 underline-offset-4 hover:text-ink"
-            href={youtubeUrl}
+            href={youtubeWatchUrl(video.youtubeId)}
             target="_blank"
             rel="noopener noreferrer"
           >
