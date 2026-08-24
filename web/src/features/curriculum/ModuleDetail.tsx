@@ -12,7 +12,7 @@ import { Badge, Button, Card, PageIntro, SectionHeading } from '../../components
 import { useTutor } from '../tutor/TutorContext'
 import { downloadPdf, pdfDownloadErrorMessage } from '../worksheets/downloadPdf'
 import { hasWorkbook } from '../worksheets/workbookAvailability'
-import { safeExternalUrl } from './externalLinks'
+import { ModuleVideoPlaylist } from './ModuleVideoPlaylist'
 
 export function ModuleDetail() {
   const { courseId, moduleId } = useParams()
@@ -307,42 +307,7 @@ function ModuleContent({ course, module }: { course: CourseResource; module: Mod
         </section>
       ) : null}
 
-      {module.videos.length > 0 ? (
-        <section>
-          <SectionHeading title="Videos" />
-          <div className="grid gap-2">
-            {module.videos.map((video) => {
-              const url = safeExternalUrl(
-                `https://www.youtube.com/watch?v=${encodeURIComponent(video.youtubeId)}`,
-              )
-              return (
-                <div
-                  key={video.id}
-                  className="flex items-center gap-3 rounded-lg border border-line bg-panel px-3 py-3"
-                >
-                  <Badge tone="violet">Video</Badge>
-                  <span className="min-w-0 flex-1">
-                    <strong className="block text-sm">{video.title}</strong>
-                    <small className="mt-1 block text-sm text-faint">{video.channel}</small>
-                  </span>
-                  {url ? (
-                    <a
-                      className="text-sm font-bold text-accent-teal no-underline hover:text-ink"
-                      href={url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      Open ↗
-                    </a>
-                  ) : (
-                    <span className="text-sm text-faint">Link unavailable</span>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        </section>
-      ) : null}
+      <ModuleVideoPlaylist module={module} />
     </div>
   )
 }
