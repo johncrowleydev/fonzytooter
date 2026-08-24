@@ -3,6 +3,7 @@ import Markdown, { type Components } from 'react-markdown'
 import rehypeKatex from 'rehype-katex'
 import remarkMath from 'remark-math'
 import 'katex/dist/katex.min.css'
+import { HighlightedCode, languageFromClassName } from '../../components/HighlightedCode'
 
 function withClassName(className: string, existingClassName?: string) {
   return existingClassName ? `${className} ${existingClassName}` : className
@@ -46,7 +47,7 @@ function WorksheetBlockquote({ className, ...props }: ComponentPropsWithoutRef<'
   return (
     <blockquote
       className={withClassName(
-        'my-5 border-l-2 border-brand-teal/50 pl-4 italic text-muted',
+        'my-5 border-l-2 border-accent-teal/50 pl-4 italic text-muted',
         className,
       )}
       {...props}
@@ -54,19 +55,36 @@ function WorksheetBlockquote({ className, ...props }: ComponentPropsWithoutRef<'
   )
 }
 
-function WorksheetCode({ className, ...props }: ComponentPropsWithoutRef<'code'>) {
-  const codeClassName = className
-    ? withClassName('font-mono text-sm leading-6 text-slate-100', className)
-    : 'rounded bg-panel-soft px-1.5 py-0.5 font-mono text-sm text-brand-teal'
+function WorksheetCode({ className, children, ...props }: ComponentPropsWithoutRef<'code'>) {
+  const language = languageFromClassName(className)
 
-  return <code className={codeClassName} {...props} />
+  if (language !== undefined && typeof children === 'string') {
+    return (
+      <code
+        className={withClassName('font-mono text-sm leading-6 text-code-ink', className)}
+        {...props}
+      >
+        <HighlightedCode code={children} language={language} />
+      </code>
+    )
+  }
+
+  const codeClassName = className
+    ? withClassName('font-mono text-sm leading-6 text-code-ink', className)
+    : 'rounded bg-panel-soft px-1.5 py-0.5 font-mono text-sm text-accent-teal'
+
+  return (
+    <code className={codeClassName} {...props}>
+      {children}
+    </code>
+  )
 }
 
 function WorksheetPreformatted({ className, ...props }: ComponentPropsWithoutRef<'pre'>) {
   return (
     <pre
       className={withClassName(
-        'my-5 max-w-full overflow-x-auto rounded-lg border border-line bg-brand-ink px-4 py-3 text-sm leading-6 text-slate-100',
+        'my-5 max-w-full overflow-x-auto overscroll-x-contain rounded-lg border border-line bg-code-surface px-4 py-3 text-sm leading-6 text-code-ink',
         className,
       )}
       {...props}

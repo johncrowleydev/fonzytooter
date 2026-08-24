@@ -1,9 +1,5 @@
 package tutor
 
-import (
-	"context"
-)
-
 type EventType string
 
 const (
@@ -17,18 +13,22 @@ const (
 )
 
 type Event struct {
-	Type     EventType `json:"type" enum:"text_delta,tool_started,tool_completed,citation,usage,completed,error"`
-	Text     string    `json:"text,omitempty"`
-	Tool     string    `json:"tool,omitempty"`
-	SourceID string    `json:"sourceId,omitempty"`
-	Usage    *Usage    `json:"usage,omitempty"`
-	Error    string    `json:"error,omitempty"`
+	Type           EventType `json:"type" enum:"text_delta,tool_started,tool_completed,citation,usage,completed,error"`
+	ConversationID string    `json:"conversationId,omitempty"`
+	Text           string    `json:"text,omitempty"`
+	Tool           string    `json:"tool,omitempty"`
+	ToolCallID     string    `json:"toolCallId,omitempty"`
+	SourceID       string    `json:"sourceId,omitempty"`
+	Usage          *Usage    `json:"usage,omitempty"`
+	Error          string    `json:"error,omitempty"`
 }
 
 type Usage struct {
-	InputTokens  int `json:"inputTokens,omitempty" minimum:"0"`
-	OutputTokens int `json:"outputTokens,omitempty" minimum:"0"`
-	TotalTokens  int `json:"totalTokens,omitempty" minimum:"0"`
+	InputTokens     int `json:"inputTokens,omitempty" minimum:"0"`
+	OutputTokens    int `json:"outputTokens,omitempty" minimum:"0"`
+	TotalTokens     int `json:"totalTokens,omitempty" minimum:"0"`
+	CachedTokens    int `json:"cachedTokens,omitempty" minimum:"0"`
+	ReasoningTokens int `json:"reasoningTokens,omitempty" minimum:"0"`
 }
 
 type TurnRequest struct {
@@ -68,28 +68,4 @@ type Execution struct {
 	Passed  int    `json:"passed" minimum:"0"`
 	Failed  int    `json:"failed" minimum:"0"`
 	Summary string `json:"summary,omitempty" maxLength:"1000"`
-}
-
-type Provider interface {
-	StreamTurn(ctx context.Context, request TurnRequest) (<-chan Event, error)
-}
-
-type Service struct {
-	provider      Provider
-	conversations *ConversationStore
-}
-
-func NewService(provider Provider) *Service {
-	return &Service{provider: provider}
-}
-
-func NewPersistentService(provider Provider, conversations *ConversationStore) *Service {
-	if conversations == nil {
-		panic("tutor.NewPersistentService: nil conversation store")
-	}
-	return &Service{provider: provider, conversations: conversations}
-}
-
-func (s *Service) StreamTurn(ctx context.Context, request TurnRequest) (<-chan Event, error) {
-	return s.provider.StreamTurn(ctx, request)
 }

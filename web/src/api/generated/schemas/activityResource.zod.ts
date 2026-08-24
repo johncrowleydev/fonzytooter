@@ -19,6 +19,8 @@ export const ActivityResource = zod.strictObject({
   moduleTitle: zod.string().optional(),
   occurredAt: zod.iso.datetime({ offset: true }),
   reviewItemId: zod.string().optional(),
+  videoId: zod.string().optional(),
+  videoTitle: zod.string().optional(),
 })
 
 export type ActivityResource = zod.input<typeof ActivityResource>

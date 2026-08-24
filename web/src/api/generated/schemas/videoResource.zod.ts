@@ -6,11 +6,21 @@
  */
 import * as zod from 'zod'
 
+export const videoResourceOrderMin = 0
+
+export const videoResourceYoutubeIdRegExp = new RegExp('^[A-Za-z0-9_-]{11}$')
+
 export const VideoResource = zod.strictObject({
+  channel: zod.string(),
+  courseId: zod.string(),
+  durationMinutes: zod.int().min(1),
   id: zod.string(),
-  objectiveIds: zod.array(zod.string()),
+  lessonIds: zod.array(zod.string()),
+  moduleId: zod.string(),
+  objectiveIds: zod.array(zod.string()).min(1),
+  order: zod.int().min(videoResourceOrderMin),
   title: zod.string(),
-  url: zod.string(),
+  youtubeId: zod.string().regex(videoResourceYoutubeIdRegExp),
 })
 
 export type VideoResource = zod.input<typeof VideoResource>

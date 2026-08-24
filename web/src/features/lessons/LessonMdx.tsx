@@ -2,10 +2,14 @@ import { evaluate } from '@mdx-js/mdx'
 import type { MDXContent } from 'mdx/types'
 import { Component, type ReactNode, useEffect, useState } from 'react'
 import * as runtime from 'react/jsx-runtime'
+import type { VideoResource } from '../../api/generated/schemas/videoResource.zod'
+import { LessonVideoCatalogProvider } from './components/YouTubeVideo'
 import { lessonMdxComponents } from './mdx/components'
 
 export type LessonMdxProps = {
   source: string
+  videos: VideoResource[]
+  authenticated?: boolean
 }
 
 type EvaluationState =
@@ -38,7 +42,7 @@ function evaluateLessonSource(source: string) {
   return evaluation
 }
 
-export function LessonMdx({ source }: LessonMdxProps) {
+export function LessonMdx({ source, videos, authenticated = false }: LessonMdxProps) {
   const [state, setState] = useState<EvaluationState>({ source, status: 'loading' })
 
   useEffect(() => {
@@ -75,9 +79,11 @@ export function LessonMdx({ source }: LessonMdxProps) {
 
   return (
     <LessonMdxErrorBoundary key={source}>
-      <div className="w-full text-base leading-7 text-body">
-        <currentState.content components={lessonMdxComponents} />
-      </div>
+      <LessonVideoCatalogProvider videos={videos} authenticated={authenticated}>
+        <div className="w-full text-base leading-7 text-body">
+          <currentState.content components={lessonMdxComponents} />
+        </div>
+      </LessonVideoCatalogProvider>
     </LessonMdxErrorBoundary>
   )
 }
@@ -108,7 +114,7 @@ class LessonMdxErrorBoundary extends Component<
 function LessonMdxError({ error }: { error: Error }) {
   return (
     <div
-      className="rounded-lg border border-brand-coral/40 bg-brand-coral/10 p-4 text-sm text-brand-coral"
+      className="rounded-lg border border-accent-coral/40 bg-accent-coral/10 p-4 text-sm text-accent-coral"
       role="alert"
     >
       <strong className="font-semibold">Lesson rendering error</strong>

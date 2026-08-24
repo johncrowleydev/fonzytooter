@@ -1,0 +1,7 @@
+id: injective
+order: 10
+objectiveIds:
+  - python.functions
+sourceLessonId: 02-functions-code-and-mathematics
+prompt: What does it mean for a function to be injective (one-to-one)?
+answer: Different inputs never map to the same output.

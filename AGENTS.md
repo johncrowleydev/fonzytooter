@@ -6,7 +6,7 @@ Instructions for coding agents working in this repository.
 
 Fonzytooter is a personal, single-user technical learning system. The AI/ML curriculum is the initial/default course, but the platform is intentionally course-aware so additional authored courses can be added later without retrofitting single-course assumptions. It is still intentionally small. Favor straightforward code and explicit data flow over generalized infrastructure.
 
-Read the relevant files in `docs/` before making architectural changes. Multi-course work must follow `docs/multi-course.md`. Frontend work must also follow `docs/frontend.md`. API/backend/frontend-contract work must follow `docs/api-contract.md`, and HTTP API design must follow `docs/api-style.md`.
+Read the relevant files in `docs/` before making architectural changes. Multi-course work must follow `docs/multi-course.md`. Frontend work must also follow `docs/frontend.md` for code conventions and `docs/ui-design-system.md` for design tokens, type scale, and interaction rules. API/backend/frontend-contract work must follow `docs/api-contract.md`, and HTTP API design must follow `docs/api-style.md`. Multi-PR autonomous work must also follow `docs/pr-marathon.md`.
 
 ## Non-negotiable architectural constraints
 
@@ -33,6 +33,16 @@ Read the relevant files in `docs/` before making architectural changes. Multi-co
 - **Use Git worktrees for agent tasks.** Each agent/task should normally work in its own worktree and branch, especially when work may happen in parallel. Multiple agents must not mutate the same working tree and risk overwriting or interleaving each other's changes.
 - **Use purpose-based branch and commit prefixes.** Names should describe the reason for the change, such as `docs/`, `fix/`, or `feat/`, rather than the agent or author identity.
 - **Inspect the working tree before committing.** Review `git status` and the relevant diff so temporary files, extracted artifacts, or another agent's work are not accidentally included.
+- **Merge only the top branch of a stacked pull request, or retarget each pull request to `main` first.** A pull request merges into its base branch, and GitHub retargets a child to `main` only once the parent has actually merged. Merging a stack bottom-up in quick succession therefore lands only the pull request whose base was already `main`; the rest merge into branches `main` never sees again, and still report as merged. This has orphaned eight pull requests across two incidents, in both cases with no failing check, conflict, or broken build. The `Merge topology` workflow now guards both halves of this: it fails a pull request whose base branch has already been merged, and audits `main` for merged work that is unreachable from it.
+
+## Pull request authority and integration
+
+- **Coding agents are not authorized to merge pull requests by default.** Agents may create branches and worktrees, commit, push, open pull requests, update their own branches, respond to review findings, and resolve review conversations that have actually been addressed.
+- **Human review and merge are a hard integration boundary.** A normal agent task is complete when the PR is open, required validation is passing, and known review findings have been addressed. The PR remains open for human review and merge.
+- **Merge permission must be explicit and specific.** An agent may merge only when the user explicitly authorizes merging that particular PR or clearly scoped merge action. General autonomy such as "finish this task," "work through the queue," "use the goal skill," or "complete the marathon" does not grant merge authority.
+- **Do not push directly to `main` unless explicitly authorized for that specific change.** Do not treat repository permissions or technically available merge APIs as user authorization.
+- **Do not close or otherwise integrate a PR merely to unblock dependent work.** Follow the dependency/stacking rules in `docs/pr-marathon.md` for multi-PR efforts.
+- **Never self-approve work on the user's behalf.** Passing CI and agent review are inputs to human review, not substitutes for it.
 
 ## Engineering preferences
 
@@ -61,8 +71,14 @@ Read the relevant files in `docs/` before making architectural changes. Multi-co
 - **Ordinary server-state/API access must use the generated TanStack Query client. Do not add feature-level raw `fetch`, Axios, or handwritten API DTOs.**
 - **Generated Zod schemas are the frontend runtime API contract and the source for inferred API types via `z.infer`, `z.input`, or `z.output`.**
 - MDX is the lesson-content format.
+- **Brand hues exist in two families split by role.** `brand-*` is a solid fill with text on it, or a small shape given its edge by an accent rim; `accent-*` is the same hues as content — text, borders, focus outlines, tints, and bare meter fills — and is theme-aware. If text sits on it, it is `brand`; otherwise it is `accent`. Using the wrong one is the difference between 9:1 and 1.8:1 in light mode.
+- **Nothing renders below 12px, and 12px is a label rather than a sentence.** There is no size below `text-xs`; a stray `text-2xs` generates no CSS at all.
+- **Focus styling is a single global `:focus-visible` rule.** Do not add per-component focus utilities, and do not use `outline-0`.
+- **A toggle button passes `pressed`, and a disabled control looks disabled.** Selection conveyed only by color reaches neither assistive technology nor anyone who cannot separate the two variants.
+- **A learner only ever reads authored prose.** Never render a curriculum identifier as visible text, never de-slugify one into prose, and never pass a state key to `aria-label`.
+- See `docs/ui-design-system.md` for the full rules and the automated guards that enforce them.
 
-See `docs/frontend.md` for the complete frontend conventions, `docs/api-contract.md` for API generation/validation rules, and `docs/api-style.md` for HTTP resource design conventions.
+See `docs/frontend.md` for the complete frontend conventions, `docs/ui-design-system.md` for the design tokens, type scale, and interaction rules, `docs/api-contract.md` for API generation/validation rules, and `docs/api-style.md` for HTTP resource design conventions.
 
 ### Python exercises
 

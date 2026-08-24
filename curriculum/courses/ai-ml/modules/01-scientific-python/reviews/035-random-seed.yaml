@@ -1,0 +1,7 @@
+id: random-seed
+order: 35
+objectiveIds:
+  - python.numerical-experiments
+sourceLessonId: 06-jupyter-and-numerical-experiments
+prompt: What does setting a pseudorandom number generator seed accomplish?
+answer: It selects a reproducible starting state so the same pseudorandom sequence can be regenerated when the same algorithm and seed are used.

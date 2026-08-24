@@ -84,10 +84,10 @@ type AnswerState = {
 }
 
 const idleOptionClass =
-  'border-line bg-white/5 text-muted hover:border-brand-teal/50 hover:bg-brand-teal/10 hover:text-ink'
-const selectedOptionClass = 'border-brand-blue/50 bg-brand-blue/10 text-ink'
-const incorrectOptionClass = 'border-brand-coral/50 bg-brand-coral/10 text-ink'
-const correctOptionClass = 'border-brand-teal/50 bg-brand-teal/10 text-ink'
+  'border-line bg-raised text-muted hover:border-accent-teal/50 hover:bg-accent-teal/10 hover:text-ink'
+const selectedOptionClass = 'border-accent-blue/50 bg-accent-blue/10 text-ink'
+const incorrectOptionClass = 'border-accent-coral/50 bg-accent-coral/10 text-ink'
+const correctOptionClass = 'border-accent-teal/50 bg-accent-teal/10 text-ink'
 
 function createInitialAnswers(): AnswerState[] {
   return mentalModelQuestions.map(() => ({
@@ -131,11 +131,11 @@ export function PythonMentalModelCheck() {
     <Card className="grid gap-5 p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-2xs font-bold uppercase tracking-widest text-faint">Local check</p>
+          <p className="text-xs font-bold uppercase tracking-widest text-faint">Local check</p>
           <h2 className="mt-1.5 text-lg font-semibold tracking-tight">
             Check your Python mental model
           </h2>
-          <p className="mt-2 max-w-2xl text-xs leading-relaxed text-muted">
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
             Choose an answer for each question. Incorrect choices include an explanation and remain
             retryable.
           </p>
@@ -151,20 +151,20 @@ export function PythonMentalModelCheck() {
           const questionId = `mental-model-question-${questionIndex}`
 
           return (
-            <section key={question.topic} className="rounded-lg border border-line bg-white/5 p-4">
+            <section key={question.topic} className="rounded-lg border border-line bg-raised p-4">
               <div className="flex items-start gap-3">
-                <span className="grid size-7 shrink-0 place-items-center rounded-full border border-line-strong text-xs font-semibold text-ink">
+                <span className="grid size-7 shrink-0 place-items-center rounded-full border border-line-strong text-sm font-semibold text-ink">
                   {questionIndex + 1}
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="text-2xs font-bold uppercase tracking-widest text-faint">
+                  <p className="text-xs font-bold uppercase tracking-widest text-faint">
                     {question.topic}
                   </p>
                   <h3 className="mt-1.5 text-sm leading-relaxed text-ink" id={questionId}>
                     {question.prompt}
                   </h3>
                 </div>
-                <span className="shrink-0 text-2xs text-muted">
+                <span className="shrink-0 text-sm text-muted">
                   {response.checked ? 'Checked' : 'Open'}
                 </span>
               </div>
@@ -176,7 +176,7 @@ export function PythonMentalModelCheck() {
                   return (
                     <button
                       key={option.id}
-                      className={`rounded-lg border px-3 py-2.5 text-left text-xs leading-relaxed transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-teal ${getOptionClass(response, option.id)}`}
+                      className={`rounded-lg border px-3 py-2.5 text-left text-sm leading-relaxed transition ${getOptionClass(response, option.id)}`}
                       type="button"
                       onClick={() => chooseAnswer(questionIndex, option.id)}
                       disabled={response.checked}
@@ -191,7 +191,7 @@ export function PythonMentalModelCheck() {
 
               {response.result === 'incorrect' ? (
                 <div
-                  className="mt-3 rounded-md border border-brand-coral/30 bg-brand-coral/10 p-3 text-xs leading-relaxed text-ink"
+                  className="mt-3 rounded-md border border-accent-coral/30 bg-accent-coral/10 p-3 text-sm leading-relaxed text-ink"
                   role="alert"
                 >
                   <strong>Not quite.</strong> {question.explanation} Try another answer.
@@ -199,7 +199,7 @@ export function PythonMentalModelCheck() {
               ) : null}
               {response.result === 'correct' ? (
                 <div
-                  className="mt-3 rounded-md border border-brand-teal/30 bg-brand-teal/10 p-3 text-xs leading-relaxed text-ink"
+                  className="mt-3 rounded-md border border-accent-teal/30 bg-accent-teal/10 p-3 text-sm leading-relaxed text-ink"
                   role="status"
                   aria-live="polite"
                 >
@@ -211,7 +211,7 @@ export function PythonMentalModelCheck() {
         })}
       </div>
 
-      <p className="border-t border-line pt-4 text-xs text-muted" role="status" aria-live="polite">
+      <p className="border-t border-line pt-4 text-sm text-muted" role="status" aria-live="polite">
         {checkedCount === mentalModelQuestions.length
           ? '5 / 5 checked. This completion state is local to the component.'
           : `${checkedCount} of ${mentalModelQuestions.length} questions checked locally.`}

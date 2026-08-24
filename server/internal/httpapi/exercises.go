@@ -86,14 +86,14 @@ type CreateExerciseAttemptResponse struct {
 }
 
 func registerExercises(api huma.API, catalog *curriculum.Catalog, service *learner.Service) {
-	huma.Register[CourseExercisePathInput, ExerciseCheckDefinitionResponse](api, huma.Operation{
+	huma.Register[CourseExercisePathInput, ExerciseCheckDefinitionResponse](api, authenticatedOperation(huma.Operation{
 		OperationID: "getExerciseCheckDefinition",
 		Method:      http.MethodGet,
 		Path:        "/api/courses/{courseId}/modules/{moduleId}/exercises/{exerciseId}/check-definition",
 		Summary:     "Get an exercise check definition",
 		Tags:        []string{"learner"},
 		Errors:      []int{http.StatusNotFound},
-	}, func(_ context.Context, input *CourseExercisePathInput) (*ExerciseCheckDefinitionResponse, error) {
+	}), func(_ context.Context, input *CourseExercisePathInput) (*ExerciseCheckDefinitionResponse, error) {
 		exercise, ok := catalog.ExerciseByCourse(input.CourseID, input.ModuleID, input.ExerciseID)
 		if !ok {
 			return nil, huma.Error404NotFound("exercise not found")
@@ -107,43 +107,51 @@ func registerExercises(api huma.API, catalog *curriculum.Catalog, service *learn
 		}}, nil
 	})
 
-	huma.Register[CourseExercisePathInput, ExerciseWorkspaceResponse](api, huma.Operation{
+	huma.Register[CourseExercisePathInput, ExerciseWorkspaceResponse](api, authenticatedOperation(huma.Operation{
 		OperationID: "getExerciseWorkspace",
 		Method:      http.MethodGet,
 		Path:        "/api/courses/{courseId}/modules/{moduleId}/exercises/{exerciseId}/workspace",
 		Summary:     "Get an exercise workspace",
 		Tags:        []string{"learner"},
 		Errors:      []int{http.StatusNotFound, http.StatusInternalServerError},
-	}, func(ctx context.Context, input *CourseExercisePathInput) (*ExerciseWorkspaceResponse, error) {
+	}), func(ctx context.Context, input *CourseExercisePathInput) (*ExerciseWorkspaceResponse, error) {
 		if service == nil {
 			return nil, huma.Error500InternalServerError("learner service is unavailable")
 		}
-		workspace, err := service.ExerciseWorkspace(ctx, input.CourseID, input.ModuleID, input.ExerciseID)
+		userID, err := requireUserID(ctx)
+		if err != nil {
+			return nil, err
+		}
+		workspace, err := service.ExerciseWorkspace(ctx, userID, input.CourseID, input.ModuleID, input.ExerciseID)
 		if err != nil {
 			return nil, exerciseError("get exercise workspace", err)
 		}
 		return &ExerciseWorkspaceResponse{Body: exerciseWorkspaceResource(workspace)}, nil
 	})
 
-	huma.Register[PutExerciseWorkspaceInput, ExerciseWorkspaceResponse](api, huma.Operation{
+	huma.Register[PutExerciseWorkspaceInput, ExerciseWorkspaceResponse](api, authenticatedOperation(huma.Operation{
 		OperationID: "putExerciseWorkspace",
 		Method:      http.MethodPut,
 		Path:        "/api/courses/{courseId}/modules/{moduleId}/exercises/{exerciseId}/workspace",
 		Summary:     "Replace an exercise workspace",
 		Tags:        []string{"learner"},
 		Errors:      []int{http.StatusNotFound, http.StatusInternalServerError},
-	}, func(ctx context.Context, input *PutExerciseWorkspaceInput) (*ExerciseWorkspaceResponse, error) {
+	}), func(ctx context.Context, input *PutExerciseWorkspaceInput) (*ExerciseWorkspaceResponse, error) {
 		if service == nil {
 			return nil, huma.Error500InternalServerError("learner service is unavailable")
 		}
-		workspace, err := service.SetExerciseWorkspace(ctx, input.CourseID, input.ModuleID, input.ExerciseID, input.Body.Code)
+		userID, err := requireUserID(ctx)
+		if err != nil {
+			return nil, err
+		}
+		workspace, err := service.SetExerciseWorkspace(ctx, userID, input.CourseID, input.ModuleID, input.ExerciseID, input.Body.Code)
 		if err != nil {
 			return nil, exerciseError("put exercise workspace", err)
 		}
 		return &ExerciseWorkspaceResponse{Body: exerciseWorkspaceResource(workspace)}, nil
 	})
 
-	huma.Register[CreateExerciseAttemptInput, CreateExerciseAttemptResponse](api, huma.Operation{
+	huma.Register[CreateExerciseAttemptInput, CreateExerciseAttemptResponse](api, authenticatedOperation(huma.Operation{
 		OperationID:   "createExerciseAttempt",
 		Method:        http.MethodPost,
 		Path:          "/api/courses/{courseId}/modules/{moduleId}/exercises/{exerciseId}/attempts",
@@ -151,7 +159,7 @@ func registerExercises(api huma.API, catalog *curriculum.Catalog, service *learn
 		Tags:          []string{"learner"},
 		DefaultStatus: http.StatusCreated,
 		Errors:        []int{http.StatusNotFound, http.StatusUnprocessableEntity, http.StatusInternalServerError},
-	}, func(ctx context.Context, input *CreateExerciseAttemptInput) (*CreateExerciseAttemptResponse, error) {
+	}), func(ctx context.Context, input *CreateExerciseAttemptInput) (*CreateExerciseAttemptResponse, error) {
 		if service == nil {
 			return nil, huma.Error500InternalServerError("learner service is unavailable")
 		}
@@ -161,7 +169,11 @@ func registerExercises(api huma.API, catalog *curriculum.Catalog, service *learn
 				TestID: result.TestID, Status: result.Status, Message: result.Message, DurationMS: result.DurationMS,
 			})
 		}
-		attempt, err := service.CreateExerciseAttempt(ctx, input.CourseID, input.ModuleID, input.ExerciseID, input.Body.CodeSnapshot, input.Body.DurationMS, results)
+		userID, err := requireUserID(ctx)
+		if err != nil {
+			return nil, err
+		}
+		attempt, err := service.CreateExerciseAttempt(ctx, userID, input.CourseID, input.ModuleID, input.ExerciseID, input.Body.CodeSnapshot, input.Body.DurationMS, results)
 		if err != nil {
 			return nil, exerciseError("create exercise attempt", err)
 		}

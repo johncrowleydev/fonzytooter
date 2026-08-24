@@ -8,10 +8,12 @@ import * as zod from 'zod'
 import { Usage } from './usage.zod'
 
 export const Event = zod.strictObject({
+  conversationId: zod.string().optional(),
   error: zod.string().optional(),
   sourceId: zod.string().optional(),
   text: zod.string().optional(),
   tool: zod.string().optional(),
+  toolCallId: zod.string().optional(),
   type: zod.enum([
     'text_delta',
     'tool_started',

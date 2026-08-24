@@ -1,0 +1,7 @@
+id: kernel-vs-document-order
+order: 33
+objectiveIds:
+  - python.numerical-experiments
+sourceLessonId: 06-jupyter-and-numerical-experiments
+prompt: What is the difference between notebook document order and kernel execution history?
+answer: Document order is the visible top-to-bottom cell order; execution history is the actual order code was run, and the kernel obeys that history.

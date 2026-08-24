@@ -9,6 +9,10 @@ import (
 )
 
 var stableIDPattern = regexp.MustCompile(StableIDPattern)
+var youtubeIDPattern = regexp.MustCompile(`^[A-Za-z0-9_-]{11}$`)
+var youtubeVideoElementPattern = regexp.MustCompile(`<YouTubeVideo\b([^>]*)>`)
+var youtubeVideoIDAttributePattern = regexp.MustCompile(`(?:^|\s)id\s*=\s*["']([^"']+)["']`)
+var arbitraryEmbedElementPattern = regexp.MustCompile(`(?i)<\s*(iframe|embed|object)\b`)
 
 type errorCollector struct {
 	items []error
@@ -110,7 +114,6 @@ func validateCourses(courses []courseFile, sources map[string]sourceAuthoring, e
 	}
 	validateObjectiveReferences(modules, objectiveIDs, errors)
 	validatePrerequisiteCycles(modules, objectiveIDs, objectivePaths, errors)
-	validateVideoObjectiveReferences(modules, objectiveIDs, errors)
 }
 
 func validateReviewItemFiles(module moduleFile, objectiveIDs map[string]string, errors *errorCollector) {
@@ -405,7 +408,7 @@ func validateModule(module moduleFile, moduleIDs map[string]string, moduleOrders
 	}
 
 	validateModuleObjectives(metadata, metadataPath, objectiveIDs, objectivePaths, errors)
-	validateModuleVideos(metadata, metadataPath, errors)
+	validateModuleVideos(module, errors)
 	validateModuleLessonReferences(module, errors)
 }
 
@@ -430,8 +433,21 @@ func validateModuleObjectives(metadata moduleAuthoring, metadataPath string, obj
 	}
 }
 
-func validateModuleVideos(metadata moduleAuthoring, metadataPath string, errors *errorCollector) {
+func validateModuleVideos(module moduleFile, errors *errorCollector) {
+	metadata := module.metadata
+	metadataPath := module.path
 	videoIDs := map[string]struct{}{}
+	videoOrders := map[int]string{}
+	objectiveIDs := make(map[string]struct{}, len(metadata.Objectives))
+	for _, objective := range metadata.Objectives {
+		objectiveIDs[objective.ID] = struct{}{}
+	}
+	lessonIDs := make(map[string]struct{}, len(module.lessons))
+	for _, lesson := range module.lessons {
+		if lesson.metadataOK {
+			lessonIDs[lesson.metadata.ID] = struct{}{}
+		}
+	}
 	for _, video := range metadata.Videos {
 		if !stableIDPattern.MatchString(video.ID) {
 			errors.addf(metadataPath, "invalid video id %q", video.ID)
@@ -444,10 +460,41 @@ func validateModuleVideos(metadata moduleAuthoring, metadataPath string, errors 
 		if strings.TrimSpace(video.Title) == "" {
 			errors.addf(metadataPath, "video %q has empty title", video.ID)
 		}
-		if err := validateHTTPURL(video.URL); err != nil {
-			errors.addf(metadataPath, "video %q: %v", video.ID, err)
+		if !youtubeIDPattern.MatchString(video.YouTubeID) {
+			errors.addf(metadataPath, "video %q has invalid youtubeId %q; expected an 11-character YouTube video ID", video.ID, video.YouTubeID)
+		}
+		if strings.TrimSpace(video.Channel) == "" {
+			errors.addf(metadataPath, "video %q has empty channel", video.ID)
+		}
+		if video.DurationMinutes == nil {
+			errors.addf(metadataPath, "video %q is missing required durationMinutes", video.ID)
+		} else if *video.DurationMinutes <= 0 {
+			errors.addf(metadataPath, "video %q durationMinutes must be greater than zero", video.ID)
+		}
+		if video.Order == nil {
+			errors.addf(metadataPath, "video %q is missing required order", video.ID)
+		} else if *video.Order < 0 {
+			errors.addf(metadataPath, "video %q order must be non-negative", video.ID)
+		} else if previous, ok := videoOrders[*video.Order]; ok {
+			errors.addf(metadataPath, "duplicate video order %d for videos %q and %q", *video.Order, previous, video.ID)
+		} else {
+			videoOrders[*video.Order] = video.ID
+		}
+		if len(video.ObjectiveIDs) == 0 {
+			errors.addf(metadataPath, "video %q has no objectiveIds", video.ID)
 		}
 		validateUniqueStrings(metadataPath, fmt.Sprintf("video %q", video.ID), "objectiveIds", video.ObjectiveIDs, errors)
+		for _, objectiveID := range video.ObjectiveIDs {
+			if _, ok := objectiveIDs[objectiveID]; !ok {
+				errors.addf(metadataPath, "video %q has unknown objective id %q in this module", video.ID, objectiveID)
+			}
+		}
+		validateUniqueStrings(metadataPath, fmt.Sprintf("video %q", video.ID), "lessonIds", video.LessonIDs, errors)
+		for _, lessonID := range video.LessonIDs {
+			if _, ok := lessonIDs[lessonID]; !ok {
+				errors.addf(metadataPath, "video %q has unknown lesson id %q in this module", video.ID, lessonID)
+			}
+		}
 	}
 }
 
@@ -485,6 +532,10 @@ func validateModuleLessonReferences(module moduleFile, errors *errorCollector) {
 }
 
 func validateLessonFiles(module moduleFile, objectiveIDs map[string]string, sources map[string]sourceAuthoring, errors *errorCollector) {
+	videosByID := make(map[string]videoAuthoring, len(module.metadata.Videos))
+	for _, video := range module.metadata.Videos {
+		videosByID[video.ID] = video
+	}
 	for _, lesson := range module.lessons {
 		if !lesson.metadataOK {
 			continue
@@ -511,7 +562,60 @@ func validateLessonFiles(module moduleFile, objectiveIDs map[string]string, sour
 				errors.addf(lesson.path, "unknown source id %q", sourceID)
 			}
 		}
+		validateLessonVideoEmbeds(lesson, videosByID, errors)
 	}
+}
+
+func validateLessonVideoEmbeds(lesson lessonFile, videosByID map[string]videoAuthoring, errors *errorCollector) {
+	content := mdxOutsideFencedCode(lesson.content)
+	if element := arbitraryEmbedElementPattern.FindStringSubmatch(content); element != nil {
+		errors.addf(lesson.path, "lesson %q cannot contain arbitrary <%s> markup; use a trusted MDX component such as YouTubeVideo", lesson.metadata.ID, strings.ToLower(element[1]))
+	}
+	for _, element := range youtubeVideoElementPattern.FindAllStringSubmatch(content, -1) {
+		attribute := youtubeVideoIDAttributePattern.FindStringSubmatch(element[1])
+		if attribute == nil {
+			errors.addf(lesson.path, "lesson %q YouTubeVideo must use a static quoted id", lesson.metadata.ID)
+			continue
+		}
+		videoID := attribute[1]
+		video, ok := videosByID[videoID]
+		if !ok {
+			errors.addf(lesson.path, "lesson %q references unknown curated video id %q in this module", lesson.metadata.ID, videoID)
+			continue
+		}
+		if !containsString(video.LessonIDs, lesson.metadata.ID) {
+			errors.addf(lesson.path, "lesson %q embeds video %q but the video does not associate that lesson in lessonIds", lesson.metadata.ID, videoID)
+		}
+	}
+}
+
+func mdxOutsideFencedCode(content string) string {
+	var builder strings.Builder
+	fence := ""
+	for _, line := range strings.SplitAfter(content, "\n") {
+		trimmed := strings.TrimSpace(line)
+		if fence == "" && (strings.HasPrefix(trimmed, "```") || strings.HasPrefix(trimmed, "~~~")) {
+			fence = trimmed[:3]
+			continue
+		}
+		if fence != "" {
+			if strings.HasPrefix(trimmed, fence) {
+				fence = ""
+			}
+			continue
+		}
+		builder.WriteString(line)
+	}
+	return builder.String()
+}
+
+func containsString(values []string, wanted string) bool {
+	for _, value := range values {
+		if value == wanted {
+			return true
+		}
+	}
+	return false
 }
 
 func validateObjectiveReferences(modules []moduleFile, objectiveIDs map[string]string, errors *errorCollector) {
@@ -573,21 +677,6 @@ func detectCycle(id string, graph map[string][]string, objectivePaths map[string
 	}
 	state[id] = 2
 	delete(stackIndex, id)
-}
-
-func validateVideoObjectiveReferences(modules []moduleFile, objectiveIDs map[string]string, errors *errorCollector) {
-	for _, module := range modules {
-		if !module.metadataOK {
-			continue
-		}
-		for _, video := range module.metadata.Videos {
-			for _, objectiveID := range video.ObjectiveIDs {
-				if _, ok := objectiveIDs[objectiveID]; !ok {
-					errors.addf(module.path, "video %q has unknown objective id %q", video.ID, objectiveID)
-				}
-			}
-		}
-	}
 }
 
 func validateHTTPURL(raw string) error {

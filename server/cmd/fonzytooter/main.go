@@ -12,6 +12,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/johncrowleydev/fonzytooter/server/internal/auth"
 	"github.com/johncrowleydev/fonzytooter/server/internal/config"
 	"github.com/johncrowleydev/fonzytooter/server/internal/curriculum"
 	"github.com/johncrowleydev/fonzytooter/server/internal/database"
@@ -19,6 +20,8 @@ import (
 	"github.com/johncrowleydev/fonzytooter/server/internal/learner"
 	"github.com/johncrowleydev/fonzytooter/server/internal/review"
 	"github.com/johncrowleydev/fonzytooter/server/internal/tutor"
+	openrouterprovider "github.com/johncrowleydev/fonzytooter/server/internal/tutor/openrouter"
+	"github.com/johncrowleydev/fonzytooter/server/internal/tutorlearning"
 )
 
 func main() {
@@ -88,9 +91,85 @@ func prepareServer(ctx context.Context, cfg config.Config, openDatabase database
 	}
 
 	conversationStore := tutor.NewConversationStore(db)
-	tutorService := tutor.NewPersistentService(tutor.NewUnavailableProvider(), conversationStore)
+	authService := auth.NewService(db, auth.SessionConfig{
+		Secure: cfg.Authentication.SecureCookie,
+		TTL:    cfg.Authentication.SessionTTL,
+	})
+	if err := authService.ProvisionBootstrap(ctx, auth.BootstrapConfig{
+		Username:    cfg.Authentication.Username,
+		Password:    cfg.Authentication.Password,
+		DisplayName: cfg.Authentication.DisplayName,
+	}); err != nil {
+		_ = db.Close()
+		return nil, nil, fmt.Errorf("configure authentication: %w", err)
+	}
+	tutorProvider, err := configuredTutorProvider(cfg)
+	if err != nil {
+		_ = db.Close()
+		return nil, nil, err
+	}
+	tutorCostGate, err := tutor.NewCostGate(db, tutor.CostGateConfig{
+		Entitled: cfg.TutorAccess.Entitled, MonthlyTurnLimit: cfg.TutorAccess.MonthlyTurnLimit,
+	})
+	if err != nil {
+		_ = db.Close()
+		return nil, nil, fmt.Errorf("configure tutor cost gate: %w", err)
+	}
 	learnerService := learner.NewService(db, catalog)
 	reviewService := review.NewService(db, catalog, review.SystemClock{})
-	server := httpapi.NewServer(cfg.Address, tutorService, catalog, learnerService, reviewService)
+	tutorService, err := configuredTutorService(tutorProvider, conversationStore, catalog, learnerService, reviewService, tutorCostGate)
+	if err != nil {
+		_ = db.Close()
+		return nil, nil, err
+	}
+	server := httpapi.NewServer(cfg.Address, tutorService, catalog, learnerService, reviewService, authService)
 	return server, db, nil
+}
+
+func configuredTutorService(provider tutor.Provider, conversations *tutor.ConversationStore, catalog *curriculum.Catalog, learnerService *learner.Service, reviewService *review.Service, costGate *tutor.CostGate) (*tutor.Service, error) {
+	builder, err := tutorlearning.NewContextBuilder(catalog, learnerService)
+	if err != nil {
+		return nil, fmt.Errorf("configure tutor context: %w", err)
+	}
+	learningTools, err := tutorlearning.NewTools(tutorlearning.Services{Catalog: catalog, Learner: learnerService, Review: reviewService})
+	if err != nil {
+		return nil, fmt.Errorf("configure tutor learning tools: %w", err)
+	}
+	registry, err := tutor.NewToolRegistry(learningTools...)
+	if err != nil {
+		return nil, fmt.Errorf("configure tutor tool registry: %w", err)
+	}
+	manager, err := tutor.NewContextManager(
+		conversations,
+		tutor.ConservativeTokenEstimator{},
+		tutor.ModelCompactor{Provider: provider, Fallback: tutor.RuleBasedCompactor{}},
+		tutor.DefaultContextManagerConfig(),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("configure tutor context manager: %w", err)
+	}
+	service, err := tutor.NewRuntimeService(tutor.RuntimeConfig{
+		Provider: provider, Store: conversations, Tools: registry, ContextManager: manager,
+		ContextBuilder: builder, MaxModelRounds: tutor.DefaultMaxModelRounds, CostGate: costGate,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("configure tutor runtime: %w", err)
+	}
+	return service, nil
+}
+
+func configuredTutorProvider(cfg config.Config) (tutor.Provider, error) {
+	if !cfg.OpenRouter.Configured() {
+		return tutor.NewUnavailableProvider(), nil
+	}
+	provider, err := openrouterprovider.New(openrouterprovider.Config{
+		APIKey:  cfg.OpenRouter.APIKey,
+		Model:   cfg.OpenRouter.Model,
+		BaseURL: cfg.OpenRouter.BaseURL,
+		Client:  &http.Client{Timeout: cfg.OpenRouter.Timeout},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("configure OpenRouter tutor provider: %w", err)
+	}
+	return provider, nil
 }

@@ -1,0 +1,7 @@
+id: function-mapping
+order: 7
+objectiveIds:
+  - python.functions
+sourceLessonId: 02-functions-code-and-mathematics
+prompt: In mathematics, what is a function fundamentally?
+answer: A rule or mapping that assigns each input in its domain exactly one output in its codomain.

@@ -1,0 +1,7 @@
+id: view-vs-copy
+order: 20
+objectiveIds:
+  - numpy.arrays
+sourceLessonId: 03-numpy-arrays-shape-dimension-and-dtype
+prompt: What is the practical difference between a NumPy view and an independent copy?
+answer: A view can share underlying storage with its source, so mutations may affect both; a copy has independent storage.

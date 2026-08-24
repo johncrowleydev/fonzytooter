@@ -10,9 +10,12 @@ import (
 	"testing/fstest"
 	"time"
 
+	"github.com/johncrowleydev/fonzytooter/server/internal/auth"
 	"github.com/johncrowleydev/fonzytooter/server/internal/curriculum"
 	"github.com/johncrowleydev/fonzytooter/server/internal/database"
 )
+
+var testUserID = auth.BootstrapUserID
 
 func TestLessonProgressLifecycleAndActivityIdempotency(t *testing.T) {
 	service, db, catalog := testService(t)
@@ -20,7 +23,7 @@ func TestLessonProgressLifecycleAndActivityIdempotency(t *testing.T) {
 	testNow := time.Date(2026, time.August, 20, 4, 0, 0, 0, time.UTC)
 	service.now = func() time.Time { return testNow }
 
-	progress, err := service.LessonProgress(context.Background(), course.ID, module.ID, lesson.ID)
+	progress, err := service.LessonProgress(context.Background(), testUserID, course.ID, module.ID, lesson.ID)
 	if err != nil {
 		t.Fatalf("get default progress: %v", err)
 	}
@@ -28,21 +31,21 @@ func TestLessonProgressLifecycleAndActivityIdempotency(t *testing.T) {
 		t.Fatalf("expected incomplete default progress, got %#v", progress)
 	}
 
-	completed, err := service.SetLessonProgress(context.Background(), course.ID, module.ID, lesson.ID, true)
+	completed, err := service.SetLessonProgress(context.Background(), testUserID, course.ID, module.ID, lesson.ID, true)
 	if err != nil {
 		t.Fatalf("complete lesson: %v", err)
 	}
 	if !completed.Completed || completed.CompletedAt == nil || !completed.CompletedAt.Equal(testNow) {
 		t.Fatalf("unexpected completed progress: %#v", completed)
 	}
-	if _, err := service.SetLessonProgress(context.Background(), course.ID, module.ID, lesson.ID, true); err != nil {
+	if _, err := service.SetLessonProgress(context.Background(), testUserID, course.ID, module.ID, lesson.ID, true); err != nil {
 		t.Fatalf("repeat completion: %v", err)
 	}
 
 	assertRowCount(t, db, "lesson_progress", 1)
 	assertRowCount(t, db, "activities", 1)
 
-	incomplete, err := service.SetLessonProgress(context.Background(), course.ID, module.ID, lesson.ID, false)
+	incomplete, err := service.SetLessonProgress(context.Background(), testUserID, course.ID, module.ID, lesson.ID, false)
 	if err != nil {
 		t.Fatalf("uncomplete lesson: %v", err)
 	}
@@ -69,10 +72,10 @@ func TestLessonProgressValidatesCatalogOwnership(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			if _, err := service.LessonProgress(context.Background(), test.courseID, test.moduleID, test.lessonID); !errors.Is(err, ErrLessonNotFound) {
+			if _, err := service.LessonProgress(context.Background(), testUserID, test.courseID, test.moduleID, test.lessonID); !errors.Is(err, ErrLessonNotFound) {
 				t.Fatalf("expected lesson not found, got %v", err)
 			}
-			if _, err := service.SetLessonProgress(context.Background(), test.courseID, test.moduleID, test.lessonID, true); !errors.Is(err, ErrLessonNotFound) {
+			if _, err := service.SetLessonProgress(context.Background(), testUserID, test.courseID, test.moduleID, test.lessonID, true); !errors.Is(err, ErrLessonNotFound) {
 				t.Fatalf("expected lesson not found on update, got %v", err)
 			}
 		})
@@ -87,7 +90,7 @@ func TestCourseProgressDerivesIntroducedObjectivesAndNextLesson(t *testing.T) {
 		t.Fatal("test curriculum needs at least two lessons")
 	}
 
-	initial, err := service.CourseProgress(context.Background(), course.ID)
+	initial, err := service.CourseProgress(context.Background(), testUserID, course.ID)
 	if err != nil {
 		t.Fatalf("get initial course progress: %v", err)
 	}
@@ -99,10 +102,10 @@ func TestCourseProgressDerivesIntroducedObjectivesAndNextLesson(t *testing.T) {
 	}
 
 	first := lessons[0]
-	if _, err := service.SetLessonProgress(context.Background(), course.ID, first.module.ID, first.lesson.ID, true); err != nil {
+	if _, err := service.SetLessonProgress(context.Background(), testUserID, course.ID, first.module.ID, first.lesson.ID, true); err != nil {
 		t.Fatalf("complete first lesson: %v", err)
 	}
-	progress, err := service.CourseProgress(context.Background(), course.ID)
+	progress, err := service.CourseProgress(context.Background(), testUserID, course.ID)
 	if err != nil {
 		t.Fatalf("get course progress: %v", err)
 	}
@@ -123,18 +126,18 @@ func TestCourseProgressDerivesIntroducedObjectivesAndNextLesson(t *testing.T) {
 	}
 
 	for _, item := range lessons[1:] {
-		if _, err := service.SetLessonProgress(context.Background(), course.ID, item.module.ID, item.lesson.ID, true); err != nil {
+		if _, err := service.SetLessonProgress(context.Background(), testUserID, course.ID, item.module.ID, item.lesson.ID, true); err != nil {
 			t.Fatalf("complete lesson %s: %v", item.lesson.ID, err)
 		}
 	}
-	complete, err := service.CourseProgress(context.Background(), course.ID)
+	complete, err := service.CourseProgress(context.Background(), testUserID, course.ID)
 	if err != nil {
 		t.Fatalf("get completed course progress: %v", err)
 	}
 	if complete.NextLesson != nil || complete.CompletedLessonCount != complete.TotalLessonCount {
 		t.Fatalf("expected completed course, got %#v", complete)
 	}
-	if _, err := service.CourseProgress(context.Background(), "missing"); !errors.Is(err, ErrCourseNotFound) {
+	if _, err := service.CourseProgress(context.Background(), testUserID, "missing"); !errors.Is(err, ErrCourseNotFound) {
 		t.Fatalf("expected missing course error, got %v", err)
 	}
 }
@@ -156,11 +159,11 @@ func TestCourseProgressIntroducesEarlierModuleObjectiveFromLaterCompletedLesson(
 	}
 	t.Cleanup(func() { _ = db.Close() })
 	service := NewService(db, catalog)
-	if _, err := service.SetLessonProgress(context.Background(), "test", "later", "later.lesson", true); err != nil {
+	if _, err := service.SetLessonProgress(context.Background(), testUserID, "test", "later", "later.lesson", true); err != nil {
 		t.Fatalf("complete later lesson: %v", err)
 	}
 
-	progress, err := service.CourseProgress(context.Background(), "test")
+	progress, err := service.CourseProgress(context.Background(), testUserID, "test")
 	if err != nil {
 		t.Fatalf("get course progress: %v", err)
 	}
@@ -180,11 +183,11 @@ func TestActivitiesAreNewestFirstBoundedAndEnriched(t *testing.T) {
 	service.now = func() time.Time { return testNow }
 
 	for _, item := range lessons[:2] {
-		if _, err := service.SetLessonProgress(context.Background(), course.ID, item.module.ID, item.lesson.ID, true); err != nil {
+		if _, err := service.SetLessonProgress(context.Background(), testUserID, course.ID, item.module.ID, item.lesson.ID, true); err != nil {
 			t.Fatalf("complete lesson %s: %v", item.lesson.ID, err)
 		}
 	}
-	activities, err := service.Activities(context.Background(), course.ID, 1)
+	activities, err := service.Activities(context.Background(), testUserID, course.ID, 1)
 	if err != nil {
 		t.Fatalf("list activities: %v", err)
 	}
@@ -194,11 +197,11 @@ func TestActivitiesAreNewestFirstBoundedAndEnriched(t *testing.T) {
 	if activities[0].CourseTitle != course.Title || activities[0].ModuleTitle == nil || activities[0].LessonTitle == nil {
 		t.Fatalf("expected curriculum-enriched titles, got %#v", activities[0])
 	}
-	empty, err := service.Activities(context.Background(), catalog.Courses()[0].ID, DefaultActivityLimit)
+	empty, err := service.Activities(context.Background(), testUserID, catalog.Courses()[0].ID, DefaultActivityLimit)
 	if err != nil || len(empty) != 2 {
 		t.Fatalf("expected two activities, got %d, %v", len(empty), err)
 	}
-	if _, err := service.Activities(context.Background(), "missing", 20); !errors.Is(err, ErrCourseNotFound) {
+	if _, err := service.Activities(context.Background(), testUserID, "missing", 20); !errors.Is(err, ErrCourseNotFound) {
 		t.Fatalf("expected missing course error, got %v", err)
 	}
 }

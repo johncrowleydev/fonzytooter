@@ -1,5 +1,43 @@
 @import 'tailwindcss';
 
+/*
+ * Type scale. There is deliberately no size below `text-xs`: a `--text-2xs` of 9px used to carry
+ * real content at 119 call sites, which is what made the UI feel cramped on every screen.
+ *
+ *   text-xs   12px  the floor. Uppercase eyebrows, badges, and tab-bar labels only -- never a
+ *                   sentence. Also used for glyphs sized by their container rather than the scale.
+ *   text-sm   14px  secondary copy: descriptions, metadata, list rows, controls, buttons.
+ *   text-base 16px  primary reading copy, including authored lesson prose.
+ *   text-lg+        headings.
+ *
+ * Text inside an SVG viewBox is in user units and scales with the diagram, so it is not on this
+ * scale at all.
+ */
+
+/*
+ * The brand hues exist in two families, split by role. Getting the wrong one is the difference
+ * between 9:1 and 1.8:1, so the distinction matters more than it looks.
+ *
+ * `brand-*` — the vivid palette, theme-invariant. There are exactly two uses:
+ *   - a SOLID FILL beneath `text-brand-ink`: primary buttons and the brand mark. Dark ink on a
+ *     vivid fill measures 7.4-12.2:1 in either theme, which is why these values never change.
+ *   - the fill of a small shape that takes its edge from an accent rim, such as a completed or
+ *     in-progress status dot. The fill alone measures under 2:1 on a white panel, so the rim is
+ *     what makes the dot perceivable; the fill only carries the hue.
+ *
+ * `accent-*` — the same hues used as CONTENT: text, borders, focus outlines, SVG strokes, status
+ *   dot rims, low-alpha tints, and bare meter fills. These sit on canvas/panel, so they must
+ *   change per theme. The vivid values measure 1.4-2.5:1 against a white panel, nowhere near the
+ *   4.5:1 body text needs.
+ *
+ *   Progress bars and the Progress page dimension meters belong here, not with the fills above:
+ *   they carry no text, so they have to contrast with their own track rather than with a label,
+ *   and the vivid fill measures about 1.4:1 against the light-mode track. Moving a bare meter to
+ *   `brand-*` because it is "a fill" is the specific regression this note exists to prevent.
+ *
+ * Every value below is verified against canvas, panel, and panel-soft in both themes. When adding
+ * a hue, measure it rather than matching by eye.
+ */
 @theme {
   --color-brand-teal: #76d0c0;
   --color-brand-teal-light: #9ce1d5;
@@ -10,7 +48,27 @@
   --color-brand-slate: #9db9c2;
   --color-brand-ink: #0b171e;
   --color-avatar: #2f4c64;
-  --text-2xs: 0.5625rem;
+
+  /*
+   * Code surfaces stay dark in both themes by design. They are tokens rather than per-site literal
+   * colors because the three code renderers (lessons, worksheets, exercises) had drifted onto
+   * different hardcoded pairs.
+   */
+  --color-code-surface: #0b171e;
+  --color-code-ink: #e9edf3;
+
+  /*
+   * Syntax token colors, all measured against --color-code-surface: 5.9:1 for comments through
+   * 15.5:1 for plain identifiers. Comments are the dimmest on purpose but still clear AA, since
+   * curriculum code comments frequently carry the explanation.
+   */
+  --color-code-keyword: #a99be7;
+  --color-code-string: #76d0c0;
+  --color-code-number: #e1b86a;
+  --color-code-function: #80afe4;
+  --color-code-type: #ef916e;
+  --color-code-comment: #7f97a1;
+  --color-code-punctuation: #9db9c2;
 }
 
 @theme inline {
@@ -26,9 +84,26 @@
   --color-faint: var(--ft-faint);
   --color-line: var(--ft-line);
   --color-line-strong: var(--ft-line-strong);
+  --color-raised: var(--ft-raised);
+  --color-accent-teal: var(--ft-accent-teal);
+  --color-accent-teal-light: var(--ft-accent-teal-light);
+  --color-accent-gold: var(--ft-accent-gold);
+  --color-accent-coral: var(--ft-accent-coral);
+  --color-accent-violet: var(--ft-accent-violet);
+  --color-accent-blue: var(--ft-accent-blue);
+  --color-accent-slate: var(--ft-accent-slate);
 }
 
-[data-theme='dark'] {
+/*
+ * `data-theme` is set on <html> by the bootstrap script in index.html before first paint, so the
+ * page never flashes the wrong theme. Dark is the bare-:root default for the same reason.
+ *
+ * `color-scheme` is the point of theming the document element rather than an app-level div: it is
+ * what tells the browser to render scrollbars, form controls, and overscroll to match.
+ */
+:root,
+:root[data-theme='dark'] {
+  color-scheme: dark;
   --ft-canvas: #08111e;
   --ft-shell: rgb(9 18 31 / 78%);
   --ft-shell-nav: rgb(9 18 31 / 96%);
@@ -38,22 +113,147 @@
   --ft-ink: #e9edf3;
   --ft-body: #c2cad5;
   --ft-muted: #8d99aa;
-  --ft-faint: #5f6c7d;
+  /* Lifted from #5f6c7d, which measured 3.24:1 on panel and never cleared AA. */
+  --ft-faint: #778597;
   --ft-line: rgb(162 181 203 / 14%);
   --ft-line-strong: rgb(162 181 203 / 24%);
+  /* Translucent lift for nested surfaces. Was a literal `bg-white/5` at 17 call sites. */
+  --ft-raised: rgb(255 255 255 / 5%);
+
+  /* On dark surfaces the vivid hues already measure 7.0-11.7:1, so accents match brand here. */
+  --ft-accent-teal: #76d0c0;
+  --ft-accent-teal-light: #9ce1d5;
+  --ft-accent-gold: #e1b86a;
+  --ft-accent-coral: #ef916e;
+  --ft-accent-violet: #a99be7;
+  --ft-accent-blue: #80afe4;
+  --ft-accent-slate: #9db9c2;
 }
 
-[data-theme='light'] {
+:root[data-theme='light'] {
+  color-scheme: light;
   --ft-canvas: #f3f6f9;
   --ft-shell: rgb(255 255 255 / 86%);
   --ft-shell-nav: rgb(255 255 255 / 96%);
   --ft-panel: #ffffff;
   --ft-panel-soft: #f6f9fb;
   --ft-panel-muted: rgb(248 250 252 / 90%);
-  --ft-ink: #203047;
-  --ft-body: #40526a;
-  --ft-muted: #68788b;
-  --ft-faint: #8b98a8;
+  /*
+   * The whole ramp is darkened so all four tiers clear AA on canvas, the tightest of the three
+   * surfaces. Previously muted sat at 4.17:1 and faint at 2.71:1, which is why secondary copy
+   * looked washed out in light mode. Measured: 12.1 / 8.1 / 5.8 / 4.7.
+   */
+  --ft-ink: #213149;
+  --ft-body: #3c4c63;
+  --ft-muted: #546171;
+  --ft-faint: #627082;
   --ft-line: rgb(36 58 83 / 14%);
   --ft-line-strong: rgb(36 58 83 / 25%);
+  /* Lifting with white is invisible on a white panel, so light mode recesses instead. */
+  --ft-raised: rgb(36 58 83 / 4%);
+
+  /* Same hues, darkened to clear 4.6:1 on canvas. Used for text, borders, and tints. */
+  --ft-accent-teal: #2a7c6d;
+  /* Hover partner for accent-teal, so hover deepens in light mode instead of lightening. */
+  --ft-accent-teal-light: #1d5f54;
+  --ft-accent-gold: #90681d;
+  --ft-accent-coral: #c34516;
+  --ft-accent-violet: #725bd8;
+  --ft-accent-blue: #2970c1;
+  --ft-accent-slate: #507581;
+}
+
+/*
+ * React does not render <html>, so the canvas color cannot be applied as a utility class here.
+ * Without it, overscroll and any area outside the app shell fall back to the browser default.
+ */
+@layer base {
+  html {
+    background-color: var(--ft-canvas);
+  }
+
+  /*
+   * One global focus ring rather than a utility repeated per control. Only 8 of roughly 60
+   * interactive elements carried a focus style before this; the shared Button, every navigation
+   * link, and the curriculum search input had none. A base rule is the only version of this that
+   * a new component cannot forget, which is why it is not expressed as a utility.
+   */
+  :focus-visible {
+    outline: 2px solid var(--ft-accent-teal);
+    outline-offset: 2px;
+  }
+
+  /*
+   * Without this, repeatedly tapping a control -- the review rating buttons, the tutor mode pills
+   * -- is liable to register as double-tap-to-zoom. Scoped to controls so pinch and double-tap
+   * zoom still work normally on content.
+   */
+  button,
+  a,
+  label,
+  summary,
+  [role='button'] {
+    touch-action: manipulation;
+  }
+}
+
+/*
+ * Syntax highlighting. These class names come from `classHighlighter` in @lezer/highlight, so they
+ * cannot be expressed as Tailwind utilities -- the markup is generated from a parse tree rather
+ * than authored. This is the third-party integration override that docs/frontend.md allows for.
+ *
+ * Colors are tokens rather than literals so the code surface can be re-themed in one place. It is
+ * currently dark in both light and dark mode by design; see the note on --color-code-surface.
+ */
+@layer components {
+  .tok-keyword,
+  .tok-controlKeyword,
+  .tok-moduleKeyword,
+  .tok-operatorKeyword,
+  .tok-modifier,
+  .tok-self {
+    color: var(--color-code-keyword);
+  }
+
+  .tok-string,
+  .tok-string2,
+  .tok-regexp,
+  .tok-escape {
+    color: var(--color-code-string);
+  }
+
+  .tok-number,
+  .tok-bool,
+  .tok-null,
+  .tok-atom {
+    color: var(--color-code-number);
+  }
+
+  .tok-variableName.tok-definition,
+  .tok-propertyName.tok-definition,
+  .tok-macroName {
+    color: var(--color-code-function);
+  }
+
+  .tok-typeName,
+  .tok-className,
+  .tok-namespace {
+    color: var(--color-code-type);
+  }
+
+  .tok-comment,
+  .tok-lineComment,
+  .tok-blockComment,
+  .tok-docComment {
+    color: var(--color-code-comment);
+    font-style: italic;
+  }
+
+  .tok-operator,
+  .tok-punctuation,
+  .tok-bracket,
+  .tok-separator,
+  .tok-meta {
+    color: var(--color-code-punctuation);
+  }
 }

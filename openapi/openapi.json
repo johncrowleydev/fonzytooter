@@ -47,6 +47,12 @@
           },
           "reviewItemId": {
             "type": "string"
+          },
+          "videoId": {
+            "type": "string"
+          },
+          "videoTitle": {
+            "type": "string"
           }
         },
         "required": [
@@ -241,6 +247,33 @@
         ],
         "type": "object"
       },
+      "CreateSessionRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/CreateSessionRequest.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "password": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "username": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "username",
+          "password"
+        ],
+        "type": "object"
+      },
       "ErrorDetail": {
         "additionalProperties": false,
         "properties": {
@@ -325,6 +358,9 @@
       "Event": {
         "additionalProperties": false,
         "properties": {
+          "conversationId": {
+            "type": "string"
+          },
           "error": {
             "type": "string"
           },
@@ -335,6 +371,9 @@
             "type": "string"
           },
           "tool": {
+            "type": "string"
+          },
+          "toolCallId": {
             "type": "string"
           },
           "type": {
@@ -1442,6 +1481,30 @@
         ],
         "type": "object"
       },
+      "SessionResource": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/SessionResource.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "authenticated": {
+            "type": "boolean"
+          },
+          "user": {
+            "$ref": "#/components/schemas/UserResource"
+          }
+        },
+        "required": [
+          "authenticated"
+        ],
+        "type": "object"
+      },
       "SourceResource": {
         "additionalProperties": false,
         "properties": {
@@ -1504,15 +1567,75 @@
         ],
         "type": "object"
       },
+      "TutorAccessResource": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/TutorAccessResource.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "monthlyTurnLimit": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "remainingTurns": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "allowed",
+              "not_entitled",
+              "limit_exhausted",
+              "unavailable"
+            ],
+            "type": "string"
+          },
+          "usedTurns": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "windowEndsAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "monthlyTurnLimit",
+          "usedTurns",
+          "remainingTurns",
+          "windowEndsAt"
+        ],
+        "type": "object"
+      },
       "Usage": {
         "additionalProperties": false,
         "properties": {
+          "cachedTokens": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
           "inputTokens": {
             "format": "int64",
             "minimum": 0,
             "type": "integer"
           },
           "outputTokens": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
+          },
+          "reasoningTokens": {
             "format": "int64",
             "minimum": 0,
             "type": "integer"
@@ -1525,30 +1648,209 @@
         },
         "type": "object"
       },
+      "UserResource": {
+        "additionalProperties": false,
+        "properties": {
+          "displayName": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "username",
+          "displayName"
+        ],
+        "type": "object"
+      },
+      "VideoProgressResource": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/VideoProgressResource.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "completed": {
+            "type": "boolean"
+          },
+          "completedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "courseId": {
+            "type": "string"
+          },
+          "moduleId": {
+            "type": "string"
+          },
+          "videoId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "courseId",
+          "moduleId",
+          "videoId",
+          "completed"
+        ],
+        "type": "object"
+      },
+      "VideoProgressUpdate": {
+        "additionalProperties": false,
+        "properties": {
+          "$schema": {
+            "description": "A URL to the JSON Schema for this object.",
+            "examples": [
+              "https://example.com/VideoProgressUpdate.json"
+            ],
+            "format": "uri",
+            "readOnly": true,
+            "type": "string"
+          },
+          "completed": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "completed"
+        ],
+        "type": "object"
+      },
+      "VideoRecommendationList": {
+        "items": {
+          "$ref": "#/components/schemas/VideoRecommendationResource"
+        },
+        "type": "array"
+      },
+      "VideoRecommendationResource": {
+        "additionalProperties": false,
+        "properties": {
+          "channel": {
+            "type": "string"
+          },
+          "courseId": {
+            "type": "string"
+          },
+          "durationMinutes": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "lessonId": {
+            "type": "string"
+          },
+          "lessonTitle": {
+            "type": "string"
+          },
+          "moduleId": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "reasonKind": {
+            "enum": [
+              "current_lesson",
+              "next_prerequisite",
+              "weak_evidence",
+              "revisit",
+              "current_module"
+            ],
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "videoId": {
+            "type": "string"
+          },
+          "watched": {
+            "type": "boolean"
+          },
+          "youtubeId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "courseId",
+          "moduleId",
+          "videoId",
+          "youtubeId",
+          "title",
+          "channel",
+          "durationMinutes",
+          "reasonKind",
+          "reason",
+          "watched"
+        ],
+        "type": "object"
+      },
       "VideoResource": {
         "additionalProperties": false,
         "properties": {
+          "channel": {
+            "type": "string"
+          },
+          "courseId": {
+            "type": "string"
+          },
+          "durationMinutes": {
+            "format": "int64",
+            "minimum": 1,
+            "type": "integer"
+          },
           "id": {
+            "type": "string"
+          },
+          "lessonIds": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "moduleId": {
             "type": "string"
           },
           "objectiveIds": {
             "items": {
               "type": "string"
             },
+            "minItems": 1,
             "type": "array"
+          },
+          "order": {
+            "format": "int64",
+            "minimum": 0,
+            "type": "integer"
           },
           "title": {
             "type": "string"
           },
-          "url": {
+          "youtubeId": {
+            "pattern": "^[A-Za-z0-9_-]{11}$",
             "type": "string"
           }
         },
         "required": [
+          "courseId",
+          "moduleId",
           "id",
+          "youtubeId",
           "title",
-          "url",
-          "objectiveIds"
+          "channel",
+          "durationMinutes",
+          "order",
+          "objectiveIds",
+          "lessonIds"
         ],
         "type": "object"
       },
@@ -1701,6 +2003,14 @@
         ],
         "type": "object"
       }
+    },
+    "securitySchemes": {
+      "sessionCookie": {
+        "description": "Opaque Fonzytooter authentication session cookie.",
+        "in": "cookie",
+        "name": "fonzytooter_session",
+        "type": "apiKey"
+      }
     }
   },
   "info": {
@@ -1746,6 +2056,16 @@
             },
             "description": "OK"
           },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
           "404": {
             "content": {
               "application/problem+json": {
@@ -1777,9 +2097,189 @@
             "description": "Internal Server Error"
           }
         },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
         "summary": "List recent learner activity",
         "tags": [
           "learner"
+        ]
+      }
+    },
+    "/api/authentication-sessions": {
+      "post": {
+        "operationId": "createAuthenticationSession",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSessionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResource"
+                }
+              }
+            },
+            "description": "Created",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Location": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Set-Cookie": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Sign in and create an authentication session",
+        "tags": [
+          "authentication"
+        ]
+      }
+    },
+    "/api/authentication-sessions/current": {
+      "delete": {
+        "operationId": "deleteCurrentAuthenticationSession",
+        "responses": {
+          "204": {
+            "description": "No Content",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Set-Cookie": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "summary": "Sign out and delete the current authentication session",
+        "tags": [
+          "authentication"
+        ]
+      },
+      "get": {
+        "operationId": "getCurrentAuthenticationSession",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResource"
+                }
+              }
+            },
+            "description": "OK",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Vary": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Get the current authentication session",
+        "tags": [
+          "authentication"
         ]
       }
     },
@@ -2078,6 +2578,16 @@
               }
             }
           },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
           "404": {
             "content": {
               "application/problem+json": {
@@ -2109,6 +2619,11 @@
             "description": "Internal Server Error"
           }
         },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
         "summary": "Create an exercise attempt",
         "tags": [
           "learner"
@@ -2155,6 +2670,16 @@
             },
             "description": "OK"
           },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
           "404": {
             "content": {
               "application/problem+json": {
@@ -2186,6 +2711,11 @@
             "description": "Internal Server Error"
           }
         },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
         "summary": "Get an exercise check definition",
         "tags": [
           "learner"
@@ -2232,6 +2762,16 @@
             },
             "description": "OK"
           },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
           "404": {
             "content": {
               "application/problem+json": {
@@ -2263,6 +2803,11 @@
             "description": "Internal Server Error"
           }
         },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
         "summary": "Get an exercise workspace",
         "tags": [
           "learner"
@@ -2317,6 +2862,16 @@
             },
             "description": "OK"
           },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
           "404": {
             "content": {
               "application/problem+json": {
@@ -2348,6 +2903,11 @@
             "description": "Internal Server Error"
           }
         },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
         "summary": "Replace an exercise workspace",
         "tags": [
           "learner"
@@ -2471,6 +3031,16 @@
             },
             "description": "OK"
           },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
           "404": {
             "content": {
               "application/problem+json": {
@@ -2502,6 +3072,11 @@
             "description": "Internal Server Error"
           }
         },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
         "summary": "Get lesson progress",
         "tags": [
           "learner"
@@ -2556,6 +3131,16 @@
             },
             "description": "OK"
           },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
           "404": {
             "content": {
               "application/problem+json": {
@@ -2587,6 +3172,11 @@
             "description": "Internal Server Error"
           }
         },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
         "summary": "Replace lesson progress",
         "tags": [
           "learner"
@@ -2651,6 +3241,16 @@
               }
             }
           },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
           "404": {
             "content": {
               "application/problem+json": {
@@ -2692,6 +3292,11 @@
             "description": "Internal Server Error"
           }
         },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
         "summary": "Create a review-card rating",
         "tags": [
           "learner"
@@ -2772,6 +3377,198 @@
         "summary": "Get an authored review item",
         "tags": [
           "curriculum"
+        ]
+      }
+    },
+    "/api/courses/{courseId}/modules/{moduleId}/videos/{videoId}/progress": {
+      "get": {
+        "operationId": "getVideoProgress",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "courseId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "moduleId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "videoId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VideoProgressResource"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "summary": "Get video progress",
+        "tags": [
+          "learner"
+        ]
+      },
+      "put": {
+        "operationId": "putVideoProgress",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "courseId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "moduleId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "videoId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VideoProgressUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VideoProgressResource"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "summary": "Replace video progress",
+        "tags": [
+          "learner"
         ]
       }
     },
@@ -3080,6 +3877,16 @@
             },
             "description": "OK"
           },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
           "404": {
             "content": {
               "application/problem+json": {
@@ -3111,6 +3918,11 @@
             "description": "Internal Server Error"
           }
         },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
         "summary": "Get course progress",
         "tags": [
           "learner"
@@ -3151,6 +3963,16 @@
             },
             "description": "OK"
           },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
           "404": {
             "content": {
               "application/problem+json": {
@@ -3182,7 +4004,88 @@
             "description": "Internal Server Error"
           }
         },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
         "summary": "List learner review cards",
+        "tags": [
+          "learner"
+        ]
+      }
+    },
+    "/api/courses/{courseId}/video-recommendations": {
+      "get": {
+        "operationId": "listVideoRecommendations",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "courseId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VideoRecommendationList"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "summary": "List learner video recommendations",
         "tags": [
           "learner"
         ]
@@ -3216,6 +4119,62 @@
         "summary": "Get API health",
         "tags": [
           "health"
+        ]
+      }
+    },
+    "/api/tutor-access": {
+      "get": {
+        "operationId": "getTutorAccess",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TutorAccessResource"
+                }
+              }
+            },
+            "description": "OK"
+          },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "500": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Internal Server Error"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
+        "summary": "Get the current learner's tutor access",
+        "tags": [
+          "tutor-access"
         ]
       }
     },
@@ -3257,6 +4216,26 @@
             },
             "description": "Bad Request"
           },
+          "401": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
           "422": {
             "content": {
               "application/problem+json": {
@@ -3266,6 +4245,16 @@
               }
             },
             "description": "Unprocessable Entity"
+          },
+          "429": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Too Many Requests"
           },
           "500": {
             "content": {
@@ -3286,8 +4275,23 @@
               }
             },
             "description": "Bad Gateway"
+          },
+          "503": {
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorModel"
+                }
+              }
+            },
+            "description": "Service Unavailable"
           }
         },
+        "security": [
+          {
+            "sessionCookie": []
+          }
+        ],
         "summary": "Create a tutor turn and stream its events",
         "tags": [
           "tutor"

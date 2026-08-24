@@ -1,0 +1,7 @@
+id: floating-point-close
+order: 37
+objectiveIds:
+  - python.numerical-experiments
+sourceLessonId: 06-jupyter-and-numerical-experiments
+prompt: Why can exact equality be the wrong comparison for computed floating-point values?
+answer: Many real numbers cannot be represented exactly in finite binary floating point, so calculations can produce tiny representation errors; approximate comparisons ask whether values are sufficiently close.

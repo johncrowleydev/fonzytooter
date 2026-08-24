@@ -9,6 +9,7 @@ import (
 	"testing/fstest"
 	"time"
 
+	"github.com/johncrowleydev/fonzytooter/server/internal/auth"
 	"github.com/johncrowleydev/fonzytooter/server/internal/curriculum"
 	"github.com/johncrowleydev/fonzytooter/server/internal/database"
 	"github.com/johncrowleydev/fonzytooter/server/internal/review"
@@ -126,13 +127,13 @@ func testReviewAPI(t *testing.T) (*API, *sql.DB) {
 	t.Cleanup(func() { _ = db.Close() })
 	clock := reviewTestClock{now: time.Date(2026, time.August, 20, 14, 30, 0, 0, time.UTC)}
 	if _, err := db.Exec(`
-		INSERT INTO lesson_progress (course_id, module_id, lesson_id, completed, completed_at, updated_at)
-		VALUES ('course', 'module', 'lesson', 1, ?, ?)
-	`, clock.now.Format(time.RFC3339Nano), clock.now.Format(time.RFC3339Nano)); err != nil {
+		INSERT INTO lesson_progress (user_id, course_id, module_id, lesson_id, completed, completed_at, updated_at)
+		VALUES (?, 'course', 'module', 'lesson', 1, ?, ?)
+	`, auth.BootstrapUserID, clock.now.Format(time.RFC3339Nano), clock.now.Format(time.RFC3339Nano)); err != nil {
 		t.Fatalf("complete source lesson: %v", err)
 	}
 	service := review.NewService(db, catalog, clock)
-	return NewAPI(tutor.NewService(tutor.NewUnavailableProvider()), catalog, nil, service), db
+	return newAuthenticatedTestAPI(t, tutor.NewService(tutor.NewUnavailableProvider()), catalog, nil, service), db
 }
 
 func assertHTTPTableCount(t *testing.T, db *sql.DB, table string, want int) {

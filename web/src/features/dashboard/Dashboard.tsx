@@ -1,19 +1,41 @@
 import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { useGetCourseProgress, useListActivities } from '../../api/generated/endpoints'
+import {
+  useGetCourseProgress,
+  useListActivities,
+  useListVideoRecommendations,
+} from '../../api/generated/endpoints'
 import type { ActivityResource } from '../../api/generated/schemas/activityResource.zod'
 import type { CourseProgressResource } from '../../api/generated/schemas/courseProgressResource.zod'
-import { coursePath, DEFAULT_COURSE_ID, exercisePath, lessonPath } from '../../app/routes'
+import type { VideoRecommendationResource } from '../../api/generated/schemas/videoRecommendationResource.zod'
+import {
+  coursePath,
+  DEFAULT_COURSE_ID,
+  exercisePath,
+  lessonPath,
+  modulePath,
+} from '../../app/routes'
 import { Badge, Card, PageIntro, SectionHeading } from '../../components/ui'
 import { useTutor } from '../tutor/TutorContext'
+import { useAuth } from '../authentication/AuthContext'
+import { SignInRequired } from '../authentication/SignInRequired'
 import { formatDashboardDate, formatDashboardGreeting } from './time'
 
 export function Dashboard() {
+  const auth = useAuth()
   const { setPageContext } = useTutor()
   const now = new Date()
   const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone
-  const progressQuery = useGetCourseProgress(DEFAULT_COURSE_ID)
-  const activityQuery = useListActivities({ courseId: DEFAULT_COURSE_ID, limit: 6 })
+  const progressQuery = useGetCourseProgress(DEFAULT_COURSE_ID, {
+    query: { enabled: auth.isAuthenticated },
+  })
+  const activityQuery = useListActivities(
+    { courseId: DEFAULT_COURSE_ID, limit: 6 },
+    { query: { enabled: auth.isAuthenticated } },
+  )
+  const recommendationQuery = useListVideoRecommendations(DEFAULT_COURSE_ID, {
+    query: { enabled: auth.isAuthenticated },
+  })
 
   useEffect(() => {
     setPageContext({ type: 'dashboard', title: 'Home', courseId: DEFAULT_COURSE_ID })
@@ -27,7 +49,20 @@ export function Dashboard() {
     />
   )
 
-  if (progressQuery.isPending || activityQuery.isPending) {
+  if (auth.isPending) {
+    return <DashboardState intro={intro} title="Checking learner access" />
+  }
+  if (!auth.isAuthenticated) {
+    return (
+      <SignInRequired
+        title="Your learning dashboard"
+        detail="Sign in to see saved progress and activity. You can browse the complete curriculum without an account."
+        returnTo="/"
+      />
+    )
+  }
+
+  if (progressQuery.isPending || activityQuery.isPending || recommendationQuery.isPending) {
     return <DashboardState intro={intro} title="Loading your learning state" />
   }
   if (progressQuery.isError || activityQuery.isError || !progressQuery.data) {
@@ -45,6 +80,7 @@ export function Dashboard() {
       intro={intro}
       progress={progressQuery.data.data}
       activities={activityQuery.data?.data ?? []}
+      recommendations={recommendationQuery.data?.data ?? []}
     />
   )
 }
@@ -53,10 +89,12 @@ export function DashboardView({
   intro,
   progress,
   activities,
+  recommendations = [],
 }: {
   intro?: React.ReactNode
   progress: CourseProgressResource
   activities: ActivityResource[]
+  recommendations?: VideoRecommendationResource[]
 }) {
   const introducedCount = progress.objectives.filter((objective) => objective.introduced).length
 
@@ -65,21 +103,21 @@ export function DashboardView({
       {intro}
 
       <section className="grid grid-cols-[minmax(0,1.58fr)_minmax(260px,0.84fr)] gap-3.5 max-lg:grid-cols-1">
-        <Card className="min-h-72 border-brand-coral/30 bg-panel p-6 max-sm:min-h-0 max-sm:p-5">
+        <Card className="min-h-72 border-accent-coral/30 bg-panel p-6 max-sm:min-h-0 max-sm:p-5">
           <Badge tone="coral">Continue learning</Badge>
           {progress.nextLesson ? (
             <div className="mt-8 max-w-2xl">
               <h2 className="text-4xl font-semibold leading-none tracking-tight max-sm:text-3xl">
                 {progress.nextLesson.lessonTitle}
               </h2>
-              <p className="mt-4 text-xs font-semibold text-brand-coral">
+              <p className="mt-4 text-sm font-semibold text-accent-coral">
                 {progress.nextLesson.moduleTitle}
               </p>
-              <p className="my-4 max-w-lg text-xs leading-relaxed text-muted">
+              <p className="my-4 max-w-lg text-sm leading-relaxed text-muted">
                 This is the next incomplete lesson in curriculum order.
               </p>
               <Link
-                className="inline-flex items-center justify-center gap-2.5 rounded-lg bg-brand-teal px-4 py-2.5 text-xs font-bold text-brand-ink no-underline transition hover:-translate-y-px hover:bg-brand-teal-light"
+                className="inline-flex items-center justify-center gap-2.5 rounded-lg bg-brand-teal px-4 py-2.5 text-sm font-bold text-brand-ink no-underline transition hover:-translate-y-px hover:bg-brand-teal-light"
                 to={lessonPath(
                   progress.nextLesson.courseId,
                   progress.nextLesson.moduleId,
@@ -94,11 +132,11 @@ export function DashboardView({
               <h2 className="text-3xl font-semibold tracking-tight">
                 All current lessons complete
               </h2>
-              <p className="my-4 text-xs leading-relaxed text-muted">
+              <p className="my-4 text-sm leading-relaxed text-muted">
                 There is no incomplete authored lesson in this course right now.
               </p>
               <Link
-                className="text-xs font-bold text-brand-teal no-underline hover:text-ink"
+                className="text-sm font-bold text-accent-teal no-underline hover:text-ink"
                 to={coursePath(progress.courseId)}
               >
                 Browse curriculum →
@@ -138,6 +176,8 @@ export function DashboardView({
         </div>
       </section>
 
+      <VideoRecommendations recommendations={recommendations} />
+
       <section className="grid grid-cols-[1.05fr_0.95fr] gap-3.5 max-lg:grid-cols-1">
         <Card className="min-h-72">
           <SectionHeading eyebrow="Recent activity" title="A quiet trail of progress" />
@@ -145,12 +185,12 @@ export function DashboardView({
         </Card>
         <Card className="min-h-72">
           <SectionHeading eyebrow="Evidence" title="What has been recorded" />
-          <div className="grid gap-4 text-xs text-muted">
+          <div className="grid gap-4 text-sm text-muted">
             <p>
               {progress.completedLessonCount} completed lessons introduce their linked objectives.
             </p>
             <p>{progress.dueReviewCount} authored recall prompts are currently due.</p>
-            <Link className="font-bold text-brand-teal no-underline hover:text-ink" to="/progress">
+            <Link className="font-bold text-accent-teal no-underline hover:text-ink" to="/progress">
               Inspect objective evidence →
             </Link>
           </div>
@@ -159,10 +199,10 @@ export function DashboardView({
 
       <section className="flex items-center justify-between gap-5 border-t border-line pt-6 max-sm:block">
         <div className="flex max-w-xl items-start gap-3">
-          <span className="text-base text-brand-gold">✦</span>
+          <span className="text-base text-accent-gold">✦</span>
           <div>
-            <strong className="text-xs">What this progress means</strong>
-            <p className="mt-1.5 text-xs leading-normal text-muted">
+            <strong className="text-sm">What this progress means</strong>
+            <p className="mt-1.5 text-sm leading-normal text-muted">
               Lesson completion, review history, and checked exercise attempts are shown as separate
               evidence. Transfer stays unassessed until a real transfer workflow exists.
             </p>
@@ -177,12 +217,65 @@ export function DashboardView({
   )
 }
 
+export function VideoRecommendations({
+  recommendations,
+}: {
+  recommendations: VideoRecommendationResource[]
+}) {
+  if (recommendations.length === 0) return null
+
+  return (
+    <section aria-label="Video recommendations">
+      <SectionHeading
+        eyebrow="Watch"
+        title="Useful video explanations"
+        detail="Chosen from this course's curated videos using your recorded learning context."
+      />
+      <div className="grid gap-3 md:grid-cols-3">
+        {recommendations.map((recommendation) => {
+          const destination = recommendation.lessonId
+            ? lessonPath(recommendation.courseId, recommendation.moduleId, recommendation.lessonId)
+            : modulePath(recommendation.courseId, recommendation.moduleId)
+          return (
+            <Card
+              className="flex min-h-52 flex-col"
+              key={`${recommendation.moduleId}/${recommendation.videoId}`}
+            >
+              <div className="flex items-center justify-between gap-3">
+                <Badge tone={recommendation.watched ? 'violet' : 'teal'}>
+                  {recommendation.watched ? 'Revisit' : 'Unwatched'}
+                </Badge>
+                <span className="text-xs font-semibold text-faint">
+                  {recommendation.durationMinutes} min
+                </span>
+              </div>
+              <h3 className="mt-4 text-base font-semibold leading-snug text-ink">
+                {recommendation.title}
+              </h3>
+              <p className="mt-1 text-sm text-muted">{recommendation.channel}</p>
+              <p className="mt-4 text-sm leading-relaxed text-body">{recommendation.reason}</p>
+              <Link
+                className="mt-auto pt-5 text-sm font-bold text-accent-teal no-underline hover:text-ink"
+                to={destination}
+              >
+                {recommendation.lessonTitle
+                  ? `Open ${recommendation.lessonTitle} →`
+                  : 'Open module playlist →'}
+              </Link>
+            </Card>
+          )
+        })}
+      </div>
+    </section>
+  )
+}
+
 export function ActivityList({ activities }: { activities: ActivityResource[] }) {
   if (activities.length === 0) {
     return (
       <div className="rounded-lg border border-dashed border-line p-5">
-        <strong className="text-xs text-ink">No activity yet</strong>
-        <p className="mt-2 text-2xs leading-relaxed text-muted">
+        <strong className="text-sm text-ink">No activity yet</strong>
+        <p className="mt-2 text-sm leading-relaxed text-muted">
           Complete a lesson or check an exercise to start a learner activity history.
         </p>
       </div>
@@ -194,24 +287,27 @@ export function ActivityList({ activities }: { activities: ActivityResource[] })
       {activities.map((activity) => {
         const exerciseChecked = activity.kind === 'exercise_checked' && Boolean(activity.exerciseId)
         const reviewCompleted = activity.kind === 'review_completed'
+        const videoCompleted = activity.kind === 'video_completed' && Boolean(activity.videoId)
         const content = (
           <>
-            <span className="grid size-6 place-items-center rounded-lg bg-brand-gold/10 text-xs text-brand-gold">
+            <span className="grid size-6 place-items-center rounded-lg bg-accent-gold/10 text-sm text-accent-gold">
               ✓
             </span>
             <div>
-              <strong className="block text-xs font-semibold">
+              <strong className="block text-sm font-semibold">
                 {reviewCompleted
                   ? `Reviewed ${activity.reviewItemId ?? 'recall prompt'}`
-                  : exerciseChecked
-                    ? `Checked ${activity.exerciseTitle ?? activity.exerciseId}`
-                    : `Completed ${activity.lessonTitle ?? 'lesson'}`}
+                  : videoCompleted
+                    ? `Watched ${activity.videoTitle ?? activity.videoId}`
+                    : exerciseChecked
+                      ? `Checked ${activity.exerciseTitle ?? activity.exerciseId}`
+                      : `Completed ${activity.lessonTitle ?? 'lesson'}`}
               </strong>
-              <span className="mt-1 block text-2xs text-faint">
+              <span className="mt-1 block text-sm text-faint">
                 {activity.moduleTitle ?? activity.courseTitle}
               </span>
             </div>
-            <time className="text-2xs text-faint" dateTime={activity.occurredAt}>
+            <time className="text-sm text-faint" dateTime={activity.occurredAt}>
               {formatActivityTime(activity.occurredAt)}
             </time>
           </>
@@ -219,12 +315,20 @@ export function ActivityList({ activities }: { activities: ActivityResource[] })
         const className =
           'grid grid-cols-[24px_1fr_auto] items-center gap-2.5 border-t border-line py-2.5 text-ink no-underline'
         return reviewCompleted ? (
-          <Link className={`${className} hover:text-brand-teal`} key={activity.id} to="/review">
+          <Link className={`${className} hover:text-accent-teal`} key={activity.id} to="/review">
+            {content}
+          </Link>
+        ) : videoCompleted && activity.moduleId ? (
+          <Link
+            className={`${className} hover:text-accent-teal`}
+            key={activity.id}
+            to={modulePath(activity.courseId, activity.moduleId)}
+          >
             {content}
           </Link>
         ) : exerciseChecked && activity.moduleId && activity.exerciseId ? (
           <Link
-            className={`${className} hover:text-brand-teal`}
+            className={`${className} hover:text-accent-teal`}
             key={activity.id}
             to={exercisePath(activity.courseId, activity.moduleId, activity.exerciseId)}
           >
@@ -232,7 +336,7 @@ export function ActivityList({ activities }: { activities: ActivityResource[] })
           </Link>
         ) : activity.moduleId && activity.lessonId ? (
           <Link
-            className={`${className} hover:text-brand-teal`}
+            className={`${className} hover:text-accent-teal`}
             key={activity.id}
             to={lessonPath(activity.courseId, activity.moduleId, activity.lessonId)}
           >
@@ -263,16 +367,16 @@ function ActionCard({
 }) {
   return (
     <Card className="flex min-h-32 items-start gap-4 p-5 max-sm:min-h-28">
-      <div className="grid size-9 place-items-center rounded-lg bg-brand-slate/20 text-xl text-muted">
+      <div className="grid size-9 place-items-center rounded-lg bg-accent-slate/20 text-xl text-muted">
         {icon}
       </div>
       <div>
-        <p className="mt-px text-2xs font-bold uppercase tracking-widest text-faint">{eyebrow}</p>
+        <p className="mt-px text-xs font-bold uppercase tracking-widest text-faint">{eyebrow}</p>
         <h3 className="my-2 text-lg tracking-tight">{title}</h3>
-        <p className="text-2xs leading-relaxed text-faint">{detail}</p>
+        <p className="text-sm leading-relaxed text-faint">{detail}</p>
         {to ? (
           <Link
-            className="mt-3 inline-flex text-2xs font-bold text-brand-teal no-underline"
+            className="mt-3 inline-flex text-sm font-bold text-accent-teal no-underline"
             to={to}
           >
             Open →
@@ -287,7 +391,7 @@ function DashboardStat({ value, label }: { value: number; label: string }) {
   return (
     <div className="grid gap-1">
       <strong className="text-2xl tracking-tight">{value}</strong>
-      <span className="text-2xs uppercase tracking-wide text-faint">{label}</span>
+      <span className="text-xs uppercase tracking-wide text-faint">{label}</span>
     </div>
   )
 }
@@ -306,7 +410,7 @@ function DashboardState({
       {intro}
       <Card muted>
         <h2 className="text-base tracking-tight text-ink">{title}</h2>
-        <p className="mt-2 text-xs leading-relaxed text-muted">{detail}</p>
+        <p className="mt-2 text-sm leading-relaxed text-muted">{detail}</p>
       </Card>
     </div>
   )

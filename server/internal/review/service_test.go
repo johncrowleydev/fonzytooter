@@ -13,15 +13,29 @@ import (
 
 	fsrs "github.com/open-spaced-repetition/go-fsrs/v4"
 
+	"github.com/johncrowleydev/fonzytooter/server/internal/auth"
 	"github.com/johncrowleydev/fonzytooter/server/internal/curriculum"
 	"github.com/johncrowleydev/fonzytooter/server/internal/database"
 )
+
+var reviewTestUserID = auth.BootstrapUserID
 
 var testNow = time.Date(2026, time.August, 20, 14, 30, 0, 123456000, time.UTC)
 
 type fixedClock struct{ now time.Time }
 
 func (clock fixedClock) Now() time.Time { return clock.now }
+
+type sequenceClock struct {
+	values []time.Time
+	index  int
+}
+
+func (clock *sequenceClock) Now() time.Time {
+	value := clock.values[clock.index]
+	clock.index++
+	return value
+}
 
 func TestCardMappingRoundTripsEveryFSRSField(t *testing.T) {
 	db, _ := newTestService(t, testNow)
@@ -40,7 +54,7 @@ func TestCardMappingRoundTripsEveryFSRSField(t *testing.T) {
 	if err != nil {
 		t.Fatalf("begin: %v", err)
 	}
-	if err := storeCard(context.Background(), tx, "course", "module", "first", want, testNow); err != nil {
+	if err := storeCard(context.Background(), tx, reviewTestUserID, "course", "module", "first", want, testNow); err != nil {
 		t.Fatalf("store card: %v", err)
 	}
 	if err := tx.Commit(); err != nil {
@@ -51,7 +65,7 @@ func TestCardMappingRoundTripsEveryFSRSField(t *testing.T) {
 	if err != nil {
 		t.Fatalf("begin read: %v", err)
 	}
-	got, found, err := loadCard(context.Background(), readTx, "course", "module", "first")
+	got, found, err := loadCard(context.Background(), readTx, reviewTestUserID, "course", "module", "first")
 	_ = readTx.Rollback()
 	if err != nil || !found {
 		t.Fatalf("load card: found=%v err=%v", found, err)
@@ -62,7 +76,7 @@ func TestCardMappingRoundTripsEveryFSRSField(t *testing.T) {
 func TestCardsTreatsAuthoredItemsAsVirtualNewWithoutWriting(t *testing.T) {
 	db, service := newTestService(t, testNow)
 
-	cards, err := service.Cards(context.Background(), "course", true)
+	cards, err := service.Cards(context.Background(), reviewTestUserID, "course", true)
 	if err != nil {
 		t.Fatalf("list cards: %v", err)
 	}
@@ -85,13 +99,13 @@ func TestAllRatingsUsePinnedSchedulerAndPreviewTimeBasis(t *testing.T) {
 	for _, rating := range []Rating{RatingAgain, RatingHard, RatingGood, RatingEasy} {
 		t.Run(string(rating), func(t *testing.T) {
 			db, service := newTestService(t, testNow)
-			cards, err := service.Cards(context.Background(), "course", true)
+			cards, err := service.Cards(context.Background(), reviewTestUserID, "course", true)
 			if err != nil {
 				t.Fatalf("preview: %v", err)
 			}
 			preview := previewFor(t, cards[0], rating)
 
-			result, err := service.Submit(context.Background(), "course", "module", cards[0].Item.ID, rating)
+			result, err := service.Submit(context.Background(), reviewTestUserID, "course", "module", cards[0].Item.ID, rating)
 			if err != nil {
 				t.Fatalf("submit: %v", err)
 			}
@@ -135,14 +149,14 @@ func TestDueOrderingPlacesStoredDueCardsBeforeNewCards(t *testing.T) {
 		LastReview: testNow.Add(-24 * time.Hour),
 	}
 	tx, _ := db.BeginTx(context.Background(), nil)
-	if err := storeCard(context.Background(), tx, "course", "module", "second", card, testNow); err != nil {
+	if err := storeCard(context.Background(), tx, reviewTestUserID, "course", "module", "second", card, testNow); err != nil {
 		t.Fatalf("store due card: %v", err)
 	}
 	if err := tx.Commit(); err != nil {
 		t.Fatalf("commit due card: %v", err)
 	}
 
-	cards, err := service.Cards(context.Background(), "course", true)
+	cards, err := service.Cards(context.Background(), reviewTestUserID, "course", true)
 	if err != nil {
 		t.Fatalf("list due cards: %v", err)
 	}
@@ -157,11 +171,40 @@ func TestSubmitIsAtomicAcrossCardLogAndActivity(t *testing.T) {
 		t.Fatalf("drop activities: %v", err)
 	}
 
-	if _, err := service.Submit(context.Background(), "course", "module", "first", RatingGood); err == nil {
+	if _, err := service.Submit(context.Background(), reviewTestUserID, "course", "module", "first", RatingGood); err == nil {
 		t.Fatal("expected activity insert failure")
 	}
 	assertTableCount(t, db, "review_cards", 0)
 	assertTableCount(t, db, "review_logs", 0)
+}
+
+func TestHistoryUsesChronologicalFixedWidthTimestampsBeforeLimiting(t *testing.T) {
+	db, service := newTestService(t, testNow)
+	base := time.Date(2026, time.August, 20, 14, 30, 0, 0, time.UTC)
+	times := []time.Time{base.Add(90 * time.Millisecond), base.Add(100 * time.Millisecond), base.Add(110 * time.Millisecond)}
+	service.clock = &sequenceClock{values: times}
+	ids := make([]int64, 0, len(times))
+	for range times {
+		submitted, err := service.Submit(context.Background(), reviewTestUserID, "course", "module", "first", RatingGood)
+		if err != nil {
+			t.Fatalf("submit review: %v", err)
+		}
+		ids = append(ids, submitted.ID)
+	}
+	var stored string
+	if err := db.QueryRow(`SELECT reviewed_at FROM review_logs WHERE id = ?`, ids[1]).Scan(&stored); err != nil {
+		t.Fatalf("read fixed-width review timestamp: %v", err)
+	}
+	if stored != "2026-08-20T14:30:00.100000000Z" {
+		t.Fatalf("expected fixed-width review timestamp, got %q", stored)
+	}
+	history, err := service.History(context.Background(), reviewTestUserID, "course", "module", "first", 1)
+	if err != nil {
+		t.Fatalf("read review history: %v", err)
+	}
+	if len(history) != 1 || history[0].ID != ids[2] {
+		t.Fatalf("expected 110ms review, got %#v", history)
+	}
 }
 
 func TestInvalidAndMissingSubmissionsDoNotWrite(t *testing.T) {
@@ -179,7 +222,7 @@ func TestInvalidAndMissingSubmissionsDoNotWrite(t *testing.T) {
 		"missing course":   {"missing", "module", "first", RatingGood, ErrCourseNotFound},
 	} {
 		t.Run(name, func(t *testing.T) {
-			_, err := service.Submit(context.Background(), test.courseID, test.moduleID, test.itemID, test.rating)
+			_, err := service.Submit(context.Background(), reviewTestUserID, test.courseID, test.moduleID, test.itemID, test.rating)
 			if !errors.Is(err, test.want) {
 				t.Fatalf("submit error = %v, want %v", err, test.want)
 			}
@@ -191,10 +234,10 @@ func TestInvalidAndMissingSubmissionsDoNotWrite(t *testing.T) {
 
 func TestNoDueCardsAfterFutureScheduling(t *testing.T) {
 	_, service := newSingleItemTestService(t, testNow)
-	if _, err := service.Submit(context.Background(), "course", "module", "first", RatingEasy); err != nil {
+	if _, err := service.Submit(context.Background(), reviewTestUserID, "course", "module", "first", RatingEasy); err != nil {
 		t.Fatalf("submit easy: %v", err)
 	}
-	cards, err := service.Cards(context.Background(), "course", true)
+	cards, err := service.Cards(context.Background(), reviewTestUserID, "course", true)
 	if err != nil {
 		t.Fatalf("list due: %v", err)
 	}
@@ -246,14 +289,14 @@ func TestCardsGateVirtualItemsOnSourceLessonButKeepPersistedSchedules(t *testing
 		t.Fatalf("reset source lesson progress: %v", err)
 	}
 
-	cards, err := service.Cards(context.Background(), "course", true)
+	cards, err := service.Cards(context.Background(), reviewTestUserID, "course", true)
 	if err != nil {
 		t.Fatalf("list future cards: %v", err)
 	}
 	if len(cards) != 0 {
 		t.Fatalf("future source lesson exposed virtual cards: %#v", cards)
 	}
-	if _, err := service.Submit(context.Background(), "course", "module", "first", RatingGood); !errors.Is(err, ErrReviewItemNotEligible) {
+	if _, err := service.Submit(context.Background(), reviewTestUserID, "course", "module", "first", RatingGood); !errors.Is(err, ErrReviewItemNotEligible) {
 		t.Fatalf("submit future card error = %v, want %v", err, ErrReviewItemNotEligible)
 	}
 
@@ -266,14 +309,14 @@ func TestCardsGateVirtualItemsOnSourceLessonButKeepPersistedSchedules(t *testing
 	if err != nil {
 		t.Fatalf("begin stored schedule: %v", err)
 	}
-	if err := storeCard(context.Background(), tx, "course", "module", "second", persisted, testNow); err != nil {
+	if err := storeCard(context.Background(), tx, reviewTestUserID, "course", "module", "second", persisted, testNow); err != nil {
 		t.Fatalf("store persisted schedule: %v", err)
 	}
 	if err := tx.Commit(); err != nil {
 		t.Fatalf("commit persisted schedule: %v", err)
 	}
 
-	cards, err = service.Cards(context.Background(), "course", true)
+	cards, err = service.Cards(context.Background(), reviewTestUserID, "course", true)
 	if err != nil {
 		t.Fatalf("list persisted card: %v", err)
 	}
@@ -306,7 +349,7 @@ func TestSubmitUsesModuleQualifiedReviewItemIdentity(t *testing.T) {
 	completeLesson(t, db, "course", "second-module", "lesson", testNow)
 	service := NewService(db, catalog, fixedClock{now: testNow})
 
-	if _, err := service.Submit(context.Background(), "course", "second-module", "shared", RatingGood); err != nil {
+	if _, err := service.Submit(context.Background(), reviewTestUserID, "course", "second-module", "shared", RatingGood); err != nil {
 		t.Fatalf("submit module-qualified review: %v", err)
 	}
 	var moduleID string
@@ -321,9 +364,9 @@ func TestSubmitUsesModuleQualifiedReviewItemIdentity(t *testing.T) {
 func completeLesson(t *testing.T, db *sql.DB, courseID, moduleID, lessonID string, now time.Time) {
 	t.Helper()
 	if _, err := db.Exec(`
-		INSERT INTO lesson_progress (course_id, module_id, lesson_id, completed, completed_at, updated_at)
-		VALUES (?, ?, ?, 1, ?, ?)
-	`, courseID, moduleID, lessonID, formatTime(now), formatTime(now)); err != nil {
+		INSERT INTO lesson_progress (user_id, course_id, module_id, lesson_id, completed, completed_at, updated_at)
+		VALUES (?, ?, ?, ?, 1, ?, ?)
+	`, reviewTestUserID, courseID, moduleID, lessonID, formatTime(now), formatTime(now)); err != nil {
 		t.Fatalf("complete source lesson: %v", err)
 	}
 }

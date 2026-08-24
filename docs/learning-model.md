@@ -106,6 +106,16 @@ Review items should map to objective IDs so review performance has semantic mean
 
 Core review content is implemented as optional Git-authored YAML under each module's `reviews/` directory. Each item identifies its source lesson and one or more curriculum objectives, and keeps prompt, answer, and an optional hint separate from learner state. The curriculum API exposes this authored content for the later review workflow; it does not attach FSRS scheduling fields or review history to the authored resource.
 
+## Video learning
+
+Curated YouTube videos are another way for a learner to encounter or revisit an objective. They are first-class curriculum material, but watching them is not itself evidence of recall, application, or transfer.
+
+A completed video may establish that the learner encountered an additional explanation and may contribute useful recency context. That state can support progress-aware recommendations, such as suggesting an unwatched visual explanation for the current objective or revisiting a video after repeated difficulty.
+
+Do not convert video completion into a mastery score or use playback telemetry as a proxy for comprehension. A learner can watch every second of a video without understanding it; conversely, a learner may understand the objective without watching the curated video at all.
+
+Video state belongs to authenticated learner history. Public users may view embedded videos and module playlists without creating learner-state rows. See `docs/youtube-learning.md` for the full curation, embedding, playlist, recommendation, and progress model.
+
 ## Activities
 
 Keep a small activity history to provide useful recency context:

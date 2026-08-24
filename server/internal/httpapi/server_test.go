@@ -26,7 +26,7 @@ func TestNewAPIRejectsNilCatalog(t *testing.T) {
 }
 
 func TestHealthReturnsTypedRepresentation(t *testing.T) {
-	app := NewAPI(tutor.NewService(tutor.NewUnavailableProvider()), curriculum.NewEmptyCatalog(), nil, nil)
+	app := newAuthenticatedTestAPI(t, tutor.NewService(tutor.NewUnavailableProvider()), curriculum.NewEmptyCatalog(), nil, nil)
 	req := httptest.NewRequest(http.MethodGet, "/api/health", nil)
 	response := httptest.NewRecorder()
 
@@ -46,7 +46,7 @@ func TestHealthReturnsTypedRepresentation(t *testing.T) {
 }
 
 func TestTutorTurnRouteUsesResourcePathAndStreamsEvents(t *testing.T) {
-	app := NewAPI(tutor.NewService(tutor.NewUnavailableProvider()), curriculum.NewEmptyCatalog(), nil, nil)
+	app := newAuthenticatedTestAPI(t, tutor.NewService(tutor.NewUnavailableProvider(), httpCostGate(t, true, 10)), curriculum.NewEmptyCatalog(), nil, nil)
 	req := httptest.NewRequest(http.MethodPost, "/api/tutor/turns", strings.NewReader(`{"message":"hello"}`))
 	req.Header.Set("Content-Type", "application/json")
 	response := httptest.NewRecorder()
@@ -79,7 +79,7 @@ func TestTutorTurnRouteUsesResourcePathAndStreamsEvents(t *testing.T) {
 }
 
 func TestTutorTurnInvalidInputUsesCommonError(t *testing.T) {
-	app := NewAPI(tutor.NewService(tutor.NewUnavailableProvider()), curriculum.NewEmptyCatalog(), nil, nil)
+	app := newAuthenticatedTestAPI(t, tutor.NewService(tutor.NewUnavailableProvider()), curriculum.NewEmptyCatalog(), nil, nil)
 	for _, message := range []string{" ", "   "} {
 		t.Run(fmt.Sprintf("message %q", message), func(t *testing.T) {
 			req := httptest.NewRequest(http.MethodPost, "/api/tutor/turns", strings.NewReader(fmt.Sprintf(`{"message":%q}`, message)))
@@ -110,7 +110,7 @@ func TestTutorTurnInvalidInputUsesCommonError(t *testing.T) {
 }
 
 func TestTutorTurnMalformedJSONUsesBadRequestProblem(t *testing.T) {
-	app := NewAPI(tutor.NewService(tutor.NewUnavailableProvider()), curriculum.NewEmptyCatalog(), nil, nil)
+	app := newAuthenticatedTestAPI(t, tutor.NewService(tutor.NewUnavailableProvider()), curriculum.NewEmptyCatalog(), nil, nil)
 	req := httptest.NewRequest(http.MethodPost, "/api/tutor/turns", strings.NewReader("{"))
 	req.Header.Set("Content-Type", "application/json")
 	response := httptest.NewRecorder()
@@ -126,7 +126,7 @@ func TestTutorTurnMalformedJSONUsesBadRequestProblem(t *testing.T) {
 }
 
 func TestTutorTurnProviderFailureUsesBadGatewayProblem(t *testing.T) {
-	app := NewAPI(tutor.NewService(failingProvider{}), curriculum.NewEmptyCatalog(), nil, nil)
+	app := newAuthenticatedTestAPI(t, tutor.NewService(failingProvider{}, httpCostGate(t, true, 10)), curriculum.NewEmptyCatalog(), nil, nil)
 	req := httptest.NewRequest(http.MethodPost, "/api/tutor/turns", strings.NewReader(`{"message":"hello"}`))
 	req.Header.Set("Content-Type", "application/json")
 	response := httptest.NewRecorder()
@@ -186,6 +186,14 @@ func TestOpenAPIContract(t *testing.T) {
 	if _, ok := app.Spec.Components.Schemas.Map()["TutorStreamEvent"]; ok {
 		t.Fatal("fake TutorStreamEvent wrapper schema is still advertised")
 	}
+	eventSchema := app.Spec.Components.Schemas.Map()["Event"]
+	if eventSchema == nil || eventSchema.Properties["conversationId"] == nil || eventSchema.Properties["toolCallId"] == nil {
+		t.Fatalf("normalized tutor event correlation fields are missing: %#v", eventSchema)
+	}
+	usageSchema := app.Spec.Components.Schemas.Map()["Usage"]
+	if usageSchema == nil || usageSchema.Properties["cachedTokens"] == nil || usageSchema.Properties["reasoningTokens"] == nil {
+		t.Fatalf("normalized tutor usage fields are missing: %#v", usageSchema)
+	}
 	if tutorPath.Post.Responses["422"].Content["application/problem+json"] == nil {
 		t.Fatal("common validation error response is not documented")
 	}
@@ -193,6 +201,6 @@ func TestOpenAPIContract(t *testing.T) {
 
 type failingProvider struct{}
 
-func (failingProvider) StreamTurn(context.Context, tutor.TurnRequest) (<-chan tutor.Event, error) {
+func (failingProvider) Stream(context.Context, tutor.ModelRequest) (<-chan tutor.ProviderEvent, error) {
 	return nil, errors.New("provider secret should not be exposed")
 }

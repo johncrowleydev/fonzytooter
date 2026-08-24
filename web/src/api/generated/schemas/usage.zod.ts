@@ -6,15 +6,21 @@
  */
 import * as zod from 'zod'
 
+export const usageCachedTokensMin = 0
+
 export const usageInputTokensMin = 0
 
 export const usageOutputTokensMin = 0
 
+export const usageReasoningTokensMin = 0
+
 export const usageTotalTokensMin = 0
 
 export const Usage = zod.strictObject({
+  cachedTokens: zod.int().min(usageCachedTokensMin).optional(),
   inputTokens: zod.int().min(usageInputTokensMin).optional(),
   outputTokens: zod.int().min(usageOutputTokensMin).optional(),
+  reasoningTokens: zod.int().min(usageReasoningTokensMin).optional(),
   totalTokens: zod.int().min(usageTotalTokensMin).optional(),
 })
 

@@ -1,0 +1,7 @@
+id: slicing-preserves-axis
+order: 19
+objectiveIds:
+  - numpy.arrays
+sourceLessonId: 03-numpy-arrays-shape-dimension-and-dtype
+prompt: Why can `x[0]` and `x[0:1]` have different shapes?
+answer: Integer indexing fixes and removes an axis, while slicing selects a range and preserves that axis, even if the range contains one position.

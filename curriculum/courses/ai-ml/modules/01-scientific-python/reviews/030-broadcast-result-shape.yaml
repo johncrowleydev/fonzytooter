@@ -1,0 +1,7 @@
+id: broadcast-result-shape
+order: 30
+objectiveIds:
+  - numpy.broadcasting
+sourceLessonId: 05-broadcasting
+prompt: If two dimensions are broadcast-compatible, how is the result size chosen for that dimension?
+answer: The result uses the larger compatible size; a `1` dimension expands conceptually to match the other size.

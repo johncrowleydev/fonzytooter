@@ -1,0 +1,1476 @@
+---
+id: 05-broadcasting
+title: "Broadcasting: When Shapes Can Work Together"
+objectiveIds:
+  - numpy.broadcasting
+sourceIds:
+  - numpy-broadcasting
+  - numpy-ufuncs
+---
+
+# Broadcasting: When Shapes Can Work Together
+
+In the previous lesson, we wrote expressions like this without much ceremony:
+
+```python
+import numpy as np
+
+x = np.array([1, 2, 3])
+print(x + 10)
+```
+
+NumPy happily produces:
+
+```text
+[11 12 13]
+```
+
+That feels obvious enough. Add ten to every value. Done.
+
+But there is a small mystery hiding inside that apparently simple expression.
+
+`x` is an array with shape `(3,)`. The value `10` is a scalar. Those are not the same kind of object and they do not have the same shape. NumPy still knows exactly what you mean.
+
+It is applying a convention called **broadcasting**.
+
+Broadcasting is one of those ideas that can feel magical when you first encounter it because NumPy quietly makes many shape mismatches work. The good news is that the magic disappears once you learn the rule. Broadcasting is not guesswork, and NumPy is not trying to infer your intent from context. It follows a small, mechanical set of shape rules.
+
+By the end of this lesson, you should be able to look at two shapes, decide whether NumPy can broadcast them together, predict the resulting shape, and explain why the operation succeeds or fails without running the code first.
+
+That skill matters far beyond this one NumPy feature. Modern machine-learning code constantly combines arrays and tensors whose shapes are similar but not identical. If broadcasting feels predictable now, a large class of later tensor bugs becomes much less mysterious.
+
+---
+
+## The simplest broadcast: one scalar, many values
+
+Start with the case we already used:
+
+```python
+x = np.array([1, 2, 3])
+result = x + 10
+```
+
+A useful mental picture is to imagine NumPy treating the scalar as though it had been repeated to match the array:
+
+```text
+[1, 2, 3]
++
+[10, 10, 10]
+------------
+[11, 12, 13]
+```
+
+That is the mathematical effect of the operation. NumPy can apply the same scalar addition independently to every element.
+
+But it is important not to take the picture too literally. NumPy does not generally need to build a new array containing thousands or millions of physical copies of the scalar. Broadcasting lets it behave **as if** the smaller operand had been expanded where necessary.
+
+For reasoning, however, the imaginary expansion is extremely useful.
+
+The same idea works with other operations:
+
+```python
+x * 2
+x - 5
+x / 10
+x ** 2
+```
+
+Each scalar behaves as though it were available at every position in the array.
+
+This is the first clue to what broadcasting really is:
+
+> **Broadcasting lets NumPy apply element-wise operations to operands whose shapes differ in compatible ways.**
+
+The word *compatible* is doing all the work there. We need a precise definition.
+
+---
+
+## Broadcasting is a shape rule, not a mathematical law
+
+It is worth separating two ideas before we go further.
+
+Suppose we have the matrix-like array:
+
+```python
+A = np.array([
+    [1, 2, 3],
+    [4, 5, 6],
+])
+```
+
+and this one-dimensional array:
+
+```python
+v = np.array([10, 20, 30])
+```
+
+NumPy allows:
+
+```python
+A + v
+```
+
+and produces:
+
+```text
+[[11 22 33]
+ [14 25 36]]
+```
+
+Conceptually, it behaves as though `v` were repeated:
+
+```text
+A = [[ 1,  2,  3],
+     [ 4,  5,  6]]
+
+v = [[10, 20, 30],
+     [10, 20, 30]]
+```
+
+Then ordinary element-wise addition is straightforward.
+
+This is a useful numerical programming convention, but it is not the same thing as saying that ordinary mathematics defines addition between every matrix and every vector in this way. Broadcasting is a rule supplied by the array system for extending element-wise operations across compatible shapes.
+
+That distinction will become especially important when we start formal linear algebra. NumPy may allow an expression because of broadcasting even when the corresponding mathematical objects would normally be discussed differently.
+
+For now, the practical lesson is simple: **NumPy's broadcasting rules determine whether differently shaped arrays can participate in an element-wise operation.**
+
+---
+
+## Start by writing the shapes
+
+When broadcasting gets confusing, do not stare at the values. Write the shapes.
+
+For the example above:
+
+```python
+A.shape
+# (2, 3)
+
+v.shape
+# (3,)
+```
+
+So the real question is not:
+
+> Can this matrix-looking thing add to this vector-looking thing?
+
+The better question is:
+
+> Can shapes `(2, 3)` and `(3,)` broadcast together?
+
+That turns a vague semantic question into a mechanical one.
+
+Here is the rule.
+
+> **Compare the dimensions from right to left. Two dimensions are compatible when they are equal, or when either one is `1`. If one shape runs out of dimensions, imagine `1`s on its left.**
+
+That sounds denser than it really is. Let's walk through it.
+
+---
+
+## Compare dimensions from the right
+
+Take these shapes:
+
+```text
+(2, 3)
+   (3,)
+```
+
+Align them on the right:
+
+```text
+(2, 3)
+(   3)
+```
+
+The rightmost dimensions are both `3`, so they are compatible.
+
+The shorter shape has no dimension left to compare with the `2`. The broadcasting rule says to imagine a leading `1`:
+
+```text
+(2, 3)
+(1, 3)
+```
+
+Now compare again:
+
+- rightmost axis: `3` and `3` — compatible because they are equal;
+- next axis: `2` and `1` — compatible because one of them is `1`.
+
+Therefore the operation works.
+
+The result takes the larger size along each compatible axis:
+
+```text
+(2, 3)
+```
+
+So:
+
+```text
+(2, 3) + (3,) → (2, 3)
+```
+
+That single procedure is the core of the lesson.
+
+---
+
+## Equal dimensions already match
+
+The easiest case is when corresponding dimensions are equal.
+
+```text
+(4, 3)
+(4, 3)
+```
+
+Compare from the right:
+
+```text
+3 with 3 ✓
+4 with 4 ✓
+```
+
+No broadcasting is really needed. The shapes already match.
+
+The result shape is:
+
+```text
+(4, 3)
+```
+
+Likewise:
+
+```text
+(2, 5, 4)
+(2, 5, 4)
+```
+
+works because every corresponding dimension matches exactly.
+
+Broadcasting becomes interesting when a dimension is `1` or when one shape has fewer axes.
+
+---
+
+## A dimension of 1 can stretch conceptually
+
+Suppose we have:
+
+```text
+(3, 1)
+(3, 4)
+```
+
+Compare from the right:
+
+```text
+1 with 4 ✓
+3 with 3 ✓
+```
+
+The `1` is compatible with `4`, so NumPy can conceptually repeat the value along that axis.
+
+Imagine an array with shape `(3, 1)`:
+
+```text
+[[10],
+ [20],
+ [30]]
+```
+
+and another with shape `(3, 4)`:
+
+```text
+[[1, 2, 3, 4],
+ [1, 2, 3, 4],
+ [1, 2, 3, 4]]
+```
+
+Broadcasting lets the first behave as though it were:
+
+```text
+[[10, 10, 10, 10],
+ [20, 20, 20, 20],
+ [30, 30, 30, 30]]
+```
+
+The result shape is therefore:
+
+```text
+(3, 4)
+```
+
+Again, the repetition is the mental model. NumPy can implement the operation without actually allocating that repeated array.
+
+---
+
+## Two size-1 axes can expand in different directions
+
+This example makes broadcasting especially visible.
+
+Consider:
+
+```python
+column = np.array([
+    [10],
+    [20],
+    [30],
+])
+
+row = np.array([[1, 2, 3, 4]])
+```
+
+Their shapes are:
+
+```text
+column: (3, 1)
+row:    (1, 4)
+```
+
+Align them:
+
+```text
+(3, 1)
+(1, 4)
+```
+
+Compare from the right:
+
+```text
+1 with 4 ✓
+3 with 1 ✓
+```
+
+So both dimensions are compatible.
+
+The resulting shape takes the larger size at each axis:
+
+```text
+(3, 4)
+```
+
+If we add them:
+
+```python
+column + row
+```
+
+we get:
+
+```text
+[[11 12 13 14]
+ [21 22 23 24]
+ [31 32 33 34]]
+```
+
+You can picture the column being extended horizontally and the row being extended vertically:
+
+```text
+column behaves like:        row behaves like:
+
+[[10, 10, 10, 10],         [[1, 2, 3, 4],
+ [20, 20, 20, 20],          [1, 2, 3, 4],
+ [30, 30, 30, 30]]          [1, 2, 3, 4]]
+```
+
+Then NumPy performs ordinary element-wise addition.
+
+This pattern appears constantly in numerical work: one array varies along one axis, another varies along another axis, and broadcasting combines them into a larger grid of results.
+
+<SingletonExpansionVisualizer />
+
+---
+
+## Missing leading dimensions behave like 1
+
+Now consider:
+
+```text
+(4, 3, 2)
+   (3, 2)
+```
+
+The second shape has only two dimensions. Do not line it up on the left. Broadcasting always compares from the **right**.
+
+So write:
+
+```text
+(4, 3, 2)
+(   3, 2)
+```
+
+Then imagine a leading `1`:
+
+```text
+(4, 3, 2)
+(1, 3, 2)
+```
+
+Now compare:
+
+```text
+2 with 2 ✓
+3 with 3 ✓
+4 with 1 ✓
+```
+
+The result is:
+
+```text
+(4, 3, 2)
+```
+
+This may initially feel strange because `(3, 2)` does not visibly contain three axes. The imagined leading `1` is simply a way to apply the same compatibility rule consistently.
+
+You do not have to physically reshape the array in order to reason this way. Just align the shapes on the right and mentally fill missing leading positions with `1`.
+
+---
+
+## When broadcasting fails
+
+Broadcasting is permissive, but it is not arbitrary.
+
+Consider:
+
+```text
+(2, 3)
+   (2,)
+```
+
+Align on the right:
+
+```text
+(2, 3)
+(   2)
+```
+
+The rightmost dimensions are:
+
+```text
+3 and 2
+```
+
+They are not equal, and neither is `1`.
+
+So broadcasting fails immediately.
+
+NumPy will raise an error for an element-wise operation such as:
+
+```python
+A + b
+```
+
+when:
+
+```text
+A.shape == (2, 3)
+b.shape == (2,)
+```
+
+The important point is that NumPy does **not** reason, "There are two rows, and this array has two values, so maybe the programmer wants one value per row."
+
+That might be what you intended, but broadcasting does not infer semantic meaning. It only follows the shape rule.
+
+If you want one value associated with each row, the shape must express that structure explicitly. We will see how shortly.
+
+---
+
+## The broadcasting procedure
+
+At this point the rule is worth condensing into one repeatable procedure.
+
+Whenever you need to decide whether two arrays can broadcast:
+
+1. Write both shapes.
+2. Align them on the right.
+3. Compare dimensions from right to left.
+4. Each pair must either be equal or contain a `1`.
+5. If one shape runs out, imagine leading `1`s.
+6. The result uses the larger compatible dimension at each position.
+7. If any pair is unequal and neither is `1`, broadcasting fails.
+
+Do not memorize examples. Memorize the procedure.
+
+Let's use it immediately.
+
+<BroadcastShapeLab />
+
+<YouTubeVideo id="numpy-broadcasting-explained">
+  You now have the mechanical rule. This walkthrough gives you another pass at
+  the same shape reasoning in live NumPy code. Keep checking the trailing
+  dimensions yourself before the video reveals what broadcasts.
+</YouTubeVideo>
+
+---
+
+## Practice: predict before running
+
+For each pair below, decide whether broadcasting works. If it does, predict the result shape.
+
+### Example A
+
+```text
+(5, 4)
+   (4,)
+```
+
+Align:
+
+```text
+(5, 4)
+(1, 4)
+```
+
+Compare:
+
+```text
+4 with 4 ✓
+5 with 1 ✓
+```
+
+Result:
+
+```text
+(5, 4)
+```
+
+### Example B
+
+```text
+(2, 5, 4)
+   (5, 4)
+```
+
+Treat the shorter shape as:
+
+```text
+(2, 5, 4)
+(1, 5, 4)
+```
+
+Everything is compatible, so:
+
+```text
+(2, 5, 4)
+```
+
+### Example C
+
+```text
+(2, 5, 4)
+   (1, 4)
+```
+
+Align:
+
+```text
+(2, 5, 4)
+(1, 1, 4)
+```
+
+Compare:
+
+```text
+4 with 4 ✓
+5 with 1 ✓
+2 with 1 ✓
+```
+
+Result:
+
+```text
+(2, 5, 4)
+```
+
+### Example D
+
+```text
+(8, 3)
+   (8,)
+```
+
+Align:
+
+```text
+(8, 3)
+(1, 8)
+```
+
+Rightmost comparison:
+
+```text
+3 with 8 ✗
+```
+
+Broadcasting fails.
+
+The fact that both shapes contain an `8` somewhere does not matter. Position matters because dimensions are aligned from the right.
+
+### Example E
+
+```text
+(4, 1, 6)
+   (3, 6)
+```
+
+Align:
+
+```text
+(4, 1, 6)
+(1, 3, 6)
+```
+
+Compare:
+
+```text
+6 with 6 ✓
+1 with 3 ✓
+4 with 1 ✓
+```
+
+Result:
+
+```text
+(4, 3, 6)
+```
+
+That last one looks intimidating until the rule is applied mechanically. Then it is just three small comparisons.
+
+---
+
+## Broadcasting often expresses exactly what the data means
+
+The real value of broadcasting is not that it lets NumPy tolerate mismatched shapes. It lets shape encode useful structure.
+
+Suppose each row of a dataset contains three measurements:
+
+```python
+data = np.array([
+    [10, 100, 1000],
+    [20, 200, 2000],
+    [30, 300, 3000],
+    [40, 400, 4000],
+])
+```
+
+Its shape is:
+
+```text
+(4, 3)
+```
+
+Now suppose each of the three measurements needs a different offset:
+
+```python
+offsets = np.array([1, 10, 100])
+```
+
+Its shape is:
+
+```text
+(3,)
+```
+
+The expression:
+
+```python
+adjusted = data - offsets
+```
+
+works because:
+
+```text
+(4, 3)
+   (3,)
+```
+
+broadcasts as:
+
+```text
+(4, 3)
+(1, 3)
+```
+
+The `offsets` array is conceptually reused for every row.
+
+That is not merely convenient syntax. The shapes match the meaning of the data: four observations, each with three measurements, and one offset associated with each measurement.
+
+This is the point where broadcasting starts to feel less like a clever NumPy trick and more like a useful way to express numerical structure.
+
+---
+
+## Broadcasting plus reductions: centering data
+
+Now we can combine ideas from the previous lesson.
+
+Suppose we want to subtract the mean of each column from every value in that column.
+
+We can calculate the column means with:
+
+```python
+column_means = data.mean(axis=0)
+```
+
+Recall what `axis=0` means: collapse axis 0.
+
+If `data.shape` is:
+
+```text
+(4, 3)
+```
+
+then:
+
+```python
+column_means.shape
+```
+
+is:
+
+```text
+(3,)
+```
+
+Now look at the subtraction:
+
+```python
+centered = data - column_means
+```
+
+The shapes are:
+
+```text
+(4, 3)
+   (3,)
+```
+
+Align them:
+
+```text
+(4, 3)
+(1, 3)
+```
+
+They broadcast cleanly.
+
+So one concise NumPy expression:
+
+```python
+centered = data - data.mean(axis=0)
+```
+
+contains several ideas we have now learned separately:
+
+- the dataset has a known shape;
+- a reduction collapses one axis;
+- the reduction produces a smaller array;
+- broadcasting aligns that smaller array with the original;
+- subtraction happens element by element.
+
+This is an important milestone. Numerical expressions that initially look dense become readable when you learn to track how the shapes change through the computation.
+
+---
+
+## A subtle failure: row means
+
+Now suppose instead that we want to subtract each row's mean from that row.
+
+Our data still has shape:
+
+```text
+(4, 3)
+```
+
+If we calculate:
+
+```python
+row_means = data.mean(axis=1)
+```
+
+then `axis=1` is collapsed, leaving:
+
+```text
+(4,)
+```
+
+It is tempting to write:
+
+```python
+data - row_means
+```
+
+After all, there are four rows and four means. Surely NumPy understands that each mean belongs to its row.
+
+It does not.
+
+Write the shapes:
+
+```text
+(4, 3)
+   (4,)
+```
+
+Align them on the right:
+
+```text
+(4, 3)
+(1, 4)
+```
+
+The rightmost comparison is:
+
+```text
+3 with 4 ✗
+```
+
+Broadcasting fails.
+
+This is a perfect example of why semantic reasoning is unreliable here. A human sees "four rows, four row means." NumPy sees only shape alignment.
+
+To make one value correspond to each row, we need a shape that explicitly represents one value along axis 1 for each of four positions along axis 0:
+
+```text
+(4, 1)
+```
+
+Now compare:
+
+```text
+(4, 3)
+(4, 1)
+```
+
+That works:
+
+```text
+3 with 1 ✓
+4 with 4 ✓
+```
+
+So how do we preserve that size-1 axis?
+
+---
+
+## `keepdims=True` can preserve broadcastable structure
+
+NumPy reductions accept a useful option:
+
+```python
+row_means = data.mean(axis=1, keepdims=True)
+```
+
+Without `keepdims=True`:
+
+```text
+(4, 3) --mean(axis=1)--> (4,)
+```
+
+With it:
+
+```text
+(4, 3) --mean(axis=1, keepdims=True)--> (4, 1)
+```
+
+The reduced axis remains present, but its size becomes `1`.
+
+That means this works exactly as intended:
+
+```python
+centered_rows = data - data.mean(axis=1, keepdims=True)
+```
+
+Shape reasoning tells the story:
+
+```text
+data                              (4, 3)
+row means with keepdims           (4, 1)
+                                   ↓
+broadcast subtraction             (4, 3)
+```
+
+`keepdims=True` can look like obscure API trivia when encountered in documentation. Here it solves a very concrete problem: **preserve an axis so the result broadcasts back against the original array in the intended direction.**
+
+That is the kind of API detail worth remembering because the shape model explains why it exists.
+
+---
+
+## Another way to make the axis explicit
+
+Sometimes you already have an array with shape `(4,)` and want to turn it into `(4, 1)`.
+
+One straightforward option is `reshape`:
+
+```python
+row_means = row_means.reshape(4, 1)
+```
+
+Or, when the exact length should be inferred:
+
+```python
+row_means = row_means.reshape(-1, 1)
+```
+
+The `-1` asks NumPy to infer that dimension from the number of elements.
+
+You may also encounter syntax such as:
+
+```python
+row_means[:, np.newaxis]
+```
+
+which inserts a new size-1 axis.
+
+You do not need to become fluent with every reshaping idiom yet. The important idea is the shape transition:
+
+```text
+(4,) → (4, 1)
+```
+
+That tiny structural change determines whether broadcasting lines up values with columns or rows.
+
+---
+
+## Shape is part of meaning
+
+This deserves emphasis because it becomes more important as arrays become higher-dimensional.
+
+These arrays contain the same four numbers:
+
+```python
+np.array([10, 20, 30, 40])
+```
+
+shape:
+
+```text
+(4,)
+```
+
+and:
+
+```python
+np.array([
+    [10],
+    [20],
+    [30],
+    [40],
+])
+```
+
+shape:
+
+```text
+(4, 1)
+```
+
+They have the same `size`, but they are not interchangeable in every array expression.
+
+The second array says something the first does not: there is an explicit second axis with exactly one position.
+
+Broadcasting makes that distinction operationally important.
+
+In numerical code, shape is therefore not just storage bookkeeping. **Shape carries structure, and structure often carries meaning.**
+
+Later, when one axis means batch, another means sequence position, another means feature, and another means attention head, this same habit of reading meaning from shape will become essential.
+
+---
+
+## Broadcasting can produce surprising bugs without errors
+
+The most dangerous broadcasting mistake is not always the one that throws an exception.
+
+An exception is annoying, but at least NumPy tells you something is wrong.
+
+More subtle bugs happen when two shapes are technically broadcast-compatible but the resulting operation is not what you intended.
+
+Suppose:
+
+```python
+x = np.array([
+    [1],
+    [2],
+    [3],
+])
+
+y = np.array([10, 20, 30])
+```
+
+Their shapes are:
+
+```text
+x: (3, 1)
+y: (3,)
+```
+
+You might glance at both and think, "three values plus three values."
+
+But broadcasting aligns them as:
+
+```text
+(3, 1)
+(1, 3)
+```
+
+The result is not shape `(3,)` or `(3, 1)`.
+
+It is:
+
+```text
+(3, 3)
+```
+
+And the values are:
+
+```text
+[[11 21 31]
+ [12 22 32]
+ [13 23 33]]
+```
+
+NumPy did exactly what the broadcasting rules said to do.
+
+If that was not what you intended, there is no type error or shape error to save you.
+
+This is why a good numerical programming habit is:
+
+> **When an expression combines arrays of different shapes, predict the result shape before trusting the result.**
+
+Shape reasoning is not merely academic. It is a debugging tool.
+
+<BroadcastDebugChallenge />
+
+---
+
+## Broadcasting does not mean "make the shapes equal somehow"
+
+A common early misconception is that broadcasting is a generic shape-fixing mechanism.
+
+It is not.
+
+NumPy cannot arbitrarily stretch any dimension to any other size.
+
+For example:
+
+```text
+(2, 3)
+(2, 2)
+```
+
+fails because the rightmost dimensions are `3` and `2`.
+
+Likewise:
+
+```text
+(5, 7, 3)
+   (5, 3)
+```
+
+aligns as:
+
+```text
+(5, 7, 3)
+(1, 5, 3)
+```
+
+The middle comparison is:
+
+```text
+7 with 5 ✗
+```
+
+So it fails even though both shapes contain a `5` and a `3`.
+
+Broadcasting is strict about **position**. It only knows how to expand dimensions of size `1` and supply missing leading dimensions as conceptual `1`s.
+
+That narrow rule is what makes the behavior predictable.
+
+---
+
+## A note on performance and memory
+
+The phrase "repeat the smaller array" is useful for understanding what broadcasting means, but NumPy generally does not need to materialize all those repeated copies.
+
+Imagine adding a scalar to an array containing ten million values. It would be absurd to first allocate another ten-million-element array filled with ten million copies of that scalar merely so the shapes matched.
+
+Broadcasting provides the semantics of repetition without requiring that literal duplication.
+
+The same idea applies to size-1 dimensions. NumPy can often reuse the same underlying value as an operation moves along the broadcasted axis.
+
+We are deliberately not diving into strides, cache behavior, memory contiguity, or NumPy's internal iteration machinery here. The useful mental model is enough:
+
+> **Broadcasting behaves like expansion, but expansion is usually conceptual rather than a physical copying step.**
+
+That explains both why the syntax is convenient and why it can remain efficient.
+
+---
+
+## Predict the shape, then predict the values
+
+Let's practice with actual arrays.
+
+### Problem 1
+
+```python
+a = np.array([
+    [1, 2, 3],
+    [4, 5, 6],
+])
+
+b = np.array([10, 20, 30])
+```
+
+Before running `a + b`, answer:
+
+- What is `a.shape`?
+- What is `b.shape`?
+- Can they broadcast?
+- What is the result shape?
+- What values will appear in the first row?
+
+The shape reasoning is:
+
+```text
+(2, 3)
+   (3,)
+→ (2, 3)
+```
+
+So the first row becomes:
+
+```text
+[11, 22, 33]
+```
+
+### Problem 2
+
+```python
+a = np.ones((4, 1))
+b = np.arange(5)
+```
+
+Shapes:
+
+```text
+(4, 1)
+   (5,)
+```
+
+Align:
+
+```text
+(4, 1)
+(1, 5)
+```
+
+Both axes are compatible, so the result is:
+
+```text
+(4, 5)
+```
+
+Before executing it, try to imagine the grid of values that will appear.
+
+### Problem 3
+
+```python
+a = np.zeros((2, 3, 4))
+b = np.zeros((3, 1))
+```
+
+Align the shapes:
+
+```text
+(2, 3, 4)
+(1, 3, 1)
+```
+
+Every axis is compatible, so the result is:
+
+```text
+(2, 3, 4)
+```
+
+### Problem 4
+
+```python
+a = np.zeros((6, 4))
+b = np.zeros((6,))
+```
+
+Align:
+
+```text
+(6, 4)
+(1, 6)
+```
+
+Rightmost comparison:
+
+```text
+4 with 6 ✗
+```
+
+Broadcasting fails.
+
+Do not let the repeated `6` distract you. Alignment is from the right.
+
+---
+
+## Exercise: diagnose the programmer's intent
+
+Suppose a programmer has measurements from five sensors at three time points:
+
+```python
+measurements = np.array([
+    [12.0, 13.5, 11.8, 14.2, 12.9],
+    [12.4, 13.7, 12.1, 14.0, 13.1],
+    [12.8, 13.9, 12.5, 14.4, 13.3],
+])
+```
+
+The shape is:
+
+```text
+(3, 5)
+```
+
+Each sensor has a calibration offset:
+
+```python
+offsets = np.array([0.2, -0.1, 0.3, 0.0, -0.2])
+```
+
+Before running:
+
+```python
+measurements - offsets
+```
+
+explain why the operation broadcasts correctly and what semantic role each axis represents.
+
+Now imagine instead that there is one correction value for each of the three time points:
+
+```python
+time_corrections = np.array([0.1, 0.2, 0.3])
+```
+
+Why does this fail?
+
+What shape should `time_corrections` have if each correction is supposed to apply across all five sensors at its corresponding time point?
+
+The answer is:
+
+```text
+(3, 1)
+```
+
+One way to construct it is:
+
+```python
+time_corrections = time_corrections.reshape(-1, 1)
+```
+
+Now:
+
+```text
+measurements        (3, 5)
+time_corrections    (3, 1)
+```
+
+broadcast successfully to:
+
+```text
+(3, 5)
+```
+
+This is the kind of shape reasoning you will use constantly in real numerical code.
+
+---
+
+## Exercise: center each column
+
+Given:
+
+```python
+x = np.array([
+    [1.0, 10.0, 100.0],
+    [2.0, 20.0, 200.0],
+    [3.0, 30.0, 300.0],
+    [4.0, 40.0, 400.0],
+])
+```
+
+write a single expression that subtracts each column's mean from every value in that column.
+
+Before running it, write down the shape of:
+
+```python
+x
+```
+
+and:
+
+```python
+x.mean(axis=0)
+```
+
+Then explain why they broadcast.
+
+A compact solution is:
+
+```python
+centered = x - x.mean(axis=0)
+```
+
+But the important part is not memorizing that expression. The important part is understanding its shape story.
+
+---
+
+## Exercise: center each row
+
+Using the same `x`, write an expression that subtracts each row's mean from every value in that row.
+
+First predict why this does **not** work:
+
+```python
+x - x.mean(axis=1)
+```
+
+Then fix it using `keepdims=True`:
+
+```python
+centered = x - x.mean(axis=1, keepdims=True)
+```
+
+Explain the transition:
+
+```text
+x                              (4, 3)
+x.mean(axis=1)                 (4,)
+x.mean(axis=1, keepdims=True)  (4, 1)
+```
+
+and why `(4, 1)` is the shape that broadcasts in the intended direction.
+
+---
+
+## Exercise: find the silent surprise
+
+Predict the shape and values before running this code:
+
+```python
+left = np.array([[1], [2], [3]])
+right = np.array([10, 20, 30])
+
+result = left + right
+```
+
+If someone expected three pairwise sums:
+
+```text
+[11, 22, 33]
+```
+
+what misunderstanding did they have about the shapes?
+
+How could they change one operand so pairwise addition produces three values instead of a `3 × 3` grid?
+
+This kind of bug is worth learning to recognize because every individual number may look perfectly reasonable even when the overall computation is wrong.
+
+---
+
+## Broadcasting and matrix multiplication are different ideas
+
+One final boundary is important before we leave this lesson.
+
+Broadcasting applies to **element-wise operations** such as:
+
+```python
++
+-
+*
+/
+np.maximum(...)
+```
+
+when the operand shapes are compatible.
+
+It does not define mathematical matrix multiplication.
+
+For example:
+
+```python
+A * B
+```
+
+in NumPy means element-wise multiplication, possibly with broadcasting.
+
+Matrix multiplication uses a different operation and different shape rules. We will learn those rules later when we formally introduce vectors and matrices.
+
+Do not merge these concepts in your head simply because both involve shapes.
+
+Broadcasting asks:
+
+> Can these operands be aligned so an element-wise operation can be applied?
+
+Matrix multiplication asks a different mathematical question entirely.
+
+Keeping that boundary clear now will save a lot of confusion later.
+
+---
+
+## A compact shape checklist
+
+When you encounter an unfamiliar NumPy expression such as:
+
+```python
+result = a * b + c
+```
+
+and the operands have different shapes, resist the urge to mentally simulate individual values first.
+
+Instead:
+
+```text
+1. Write the shapes.
+2. Align them on the right.
+3. Compare each axis.
+4. Equal sizes are compatible.
+5. A size of 1 can broadcast.
+6. Missing leading axes behave like 1.
+7. Any other mismatch fails.
+8. Predict the result shape.
+9. Only then reason about the values.
+```
+
+With enough practice, this becomes automatic.
+
+That matters because later tensor expressions may involve shapes such as:
+
+```text
+(batch, sequence, features)
+```
+
+or even:
+
+```text
+(batch, heads, sequence, features)
+```
+
+The arrays become more complicated, but the broadcasting rule does not. It is still the same right-to-left comparison you just learned.
+
+---
+
+## What you should be able to do now
+
+You do not need to memorize every NumPy reshaping trick. You do need to be able to reason confidently about broadcasting itself.
+
+Given two shapes, you should now be able to determine whether they are compatible, explain each axis comparison, and predict the resulting shape. Given an expression that fails, you should be able to identify the first incompatible axis rather than treating the error message as mysterious. Given a size-1 dimension, you should understand how that dimension can be conceptually extended. And when a reduction produces a smaller array, you should be able to reason about whether that result can broadcast back against the original.
+
+Most importantly, broadcasting should no longer feel like NumPy quietly guessing what you meant.
+
+It is doing something much less magical and much more useful: following a small, strict set of shape rules.
+
+In the next lesson, we will take the NumPy skills from the last three lessons into a different working environment. Rather than learning another isolated array feature, we will use arrays, functions, plotting, and computation together in Jupyter to conduct our first small numerical experiments.

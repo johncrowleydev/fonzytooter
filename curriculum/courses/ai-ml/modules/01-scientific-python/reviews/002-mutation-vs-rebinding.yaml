@@ -1,0 +1,7 @@
+id: mutation-vs-rebinding
+order: 2
+objectiveIds:
+  - python.execution-model
+sourceLessonId: 01-python-for-a-programmer
+prompt: What is the difference between mutating an object and rebinding a name?
+answer: Mutation changes an existing object; rebinding makes a name refer to a different object.

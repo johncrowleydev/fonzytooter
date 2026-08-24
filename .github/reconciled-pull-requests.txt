@@ -1,0 +1,16 @@
+# Pull requests whose work reached main by a route the merge-topology check cannot follow.
+#
+# The check verifies that a merged pull request's head commit is reachable from main. That fails
+# for a branch which was force-pushed after its pull request merged: GitHub then records the
+# rebased tip, which main has never seen, even though the original commits did land.
+#
+# The check cannot tell that case apart from genuinely lost work, so each one is recorded here by
+# hand. An entry states why the work is present despite the commit not being reachable. If a
+# listed pull request later becomes reachable on its own, the check says so and the line should be
+# deleted.
+#
+# Format: <pull request number> <reason>
+
+72 Force-pushed during a rebase after merging; original commit dbd1668 landed via the #77 recovery merge.
+73 Force-pushed during a rebase after merging; original commit 44bd865 landed via the #77 recovery merge.
+79 Force-pushed after merging; original commits 44b948b and 4278b3e remain present on main.

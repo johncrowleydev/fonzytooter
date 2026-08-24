@@ -1,0 +1,7 @@
+id: broadcast-right-align
+order: 27
+objectiveIds:
+  - numpy.broadcasting
+sourceLessonId: 05-broadcasting
+prompt: When comparing two shapes for NumPy broadcasting, how are their dimensions aligned?
+answer: Align the shapes on the right and compare dimensions from right to left.

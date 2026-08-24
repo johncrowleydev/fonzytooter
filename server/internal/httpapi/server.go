@@ -12,6 +12,7 @@ import (
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/danielgtaylor/huma/v2/adapters/humago"
+	"github.com/johncrowleydev/fonzytooter/server/internal/auth"
 	"github.com/johncrowleydev/fonzytooter/server/internal/curriculum"
 	"github.com/johncrowleydev/fonzytooter/server/internal/learner"
 	"github.com/johncrowleydev/fonzytooter/server/internal/review"
@@ -34,6 +35,18 @@ type HealthResponse struct {
 
 type TutorTurnInput struct {
 	Body tutor.TurnRequest
+}
+
+type TutorAccessResource struct {
+	Status           tutor.AccessStatus `json:"status" enum:"allowed,not_entitled,limit_exhausted,unavailable"`
+	MonthlyTurnLimit int                `json:"monthlyTurnLimit" minimum:"0"`
+	UsedTurns        int                `json:"usedTurns" minimum:"0"`
+	RemainingTurns   int                `json:"remainingTurns" minimum:"0"`
+	WindowEndsAt     time.Time          `json:"windowEndsAt"`
+}
+
+type GetTutorAccessResponse struct {
+	Body TutorAccessResource
 }
 
 type CoursePathInput struct {
@@ -111,10 +124,16 @@ type ObjectiveResource struct {
 }
 
 type VideoResource struct {
-	ID           string   `json:"id"`
-	Title        string   `json:"title"`
-	URL          string   `json:"url"`
-	ObjectiveIDs []string `json:"objectiveIds" nullable:"false"`
+	CourseID        string   `json:"courseId"`
+	ModuleID        string   `json:"moduleId"`
+	ID              string   `json:"id"`
+	YouTubeID       string   `json:"youtubeId" pattern:"^[A-Za-z0-9_-]{11}$"`
+	Title           string   `json:"title"`
+	Channel         string   `json:"channel"`
+	DurationMinutes int      `json:"durationMinutes" minimum:"1"`
+	Order           int      `json:"order" minimum:"0"`
+	ObjectiveIDs    []string `json:"objectiveIds" nullable:"false" minItems:"1"`
+	LessonIDs       []string `json:"lessonIds" nullable:"false"`
 }
 
 type LessonSummary struct {
@@ -252,7 +271,11 @@ type GetCourseReviewItemResponse struct {
 // NewAPI constructs the application handler and registers every documented
 // operation on the same Huma API used by the OpenAPI command.
 func NewAPI(tutorService *tutor.Service, catalog *curriculum.Catalog, learnerService *learner.Service, reviewService *review.Service) *API {
-	return newAPI(tutorService, catalog, learnerService, reviewService, worksheetpdf.NewRenderer())
+	return newAPIWithAuth(tutorService, catalog, learnerService, reviewService, worksheetpdf.NewRenderer(), nil)
+}
+
+func NewAPIWithAuth(tutorService *tutor.Service, catalog *curriculum.Catalog, learnerService *learner.Service, reviewService *review.Service, authService *auth.Service) *API {
+	return newAPIWithAuth(tutorService, catalog, learnerService, reviewService, worksheetpdf.NewRenderer(), authService)
 }
 
 type worksheetDocumentRenderer interface {
@@ -261,6 +284,10 @@ type worksheetDocumentRenderer interface {
 }
 
 func newAPI(tutorService *tutor.Service, catalog *curriculum.Catalog, learnerService *learner.Service, reviewService *review.Service, documentRenderer worksheetDocumentRenderer) *API {
+	return newAPIWithAuth(tutorService, catalog, learnerService, reviewService, documentRenderer, nil)
+}
+
+func newAPIWithAuth(tutorService *tutor.Service, catalog *curriculum.Catalog, learnerService *learner.Service, reviewService *review.Service, documentRenderer worksheetDocumentRenderer, authService *auth.Service) *API {
 	if catalog == nil {
 		panic("httpapi.NewAPI: nil curriculum catalog")
 	}
@@ -271,6 +298,8 @@ func newAPI(tutorService *tutor.Service, catalog *curriculum.Catalog, learnerSer
 	config.SchemasPath = ""
 
 	humaAPI := humago.New(mux, config)
+	configureAuthorization(humaAPI)
+	registerAuthentication(humaAPI, authService)
 	registerHealth(humaAPI)
 	registerTutorTurn(humaAPI, tutorService)
 	registerCurriculum(humaAPI, catalog, documentRenderer)
@@ -278,11 +307,15 @@ func newAPI(tutorService *tutor.Service, catalog *curriculum.Catalog, learnerSer
 	registerExercises(humaAPI, catalog, learnerService)
 	registerReviews(humaAPI, reviewService)
 
-	return &API{Handler: mux, Spec: humaAPI.OpenAPI()}
+	handler := http.Handler(mux)
+	if authService != nil {
+		handler = authService.Middleware(handler)
+	}
+	return &API{Handler: handler, Spec: humaAPI.OpenAPI()}
 }
 
-func NewServer(address string, tutorService *tutor.Service, catalog *curriculum.Catalog, learnerService *learner.Service, reviewService *review.Service) *http.Server {
-	application := NewAPI(tutorService, catalog, learnerService, reviewService)
+func NewServer(address string, tutorService *tutor.Service, catalog *curriculum.Catalog, learnerService *learner.Service, reviewService *review.Service, authService *auth.Service) *http.Server {
+	application := NewAPIWithAuth(tutorService, catalog, learnerService, reviewService, authService)
 
 	return &http.Server{
 		Addr:              address,
@@ -292,13 +325,13 @@ func NewServer(address string, tutorService *tutor.Service, catalog *curriculum.
 }
 
 func registerCurriculum(api huma.API, catalog *curriculum.Catalog, documentRenderer worksheetDocumentRenderer) {
-	huma.Register[struct{}, ListCoursesResponse](api, huma.Operation{
+	huma.Register[struct{}, ListCoursesResponse](api, publicOperation(huma.Operation{
 		OperationID: "listCourses",
 		Method:      http.MethodGet,
 		Path:        "/api/courses",
 		Summary:     "List curriculum courses",
 		Tags:        []string{"curriculum"},
-	}, func(context.Context, *struct{}) (*ListCoursesResponse, error) {
+	}), func(context.Context, *struct{}) (*ListCoursesResponse, error) {
 		courses := catalog.Courses()
 		body := make([]CourseSummary, 0, len(courses))
 		for _, course := range courses {
@@ -319,14 +352,14 @@ func registerCurriculum(api huma.API, catalog *curriculum.Catalog, documentRende
 		Ref: "#/components/schemas/CourseSummaryList",
 	}
 
-	huma.Register[CoursePathInput, GetCourseResponse](api, huma.Operation{
+	huma.Register[CoursePathInput, GetCourseResponse](api, publicOperation(huma.Operation{
 		OperationID: "getCourse",
 		Method:      http.MethodGet,
 		Path:        "/api/courses/{courseId}",
 		Summary:     "Get a curriculum course",
 		Tags:        []string{"curriculum"},
 		Errors:      []int{http.StatusNotFound},
-	}, func(_ context.Context, input *CoursePathInput) (*GetCourseResponse, error) {
+	}), func(_ context.Context, input *CoursePathInput) (*GetCourseResponse, error) {
 		course, ok := catalog.CourseByID(input.CourseID)
 		if !ok {
 			return nil, huma.Error404NotFound("course not found")
@@ -344,14 +377,14 @@ func registerCurriculum(api huma.API, catalog *curriculum.Catalog, documentRende
 		}}, nil
 	})
 
-	huma.Register[CourseModulePathInput, GetCourseModuleResponse](api, huma.Operation{
+	huma.Register[CourseModulePathInput, GetCourseModuleResponse](api, publicOperation(huma.Operation{
 		OperationID: "getCourseModule",
 		Method:      http.MethodGet,
 		Path:        "/api/courses/{courseId}/modules/{moduleId}",
 		Summary:     "Get a course module",
 		Tags:        []string{"curriculum"},
 		Errors:      []int{http.StatusNotFound},
-	}, func(_ context.Context, input *CourseModulePathInput) (*GetCourseModuleResponse, error) {
+	}), func(_ context.Context, input *CourseModulePathInput) (*GetCourseModuleResponse, error) {
 		module, ok := catalog.ModuleByCourse(input.CourseID, input.ModuleID)
 		if !ok {
 			return nil, huma.Error404NotFound("module not found")
@@ -359,14 +392,14 @@ func registerCurriculum(api huma.API, catalog *curriculum.Catalog, documentRende
 		return &GetCourseModuleResponse{Body: moduleResource(module)}, nil
 	})
 
-	huma.Register[CourseLessonPathInput, GetCourseLessonResponse](api, huma.Operation{
+	huma.Register[CourseLessonPathInput, GetCourseLessonResponse](api, publicOperation(huma.Operation{
 		OperationID: "getCourseLesson",
 		Method:      http.MethodGet,
 		Path:        "/api/courses/{courseId}/modules/{moduleId}/lessons/{lessonId}",
 		Summary:     "Get a course lesson",
 		Tags:        []string{"curriculum"},
 		Errors:      []int{http.StatusNotFound},
-	}, func(_ context.Context, input *CourseLessonPathInput) (*GetCourseLessonResponse, error) {
+	}), func(_ context.Context, input *CourseLessonPathInput) (*GetCourseLessonResponse, error) {
 		lesson, ok := catalog.LessonByCourse(input.CourseID, input.ModuleID, input.LessonID)
 		if !ok {
 			return nil, huma.Error404NotFound("lesson not found")
@@ -393,14 +426,14 @@ func registerCurriculum(api huma.API, catalog *curriculum.Catalog, documentRende
 		}}, nil
 	})
 
-	huma.Register[CourseExercisePathInput, GetCourseExerciseResponse](api, huma.Operation{
+	huma.Register[CourseExercisePathInput, GetCourseExerciseResponse](api, publicOperation(huma.Operation{
 		OperationID: "getCourseModuleExercise",
 		Method:      http.MethodGet,
 		Path:        "/api/courses/{courseId}/modules/{moduleId}/exercises/{exerciseId}",
 		Summary:     "Get an embedded course exercise",
 		Tags:        []string{"curriculum"},
 		Errors:      []int{http.StatusNotFound},
-	}, func(_ context.Context, input *CourseExercisePathInput) (*GetCourseExerciseResponse, error) {
+	}), func(_ context.Context, input *CourseExercisePathInput) (*GetCourseExerciseResponse, error) {
 		exercise, ok := catalog.ExerciseByCourse(input.CourseID, input.ModuleID, input.ExerciseID)
 		if !ok {
 			return nil, huma.Error404NotFound("exercise not found")
@@ -420,14 +453,14 @@ func registerCurriculum(api huma.API, catalog *curriculum.Catalog, documentRende
 		}}, nil
 	})
 
-	huma.Register[CourseReviewItemPathInput, GetCourseReviewItemResponse](api, huma.Operation{
+	huma.Register[CourseReviewItemPathInput, GetCourseReviewItemResponse](api, publicOperation(huma.Operation{
 		OperationID: "getCourseModuleReviewItem",
 		Method:      http.MethodGet,
 		Path:        "/api/courses/{courseId}/modules/{moduleId}/review-items/{reviewItemId}",
 		Summary:     "Get an authored review item",
 		Tags:        []string{"curriculum"},
 		Errors:      []int{http.StatusNotFound},
-	}, func(_ context.Context, input *CourseReviewItemPathInput) (*GetCourseReviewItemResponse, error) {
+	}), func(_ context.Context, input *CourseReviewItemPathInput) (*GetCourseReviewItemResponse, error) {
 		reviewItem, ok := catalog.ReviewItemByCourse(input.CourseID, input.ModuleID, input.ReviewItemID)
 		if !ok {
 			return nil, huma.Error404NotFound("review item not found")
@@ -445,14 +478,14 @@ func registerCurriculum(api huma.API, catalog *curriculum.Catalog, documentRende
 		}}, nil
 	})
 
-	huma.Register[CourseWorksheetPathInput, GetCourseWorksheetResponse](api, huma.Operation{
+	huma.Register[CourseWorksheetPathInput, GetCourseWorksheetResponse](api, publicOperation(huma.Operation{
 		OperationID: "getCourseModuleWorksheet",
 		Method:      http.MethodGet,
 		Path:        "/api/courses/{courseId}/modules/{moduleId}/worksheets/{worksheetId}",
 		Summary:     "Get a course module worksheet",
 		Tags:        []string{"curriculum"},
 		Errors:      []int{http.StatusNotFound},
-	}, func(_ context.Context, input *CourseWorksheetPathInput) (*GetCourseWorksheetResponse, error) {
+	}), func(_ context.Context, input *CourseWorksheetPathInput) (*GetCourseWorksheetResponse, error) {
 		worksheet, ok := catalog.WorksheetByCourse(input.CourseID, input.ModuleID, input.WorksheetID)
 		if !ok {
 			return nil, huma.Error404NotFound("worksheet not found")
@@ -480,7 +513,7 @@ func registerCurriculum(api huma.API, catalog *curriculum.Catalog, documentRende
 		}}, nil
 	})
 
-	huma.Register[CourseWorksheetDocumentPathInput, huma.StreamResponse](api, huma.Operation{
+	huma.Register[CourseWorksheetDocumentPathInput, huma.StreamResponse](api, publicOperation(huma.Operation{
 		OperationID: "getCourseModuleWorksheetDocument",
 		Method:      http.MethodGet,
 		Path:        "/api/courses/{courseId}/modules/{moduleId}/worksheets/{worksheetId}/documents/{documentId}",
@@ -504,7 +537,7 @@ func registerCurriculum(api huma.API, catalog *curriculum.Catalog, documentRende
 				},
 			},
 		},
-	}, func(ctx context.Context, input *CourseWorksheetDocumentPathInput) (*huma.StreamResponse, error) {
+	}), func(ctx context.Context, input *CourseWorksheetDocumentPathInput) (*huma.StreamResponse, error) {
 		variant, err := worksheetpdf.ParseVariant(input.DocumentID)
 		if err != nil {
 			return nil, huma.Error404NotFound("worksheet document not found")
@@ -540,7 +573,7 @@ func registerCurriculum(api huma.API, catalog *curriculum.Catalog, documentRende
 		}}, nil
 	})
 
-	huma.Register[CourseModuleWorkbookPathInput, huma.StreamResponse](api, huma.Operation{
+	huma.Register[CourseModuleWorkbookPathInput, huma.StreamResponse](api, publicOperation(huma.Operation{
 		OperationID: "getCourseModuleWorkbook",
 		Method:      http.MethodGet,
 		Path:        "/api/courses/{courseId}/modules/{moduleId}/workbooks/{workbookId}",
@@ -564,7 +597,7 @@ func registerCurriculum(api huma.API, catalog *curriculum.Catalog, documentRende
 				},
 			},
 		},
-	}, func(ctx context.Context, input *CourseModuleWorkbookPathInput) (*huma.StreamResponse, error) {
+	}), func(ctx context.Context, input *CourseModuleWorkbookPathInput) (*huma.StreamResponse, error) {
 		variant, err := worksheetpdf.ParseVariant(input.WorkbookID)
 		if err != nil {
 			return nil, huma.Error404NotFound("module workbook not found")
@@ -619,10 +652,16 @@ func moduleResource(module curriculum.Module) ModuleResource {
 	videos := make([]VideoResource, 0, len(module.Videos))
 	for _, video := range module.Videos {
 		videos = append(videos, VideoResource{
-			ID:           video.ID,
-			Title:        video.Title,
-			URL:          video.URL,
-			ObjectiveIDs: append([]string{}, video.ObjectiveIDs...),
+			CourseID:        video.CourseID,
+			ModuleID:        video.ModuleID,
+			ID:              video.ID,
+			YouTubeID:       video.YouTubeID,
+			Title:           video.Title,
+			Channel:         video.Channel,
+			DurationMinutes: video.DurationMinutes,
+			Order:           video.Order,
+			ObjectiveIDs:    append([]string{}, video.ObjectiveIDs...),
+			LessonIDs:       append([]string{}, video.LessonIDs...),
 		})
 	}
 
@@ -675,18 +714,44 @@ func worksheetSummaries(worksheets []curriculum.Worksheet) []WorksheetSummary {
 }
 
 func registerHealth(api huma.API) {
-	huma.Register[struct{}, HealthResponse](api, huma.Operation{
+	huma.Register[struct{}, HealthResponse](api, publicOperation(huma.Operation{
 		OperationID: "getHealth",
 		Method:      http.MethodGet,
 		Path:        "/api/health",
 		Summary:     "Get API health",
 		Tags:        []string{"health"},
-	}, func(context.Context, *struct{}) (*HealthResponse, error) {
+	}), func(context.Context, *struct{}) (*HealthResponse, error) {
 		return &HealthResponse{Body: Health{Status: "ok"}}, nil
 	})
 }
 
 func registerTutorTurn(api huma.API, tutorService *tutor.Service) {
+	huma.Register[struct{}, GetTutorAccessResponse](api, authenticatedOperation(huma.Operation{
+		OperationID: "getTutorAccess",
+		Method:      http.MethodGet,
+		Path:        "/api/tutor-access",
+		Summary:     "Get the current learner's tutor access",
+		Tags:        []string{"tutor-access"},
+		Errors:      []int{http.StatusServiceUnavailable},
+	}), func(ctx context.Context, _ *struct{}) (*GetTutorAccessResponse, error) {
+		if tutorService == nil {
+			return nil, huma.Error503ServiceUnavailable("tutor access is unavailable")
+		}
+		userID, err := requireUserID(ctx)
+		if err != nil {
+			return nil, err
+		}
+		access, err := tutorService.TutorAccess(ctx, userID)
+		if err != nil {
+			return nil, huma.Error503ServiceUnavailable("tutor access is unavailable")
+		}
+		return &GetTutorAccessResponse{Body: TutorAccessResource{
+			Status: access.Status, MonthlyTurnLimit: access.MonthlyTurnLimit,
+			UsedTurns: access.UsedTurns, RemainingTurns: access.RemainingTurns,
+			WindowEndsAt: access.WindowEndsAt,
+		}}, nil
+	})
+
 	eventSchema := api.OpenAPI().Components.Schemas.Schema(reflect.TypeOf(tutor.Event{}), true, "TutorEvent")
 	api.OpenAPI().Components.Schemas.Schema(reflect.TypeOf(tutor.TurnRequest{}), true, "TutorTurnRequest")
 	streamSchema := &huma.Schema{
@@ -695,14 +760,17 @@ func registerTutorTurn(api huma.API, tutorService *tutor.Service) {
 		Items:       eventSchema,
 	}
 
-	huma.Register[TutorTurnInput, huma.StreamResponse](api, huma.Operation{
+	huma.Register[TutorTurnInput, huma.StreamResponse](api, authenticatedOperation(huma.Operation{
 		OperationID:   "createTutorTurn",
 		Method:        http.MethodPost,
 		Path:          "/api/tutor/turns",
 		Summary:       "Create a tutor turn and stream its events",
 		Tags:          []string{"tutor"},
 		DefaultStatus: http.StatusOK,
-		Errors:        []int{http.StatusBadRequest, http.StatusBadGateway},
+		Errors: []int{
+			http.StatusBadRequest, http.StatusForbidden, http.StatusTooManyRequests,
+			http.StatusBadGateway, http.StatusServiceUnavailable,
+		},
 		Responses: map[string]*huma.Response{
 			"200": {
 				Description: http.StatusText(http.StatusOK),
@@ -711,14 +779,27 @@ func registerTutorTurn(api huma.API, tutorService *tutor.Service) {
 				},
 			},
 		},
-	}, func(ctx context.Context, input *TutorTurnInput) (*huma.StreamResponse, error) {
+	}), func(ctx context.Context, input *TutorTurnInput) (*huma.StreamResponse, error) {
 		if tutorService == nil {
 			return nil, huma.Error500InternalServerError("tutor service is unavailable")
 		}
-
-		events, err := tutorService.StreamTurn(ctx, input.Body)
+		userID, err := requireUserID(ctx)
 		if err != nil {
-			return nil, huma.Error502BadGateway("tutor provider unavailable")
+			return nil, err
+		}
+
+		events, err := tutorService.StreamTurn(ctx, userID, input.Body)
+		if err != nil {
+			switch {
+			case errors.Is(err, tutor.ErrTutorNotEntitled):
+				return nil, huma.Error403Forbidden("tutor is unavailable for this account")
+			case errors.Is(err, tutor.ErrTutorLimitExhausted):
+				return nil, huma.NewError(http.StatusTooManyRequests, "tutor usage limit reached")
+			case errors.Is(err, tutor.ErrTutorPolicyUnavailable):
+				return nil, huma.Error503ServiceUnavailable("tutor access is unavailable")
+			default:
+				return nil, huma.Error502BadGateway("tutor provider unavailable")
+			}
 		}
 
 		return &huma.StreamResponse{Body: func(streamContext huma.Context) {

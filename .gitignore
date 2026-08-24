@@ -27,6 +27,3 @@ data/
 Thumbs.db
 .vscode/
 .idea/
-
-# Secrets
-api-key.txt

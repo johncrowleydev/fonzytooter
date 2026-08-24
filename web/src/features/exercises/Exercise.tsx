@@ -13,13 +13,16 @@ import {
 } from '../../api/generated/endpoints'
 import { lessonPath, modulePath } from '../../app/routes'
 import { Badge, Button, Card, PageIntro, SectionHeading } from '../../components/ui'
+import { HighlightedCode } from '../../components/HighlightedCode'
 import { useTutor } from '../tutor/TutorContext'
+import { useAuth } from '../authentication/AuthContext'
+import { SignInLink } from '../authentication/SignInLink'
 import { CodeEditor } from './CodeEditor'
 import { LatestTaskQueue } from './LatestTaskQueue'
 import { PyodideRunner } from './runtime/PyodideRunner'
 import type { PythonCheckResult, PythonRunResult } from './types'
 
-type SaveState = 'saved' | 'saving' | 'failed'
+type SaveState = 'saved' | 'saving' | 'failed' | 'anonymous'
 
 type LocalDraft = {
   code: string
@@ -42,11 +45,14 @@ function readLocalDraft(key: string): LocalDraft | undefined {
 }
 
 export function Exercise() {
+  const auth = useAuth()
   const { courseId = '', moduleId = '', exerciseId = '' } = useParams()
   const { setPageContext, openTutorWithContext } = useTutor()
   const runner = useMemo(() => new PyodideRunner(), [])
   const exerciseQuery = useGetCourseModuleExercise(courseId, moduleId, exerciseId)
-  const workspaceQuery = useGetExerciseWorkspace(courseId, moduleId, exerciseId)
+  const workspaceQuery = useGetExerciseWorkspace(courseId, moduleId, exerciseId, {
+    query: { enabled: auth.isAuthenticated },
+  })
   const checkDefinitionQuery = useGetExerciseCheckDefinition(courseId, moduleId, exerciseId, {
     query: { enabled: false },
   })
@@ -79,6 +85,7 @@ export function Exercise() {
   const createAttempt = useCreateExerciseAttempt()
 
   function queueWorkspaceSave(codeToSave: string) {
+    if (!auth.isAuthenticated) return
     saveQueue.enqueue(async () => {
       try {
         const response = await saveWorkspaceRef.current({
@@ -108,7 +115,17 @@ export function Exercise() {
   }, [draftKey])
 
   useEffect(() => {
-    if (initialized.current || !workspaceQuery.data) return
+    if (auth.isPending || auth.isAuthenticated || initialized.current || !exerciseQuery.data) return
+    const starterCode = exerciseQuery.data.data.starterCode
+    savedCode.current = starterCode
+    skipNextSave.current = true
+    setCode(starterCode)
+    setSaveState('anonymous')
+    initialized.current = true
+  }, [auth.isAuthenticated, auth.isPending, exerciseQuery.data])
+
+  useEffect(() => {
+    if (!auth.isAuthenticated || initialized.current || !workspaceQuery.data) return
     const serverCode = workspaceQuery.data.data.code
     const local = readLocalDraft(draftKey)
     const recoveredCode = local?.savedCode === serverCode ? local.code : serverCode
@@ -117,10 +134,16 @@ export function Exercise() {
     setCode(recoveredCode)
     setSaveState(recoveredCode === serverCode ? 'saved' : 'saving')
     initialized.current = true
-  }, [draftKey, workspaceQuery.data])
+  }, [auth.isAuthenticated, draftKey, workspaceQuery.data])
 
   useEffect(() => {
-    if (initialized.current || !workspaceQuery.isError || !exerciseQuery.data) return
+    if (
+      !auth.isAuthenticated ||
+      initialized.current ||
+      !workspaceQuery.isError ||
+      !exerciseQuery.data
+    )
+      return
     const local = readLocalDraft(draftKey)
     const fallback = local?.code ?? exerciseQuery.data.data.starterCode
     savedCode.current = local?.savedCode ?? fallback
@@ -128,21 +151,21 @@ export function Exercise() {
     setCode(fallback)
     setSaveState('failed')
     initialized.current = true
-  }, [draftKey, exerciseQuery.data, workspaceQuery.isError])
+  }, [auth.isAuthenticated, draftKey, exerciseQuery.data, workspaceQuery.isError])
 
   useEffect(() => {
     if (skipNextSave.current) {
       skipNextSave.current = false
       return
     }
-    if (!initialized.current || code === savedCode.current) return
+    if (!auth.isAuthenticated || !initialized.current || code === savedCode.current) return
     setSaveState('saving')
     localStorage.setItem(draftKey, JSON.stringify({ code, savedCode: savedCode.current }))
     const timer = window.setTimeout(() => {
       queueWorkspaceSave(code)
     }, 700)
     return () => window.clearTimeout(timer)
-  }, [code, courseId, draftKey, exerciseId, moduleId])
+  }, [auth.isAuthenticated, code, courseId, draftKey, exerciseId, moduleId])
 
   useEffect(() => () => runner.dispose(), [runner])
 
@@ -209,29 +232,34 @@ export function Exercise() {
   }
 
   async function check() {
+    if (!exercise) return
     setExecuting(true)
     setExecutionError(undefined)
     setRunResult(undefined)
     try {
-      const definition = await checkDefinitionQuery.refetch()
-      if (!definition.data) throw new Error('Exercise checks are unavailable')
-      const result = await runner.check({ code, tests: definition.data.data.tests })
+      const tests = auth.isAuthenticated
+        ? (await checkDefinitionQuery.refetch()).data?.data.tests
+        : exercise.visibleTests.map((test) => ({ ...test, visibility: 'visible' as const }))
+      if (!tests) throw new Error('Exercise checks are unavailable')
+      const result = await runner.check({ code, tests })
       setCheckResult(result)
-      await createAttempt.mutateAsync({
-        courseId,
-        moduleId,
-        exerciseId,
-        data: {
-          codeSnapshot: code,
-          durationMs: result.durationMs,
-          results: result.tests.map((test) => ({
-            testId: test.testId,
-            status: test.status,
-            message: test.message,
-            durationMs: test.durationMs,
-          })),
-        },
-      })
+      if (auth.isAuthenticated) {
+        await createAttempt.mutateAsync({
+          courseId,
+          moduleId,
+          exerciseId,
+          data: {
+            codeSnapshot: code,
+            durationMs: result.durationMs,
+            results: result.tests.map((test) => ({
+              testId: test.testId,
+              status: test.status,
+              message: test.message,
+              durationMs: test.durationMs,
+            })),
+          },
+        })
+      }
     } catch (error) {
       setExecutionError(error instanceof Error ? error.message : String(error))
     } finally {
@@ -239,11 +267,15 @@ export function Exercise() {
     }
   }
 
-  if (exerciseQuery.isLoading || workspaceQuery.isLoading) {
+  if (
+    exerciseQuery.isLoading ||
+    auth.isPending ||
+    (auth.isAuthenticated && workspaceQuery.isLoading)
+  ) {
     return <Card className="p-8 text-sm text-muted">Loading exercise workspace…</Card>
   }
   if (!exercise) {
-    return <Card className="p-8 text-sm text-brand-coral">Exercise not found.</Card>
+    return <Card className="p-8 text-sm text-accent-coral">Exercise not found.</Card>
   }
 
   const output = checkResult ?? runResult
@@ -253,11 +285,12 @@ export function Exercise() {
     saved: 'Saved',
     saving: 'Saving…',
     failed: 'Save failed · local draft kept',
+    anonymous: 'Browser-only · not saved',
   }
 
   return (
     <div className="grid max-w-6xl gap-7 max-sm:gap-5">
-      <div className="flex flex-wrap gap-2 text-xs text-muted">
+      <div className="flex flex-wrap gap-2 text-sm text-muted">
         <Link className="font-bold no-underline hover:text-ink" to={modulePath(courseId, moduleId)}>
           ← {module?.title ?? moduleId}
         </Link>
@@ -281,7 +314,7 @@ export function Exercise() {
             <div className="flex border-b border-line px-5">
               {(['prompt', 'tests'] as const).map((tab) => (
                 <button
-                  className={`mr-4 border-0 border-b-2 bg-transparent px-2 py-3 text-xs ${activeTab === tab ? 'border-brand-coral text-ink' : 'border-transparent text-faint'}`}
+                  className={`mr-4 border-0 border-b-2 bg-transparent px-2 py-3 text-sm ${activeTab === tab ? 'border-accent-coral text-ink' : 'border-transparent text-faint'}`}
                   key={tab}
                   onClick={() => setActiveTab(tab)}
                   type="button"
@@ -298,8 +331,12 @@ export function Exercise() {
                   {exercise.visibleTests.map((test) => (
                     <div key={test.id}>
                       <p className="mb-2 font-semibold text-ink">{test.title}</p>
-                      <pre className="overflow-x-auto rounded-lg bg-slate-950 p-3 text-xs text-slate-200">
-                        <code>{test.code}</code>
+                      <pre className="overflow-x-auto overscroll-x-contain rounded-lg bg-code-surface p-3 text-sm text-code-ink">
+                        <code>
+                          {/* Exercise tests are Python by construction: Pyodide is the only
+                              interpreter in the learning app. */}
+                          <HighlightedCode code={test.code} language="python" />
+                        </code>
                       </pre>
                     </div>
                   ))}
@@ -310,10 +347,10 @@ export function Exercise() {
           <Card className="overflow-hidden p-0">
             <div className="border-b border-line px-5 py-3.5">
               <div>
-                <p className="mb-1 font-mono text-xs text-ink">workspace.py</p>
+                <p className="mb-1 font-mono text-sm text-ink">workspace.py</p>
                 <span
                   className={
-                    saveState === 'failed' ? 'text-2xs text-brand-coral' : 'text-2xs text-faint'
+                    saveState === 'failed' ? 'text-sm text-accent-coral' : 'text-sm text-faint'
                   }
                 >
                   {saveLabels[saveState]}
@@ -327,11 +364,16 @@ export function Exercise() {
                   Run ▶
                 </Button>
                 <Button disabled={executing} onClick={check} variant="secondary">
-                  Check ✓
+                  {auth.isAuthenticated ? 'Check & save ✓' : 'Check visible tests ✓'}
                 </Button>
               </div>
+              {!auth.isAuthenticated ? (
+                <SignInLink className="text-sm font-bold text-accent-teal no-underline hover:text-ink">
+                  Sign in to save attempts
+                </SignInLink>
+              ) : null}
               <button
-                className="border-0 bg-transparent p-0 text-xs text-brand-gold"
+                className="border-0 bg-transparent p-0 text-sm text-accent-gold"
                 onClick={() =>
                   openTutorWithContext({
                     type: 'exercise',
@@ -369,18 +411,18 @@ export function Exercise() {
                 }
               />
             </div>
-            <div className="min-h-44 px-5 pb-5 pt-3 text-xs leading-relaxed">
-              {executionError ? <p className="text-brand-coral">{executionError}</p> : null}
+            <div className="min-h-44 px-5 pb-5 pt-3 text-sm leading-relaxed">
+              {executionError ? <p className="text-accent-coral">{executionError}</p> : null}
               {output?.stdout ? (
                 <pre className="whitespace-pre-wrap font-mono text-muted">{output.stdout}</pre>
               ) : null}
               {output?.stderr ? (
-                <pre className="whitespace-pre-wrap font-mono text-brand-coral">
+                <pre className="whitespace-pre-wrap font-mono text-accent-coral">
                   {output.stderr}
                 </pre>
               ) : null}
               {runResult?.error ? (
-                <p className="text-brand-coral">
+                <p className="text-accent-coral">
                   {runResult.error.name}: {runResult.error.message}
                 </p>
               ) : null}
@@ -393,7 +435,7 @@ export function Exercise() {
                     >
                       <span
                         className={
-                          test.status === 'passed' ? 'text-brand-teal' : 'text-brand-coral'
+                          test.status === 'passed' ? 'text-accent-teal' : 'text-accent-coral'
                         }
                       >
                         {test.status === 'passed' ? '✓' : '×'}
@@ -418,10 +460,10 @@ export function Exercise() {
         </main>
         <aside className="grid content-start gap-3.5 max-xl:grid-cols-2 max-sm:grid-cols-1">
           <Card>
-            <p className="text-2xs font-bold uppercase tracking-widest text-faint">
+            <p className="text-xs font-bold uppercase tracking-widest text-faint">
               Learning objectives
             </p>
-            <ul className="mt-3 grid gap-2 text-xs text-muted">
+            <ul className="mt-3 grid gap-2 text-sm text-muted">
               {objectives.map((objective) => (
                 <li key={objective.id}>{objective.title}</li>
               ))}

@@ -31,6 +31,13 @@ TutorService
     |     +-- relevant learner evidence
     |     +-- bounded conversation history
     |
+    +-- ContextManager
+    |     +-- provider-independent token budgeting
+    |     +-- recent verbatim conversation tail
+    |     +-- persistent compacted conversation memory
+    |     +-- automatic pre-limit compaction
+    |     +-- output and tool-call headroom
+    |
     +-- ToolRegistry
     |     +-- typed definitions
     |     +-- JSON schemas
@@ -66,6 +73,34 @@ The provider boundary is responsible for:
 - preserving provider-required reasoning state across turns when necessary;
 - reporting usage, latency-relevant metadata, and errors;
 - mapping a provider's reasoning controls onto Fonzytooter's internal reasoning policy.
+
+### OpenRouter configuration
+
+The server enables the OpenRouter adapter only when both `OPENROUTER_API_KEY` and an exact `FONZYTOOTER_TUTOR_MODEL` ID are set. There is deliberately no production model default: if either value is absent, the existing not-configured tutor response remains active. `OPENROUTER_BASE_URL` may override the default `https://openrouter.ai/api/v1` endpoint for deterministic local testing, and `OPENROUTER_HTTP_TIMEOUT` accepts a positive Go duration such as `90s`.
+
+### Metered access policy
+
+Authentication identifies the learner but does not authorize metered tutor
+use. The server denies tutor use unless `FONZYTOOTER_TUTOR_ENTITLED=true` and
+`FONZYTOOTER_TUTOR_MONTHLY_TURN_LIMIT` is a positive integer. This intentionally
+small personal-deployment policy keeps entitlement separate from quota without
+introducing plans or billing infrastructure.
+
+The allowance is a per-user count of accepted tutor turns in each UTC calendar
+month. Fonzytooter does not claim that this is an exact monetary cost: provider
+usage events include token counts but no reliable normalized price. Each turn
+is atomically reserved in SQLite before conversation persistence or provider
+execution, so concurrent requests cannot cross the configured turn limit.
+Reservations remain consumed when context preparation or provider execution
+fails. This conservative rule prevents retrying failures from bypassing the
+cost boundary. Provider work within one accepted turn remains bounded by the
+runtime's maximum model rounds (plus bounded context compaction when needed).
+
+`GET /api/tutor-access` exposes only the current learner's stable access state
+(`allowed`, `not_entitled`, `limit_exhausted`, or `unavailable`) and aggregate
+turn counts. It never exposes provider credentials or billing identifiers.
+
+The adapter owns OpenRouter's Chat Completions request, SSE, tool-call, reasoning, usage, and error shapes. It reconstructs fragmented tool arguments by call index, preserves call IDs through tool-result continuation, maps the canonical reasoning levels to OpenRouter effort values, and retries a rejected unsupported reasoning setting once without that optional setting. Streamed `reasoning_details` objects are concatenated in their original order and persisted with recent assistant messages as opaque provider/model-scoped state; a compatible adapter replays them through tool results and later conversational turns without inspecting their contents. State attached to an incompatible provider/model is omitted, and compacted messages no longer contribute it to inference requests. Text and image URL/data-URL parts are supported at the request boundary; document and audio inputs are intentionally outside this adapter slice.
 
 The tutor service is responsible for:
 
@@ -113,6 +148,20 @@ Fonzytooter owns conversation state. Do not make a provider thread ID the author
 Persist the canonical conversation in SQLite so that providers can be changed without losing history or coupling the application to one vendor's state model. The exact schema may evolve, but it will likely need explicit records for conversations, messages, tool calls/results, and later attachments.
 
 Inference requests should use bounded recent history plus deliberately selected older context or summaries when needed. Do not blindly resend an unbounded conversation forever merely because a model advertises a very large context window.
+
+## Context management and automatic compaction
+
+Context management is a first-class runtime responsibility. Every model request is assembled within a provider-independent budget that explicitly accounts for the system/tutor policy, compacted memory, recent verbatim messages, fresh application context, deterministic curriculum or learner context, tool definitions, and the current user message. The runtime reserves output and tool-call headroom rather than filling the provider's entire advertised context window with input.
+
+The system/tutor policy and current user message are always retained. A bounded recent conversation tail remains verbatim. When older unsummarized history approaches a configured safety threshold—or grows beyond that retained tail—the runtime compacts it before the hard context limit and persists both the resulting memory and the exact message sequence summarized through. Repeated compaction advances that marker so transcript content is neither summarized twice nor included both verbatim and through memory.
+
+Compacted memory should preserve salient learning state such as the learner's current goal, established understanding, known misconceptions, corrections already made, explanations that did not work, unresolved questions, active longer-lived task context, relevant tool findings, and source or citation IDs. The representation remains bounded and versioned so it can evolve without becoming an opaque replacement for the canonical transcript.
+
+Production compaction uses the configured model to produce a strictly decoded structured-memory document. A bounded deterministic compactor remains the failure fallback and the test implementation; it is not the normal semantic-memory path. If the ordinary recent verbatim tail is still too large, context preparation progressively compacts more of its oldest messages while always retaining the current user message, stopping only when the request fits or the irreducible current request exceeds the hard budget.
+
+Current page state is different: it is fresh, ephemeral input rebuilt from application state on every turn. Route identifiers, selected text, current code, and execution results must not become durable truth merely because they appeared in an older request, and stale page state must not be reintroduced through compaction memory.
+
+Token estimation is an interface rather than a commitment to one tokenizer or model family. Providers may later supply more accurate model-aware estimates and context limits, while the runtime retains responsibility for enforcing its safety threshold and reserved response/tool capacity.
 
 ## Canonical multimodal messages
 
@@ -220,6 +269,12 @@ Return previous saved attempts, checks, and failure information for an exercise 
 ### `get_review_history`
 
 Return relevant spaced-repetition history for one or more objectives/review items.
+
+## Implemented Fonzytooter context and tools
+
+The backend runtime now uses a versioned Fonzytooter policy and an authoritative context builder. Client page labels are treated as hints only: course, module, lesson, exercise, objective, and source ownership is resolved against the immutable curriculum catalog, with current selected text, code, and execution state kept as bounded ephemeral input. Current lesson excerpts, source metadata, relevant objective evidence, and compact course progress are injected when predictable, so the model does not need a `get_current_page` tool.
+
+The six initial tools above are implemented as typed, validated, read-only capabilities. Search uses a deterministic normalized text score and stable tie-breaking; content retrieval and learner histories are course-scoped and size-limited; worksheet answer keys and hidden exercise tests are never returned. Source-bearing curriculum results expose only registered source IDs and metadata, and the runtime emits normalized citation events for those retrieved IDs. No tool mutates learner state, runs server-side Python, performs web search, or awards mastery.
 
 Tool definitions should use typed Go argument/result structures. Prefer deriving tool JSON schemas from typed definitions using existing project schema machinery when that can be done cleanly; avoid maintaining redundant hand-written schemas without a concrete reason.
 

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/johncrowleydev/fonzytooter/server/internal/auth"
 	"github.com/johncrowleydev/fonzytooter/server/internal/curriculum"
 )
 
@@ -106,6 +107,8 @@ type Activity struct {
 	LessonTitle   *string
 	ExerciseID    *string
 	ExerciseTitle *string
+	VideoID       *string
+	VideoTitle    *string
 	ReviewItemID  *string
 	OccurredAt    time.Time
 }
@@ -120,7 +123,7 @@ func NewService(db *sql.DB, catalog *curriculum.Catalog) *Service {
 	return &Service{db: db, catalog: catalog, now: time.Now}
 }
 
-func (s *Service) LessonProgress(ctx context.Context, courseID, moduleID, lessonID string) (LessonProgress, error) {
+func (s *Service) LessonProgress(ctx context.Context, userID auth.UserID, courseID, moduleID, lessonID string) (LessonProgress, error) {
 	if _, ok := s.catalog.LessonByCourse(courseID, moduleID, lessonID); !ok {
 		return LessonProgress{}, ErrLessonNotFound
 	}
@@ -131,8 +134,8 @@ func (s *Service) LessonProgress(ctx context.Context, courseID, moduleID, lesson
 	err := s.db.QueryRowContext(ctx, `
 		SELECT completed, completed_at
 		FROM lesson_progress
-		WHERE course_id = ? AND module_id = ? AND lesson_id = ?
-	`, courseID, moduleID, lessonID).Scan(&completed, &completedAt)
+		WHERE user_id = ? AND course_id = ? AND module_id = ? AND lesson_id = ?
+	`, userID, courseID, moduleID, lessonID).Scan(&completed, &completedAt)
 	if errors.Is(err, sql.ErrNoRows) {
 		return progress, nil
 	}
@@ -150,7 +153,7 @@ func (s *Service) LessonProgress(ctx context.Context, courseID, moduleID, lesson
 	return progress, nil
 }
 
-func (s *Service) SetLessonProgress(ctx context.Context, courseID, moduleID, lessonID string, completed bool) (LessonProgress, error) {
+func (s *Service) SetLessonProgress(ctx context.Context, userID auth.UserID, courseID, moduleID, lessonID string, completed bool) (LessonProgress, error) {
 	if _, ok := s.catalog.LessonByCourse(courseID, moduleID, lessonID); !ok {
 		return LessonProgress{}, ErrLessonNotFound
 	}
@@ -166,8 +169,8 @@ func (s *Service) SetLessonProgress(ctx context.Context, courseID, moduleID, les
 	err = tx.QueryRowContext(ctx, `
 		SELECT completed, completed_at
 		FROM lesson_progress
-		WHERE course_id = ? AND module_id = ? AND lesson_id = ?
-	`, courseID, moduleID, lessonID).Scan(&existingCompleted, &existingCompletedAt)
+		WHERE user_id = ? AND course_id = ? AND module_id = ? AND lesson_id = ?
+	`, userID, courseID, moduleID, lessonID).Scan(&existingCompleted, &existingCompletedAt)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return LessonProgress{}, fmt.Errorf("read lesson progress for update: %w", err)
 	}
@@ -186,27 +189,27 @@ func (s *Service) SetLessonProgress(ctx context.Context, courseID, moduleID, les
 	}
 
 	now := s.now().UTC()
-	nowText := now.Format(time.RFC3339Nano)
+	nowText := formatLearnerTime(now)
 	var completedAt any
 	if completed {
 		completedAt = nowText
 	}
 	_, err = tx.ExecContext(ctx, `
-		INSERT INTO lesson_progress (course_id, module_id, lesson_id, completed, completed_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?)
-		ON CONFLICT (course_id, module_id, lesson_id) DO UPDATE SET
+		INSERT INTO lesson_progress (user_id, course_id, module_id, lesson_id, completed, completed_at, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?)
+		ON CONFLICT (user_id, course_id, module_id, lesson_id) DO UPDATE SET
 			completed = excluded.completed,
 			completed_at = excluded.completed_at,
 			updated_at = excluded.updated_at
-	`, courseID, moduleID, lessonID, completed, completedAt, nowText)
+	`, userID, courseID, moduleID, lessonID, completed, completedAt, nowText)
 	if err != nil {
 		return LessonProgress{}, fmt.Errorf("write lesson progress: %w", err)
 	}
 	if completed {
 		if _, err := tx.ExecContext(ctx, `
-			INSERT INTO activities (kind, course_id, module_id, lesson_id, occurred_at)
-			VALUES (?, ?, ?, ?, ?)
-		`, ActivityLessonCompleted, courseID, moduleID, lessonID, nowText); err != nil {
+			INSERT INTO activities (user_id, kind, course_id, module_id, lesson_id, occurred_at)
+			VALUES (?, ?, ?, ?, ?, ?)
+		`, userID, ActivityLessonCompleted, courseID, moduleID, lessonID, nowText); err != nil {
 			return LessonProgress{}, fmt.Errorf("record lesson completion activity: %w", err)
 		}
 	}
@@ -221,7 +224,7 @@ func (s *Service) SetLessonProgress(ctx context.Context, courseID, moduleID, les
 	return progress, nil
 }
 
-func (s *Service) CourseProgress(ctx context.Context, courseID string) (CourseProgress, error) {
+func (s *Service) CourseProgress(ctx context.Context, userID auth.UserID, courseID string) (CourseProgress, error) {
 	course, ok := s.catalog.CourseByID(courseID)
 	if !ok {
 		return CourseProgress{}, ErrCourseNotFound
@@ -230,8 +233,8 @@ func (s *Service) CourseProgress(ctx context.Context, courseID string) (CoursePr
 	rows, err := s.db.QueryContext(ctx, `
 		SELECT module_id, lesson_id, completed_at
 		FROM lesson_progress
-		WHERE course_id = ? AND completed = 1
-	`, courseID)
+		WHERE user_id = ? AND course_id = ? AND completed = 1
+	`, userID, courseID)
 	if err != nil {
 		return CourseProgress{}, fmt.Errorf("read completed lessons: %w", err)
 	}
@@ -298,7 +301,7 @@ func (s *Service) CourseProgress(ctx context.Context, courseID string) (CoursePr
 		}
 	}
 	result.NextLesson = nextLesson(course, orderedLessons, completed)
-	if err := s.addCourseEvidence(ctx, course, objectiveIndex, &result); err != nil {
+	if err := s.addCourseEvidence(ctx, userID, course, objectiveIndex, &result); err != nil {
 		return CourseProgress{}, err
 	}
 	return result, nil
@@ -331,7 +334,7 @@ func nextLessonValue(course curriculum.Course, module curriculum.Module, lesson 
 	return &NextLesson{CourseID: course.ID, ModuleID: module.ID, ModuleTitle: module.Title, LessonID: lesson.ID, LessonTitle: lesson.Title}
 }
 
-func (s *Service) Activities(ctx context.Context, courseID string, limit int) ([]Activity, error) {
+func (s *Service) Activities(ctx context.Context, userID auth.UserID, courseID string, limit int) ([]Activity, error) {
 	course, ok := s.catalog.CourseByID(courseID)
 	if !ok {
 		return nil, ErrCourseNotFound
@@ -344,12 +347,12 @@ func (s *Service) Activities(ctx context.Context, courseID string, limit int) ([
 	}
 
 	rows, err := s.db.QueryContext(ctx, `
-		SELECT id, kind, course_id, module_id, lesson_id, exercise_id, review_item_id, occurred_at
+		SELECT id, kind, course_id, module_id, lesson_id, exercise_id, video_id, review_item_id, occurred_at
 		FROM activities
-		WHERE course_id = ?
+		WHERE user_id = ? AND course_id = ?
 		ORDER BY occurred_at DESC, id DESC
 		LIMIT ?
-	`, courseID, limit)
+	`, userID, courseID, limit)
 	if err != nil {
 		return nil, fmt.Errorf("read learner activities: %w", err)
 	}
@@ -358,15 +361,16 @@ func (s *Service) Activities(ctx context.Context, courseID string, limit int) ([
 	activities := make([]Activity, 0)
 	for rows.Next() {
 		var activity Activity
-		var moduleID, lessonID, exerciseID, reviewItemID sql.NullString
+		var moduleID, lessonID, exerciseID, videoID, reviewItemID sql.NullString
 		var occurredAt string
-		if err := rows.Scan(&activity.ID, &activity.Kind, &activity.CourseID, &moduleID, &lessonID, &exerciseID, &reviewItemID, &occurredAt); err != nil {
+		if err := rows.Scan(&activity.ID, &activity.Kind, &activity.CourseID, &moduleID, &lessonID, &exerciseID, &videoID, &reviewItemID, &occurredAt); err != nil {
 			return nil, fmt.Errorf("scan learner activity: %w", err)
 		}
 		activity.CourseTitle = course.Title
 		activity.ModuleID = nullableString(moduleID)
 		activity.LessonID = nullableString(lessonID)
 		activity.ExerciseID = nullableString(exerciseID)
+		activity.VideoID = nullableString(videoID)
 		activity.ReviewItemID = nullableString(reviewItemID)
 		activity.OccurredAt, err = time.Parse(time.RFC3339Nano, occurredAt)
 		if err != nil {
@@ -387,12 +391,26 @@ func (s *Service) Activities(ctx context.Context, courseID string, limit int) ([
 				activity.ExerciseTitle = stringPointer(exercise.Title)
 			}
 		}
+		if activity.ModuleID != nil && activity.VideoID != nil {
+			if module, ok := s.catalog.ModuleByCourse(courseID, *activity.ModuleID); ok {
+				for _, video := range module.Videos {
+					if video.ID == *activity.VideoID {
+						activity.VideoTitle = stringPointer(video.Title)
+						break
+					}
+				}
+			}
+		}
 		activities = append(activities, activity)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("iterate learner activities: %w", err)
 	}
 	return activities, nil
+}
+
+func formatLearnerTime(value time.Time) string {
+	return value.UTC().Format("2006-01-02T15:04:05.000000000Z")
 }
 
 func lessonProgressFromStored(courseID, moduleID, lessonID string, completed bool, completedAt sql.NullString) (LessonProgress, error) {
