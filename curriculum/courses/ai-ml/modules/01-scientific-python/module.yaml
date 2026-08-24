@@ -32,7 +32,37 @@ objectives:
     prerequisites:
       - python.functions
       - numpy.vectorization
-videos: []
+videos:
+  - id: vectorization-in-python
+    youtubeId: OnG2NfuC5aY
+    title: L3.3 Vectorization in Python
+    channel: Sebastian Raschka
+    durationMinutes: 15
+    order: 0
+    objectiveIds:
+      - numpy.vectorization
+    lessonIds:
+      - 04-vectorized-thinking
+  - id: numpy-broadcasting-explained
+    youtubeId: oG1t3qlzq14
+    title: Numpy Broadcasting Explained
+    channel: mCoding
+    durationMinutes: 13
+    order: 1
+    objectiveIds:
+      - numpy.broadcasting
+    lessonIds:
+      - 05-broadcasting
+  - id: jupyter-notebook-walkthrough
+    youtubeId: HW29067qVWk
+    title: "Jupyter Notebook Tutorial: Introduction, Setup, and Walkthrough"
+    channel: Corey Schafer
+    durationMinutes: 30
+    order: 2
+    objectiveIds:
+      - python.numerical-experiments
+    lessonIds:
+      - 06-jupyter-and-numerical-experiments
 lessons:
   - 01-python-for-a-programmer
   - 02-functions-code-and-mathematics

@@ -12,9 +12,11 @@ import { Badge, Button, Card, PageIntro, SectionHeading } from '../../components
 import { useTutor } from '../tutor/TutorContext'
 import { downloadPdf, pdfDownloadErrorMessage } from '../worksheets/downloadPdf'
 import { hasWorkbook } from '../worksheets/workbookAvailability'
-import { externalHost, safeExternalUrl } from './externalLinks'
+import { ModuleVideoPlaylist } from './ModuleVideoPlaylist'
+import { useAuth } from '../authentication/AuthContext'
 
 export function ModuleDetail() {
+  const auth = useAuth()
   const { courseId, moduleId } = useParams()
   const courseQuery = useGetCourse(courseId ?? '', {
     query: { enabled: Boolean(courseId) },
@@ -92,10 +94,18 @@ export function ModuleDetail() {
     )
   }
 
-  return <ModuleContent course={course} module={module} />
+  return <ModuleContent course={course} module={module} authenticated={auth.isAuthenticated} />
 }
 
-function ModuleContent({ course, module }: { course: CourseResource; module: ModuleResource }) {
+function ModuleContent({
+  course,
+  module,
+  authenticated,
+}: {
+  course: CourseResource
+  module: ModuleResource
+  authenticated: boolean
+}) {
   const [downloadingWorkbook, setDownloadingWorkbook] = useState<'student' | 'solutions' | null>(
     null,
   )
@@ -307,41 +317,7 @@ function ModuleContent({ course, module }: { course: CourseResource; module: Mod
         </section>
       ) : null}
 
-      {module.videos.length > 0 ? (
-        <section>
-          <SectionHeading title="Videos" />
-          <div className="grid gap-2">
-            {module.videos.map((video) => {
-              const url = safeExternalUrl(video.url)
-              const host = externalHost(video.url)
-              return (
-                <div
-                  key={video.id}
-                  className="flex items-center gap-3 rounded-lg border border-line bg-panel px-3 py-3"
-                >
-                  <Badge tone="violet">Video</Badge>
-                  <span className="min-w-0 flex-1">
-                    <strong className="block text-sm">{video.title}</strong>
-                    {host ? <small className="mt-1 block text-sm text-faint">{host}</small> : null}
-                  </span>
-                  {url ? (
-                    <a
-                      className="text-sm font-bold text-accent-teal no-underline hover:text-ink"
-                      href={url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      Open ↗
-                    </a>
-                  ) : (
-                    <span className="text-sm text-faint">Link unavailable</span>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        </section>
-      ) : null}
+      <ModuleVideoPlaylist module={module} authenticated={authenticated} />
     </div>
   )
 }

@@ -50,6 +50,9 @@ func TestCurriculumReadAPI(t *testing.T) {
 	if module.Lessons[0].ID != "lesson.stable" || len(module.Lessons[0].ObjectiveIDs) != 1 {
 		t.Fatalf("unexpected lesson summary: %#v", module.Lessons[0])
 	}
+	if video := module.Videos[0]; video.CourseID != "ai-ml" || video.ModuleID != "python" || video.ID != "python-video" || video.YouTubeID != "dQw4w9WgXcQ" || video.Channel != "Python Creator" || video.DurationMinutes != 8 || video.Order != 0 || len(video.ObjectiveIDs) != 1 || len(video.LessonIDs) != 1 || video.LessonIDs[0] != "lesson.stable" {
+		t.Fatalf("unexpected video resource: %#v", video)
+	}
 	if module.Worksheets[0].ID != "worksheet" || module.Worksheets[0].ProblemCount != 1 {
 		t.Fatalf("unexpected worksheet summary: %#v", module.Worksheets[0])
 	}
@@ -246,7 +249,7 @@ func testCatalog(t *testing.T) *curriculum.Catalog {
 		"courses/ai-ml/modules/first/module.yaml":                 &fstest.MapFile{Data: []byte("id: foundations\ntitle: Foundations\norder: 1\nobjectives: []\nvideos: []\nlessons: []\n")},
 		"courses/other/course.yaml":                               &fstest.MapFile{Data: []byte("id: other\ntitle: Other course\ndescription: Another course.\norder: 1\n")},
 		"courses/other/modules/extra/module.yaml":                 &fstest.MapFile{Data: []byte("id: extra\ntitle: Extra\norder: 0\nobjectives: []\nvideos: []\nlessons: []\n")},
-		"courses/ai-ml/modules/storage/module.yaml":               &fstest.MapFile{Data: []byte("id: python\ntitle: Python\norder: 2\nobjectives:\n  - id: python.variables\n    title: Use variables\n    description: Bind names to values.\n    prerequisites: []\nvideos:\n  - id: python-video\n    title: Python video\n    url: https://example.com/python\n    objectiveIds:\n      - python.variables\nlessons:\n  - lesson.stable\n")},
+		"courses/ai-ml/modules/storage/module.yaml":               &fstest.MapFile{Data: []byte("id: python\ntitle: Python\norder: 2\nobjectives:\n  - id: python.variables\n    title: Use variables\n    description: Bind names to values.\n    prerequisites: []\nvideos:\n  - id: python-video\n    youtubeId: dQw4w9WgXcQ\n    title: Python video\n    channel: Python Creator\n    durationMinutes: 8\n    order: 0\n    objectiveIds:\n      - python.variables\n    lessonIds:\n      - lesson.stable\nlessons:\n  - lesson.stable\n")},
 		"courses/ai-ml/modules/storage/not-the-id.mdx":            &fstest.MapFile{Data: []byte("---\nid: lesson.stable\ntitle: Stable lesson\nobjectiveIds:\n  - python.variables\nsourceIds:\n  - go-docs\n---\n# Lesson\n")},
 		"courses/ai-ml/modules/storage/worksheets/worksheet.yaml": &fstest.MapFile{Data: []byte("id: worksheet\ntitle: Worksheet\nlessonId: lesson.stable\norder: 0\nobjectiveIds:\n  - python.variables\ninstructions: Complete the worksheet.\nproblems:\n  - id: problem\n    prompt: Solve it.\n    objectiveIds:\n      - python.variables\n    expectedAnswer: Secret answer.\n    requiresWork: true\n    responseLines: 3\n    rubric:\n      - Secret criterion.\n")},
 		"courses/ai-ml/modules/storage/exercises/example.yaml":    &fstest.MapFile{Data: []byte("id: python.example\ntitle: Example exercise\nlessonId: lesson.stable\norder: 0\nobjectiveIds:\n  - python.variables\nprompt: Implement it.\nstarterCode: pass\ntests:\n  - id: visible-case\n    title: Visible check\n    visibility: visible\n    code: assert solution()\n  - id: hidden-case\n    title: Hidden check\n    visibility: hidden\n    code: assert secret_solution()\n")},

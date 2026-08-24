@@ -63,6 +63,7 @@ videos:
     title: Gradient Descent, Step-by-Step
     channel: StatQuest
     durationMinutes: 23
+    order: 0
     objectiveIds:
       - optimization.gradient-descent
     lessonIds:
@@ -80,6 +81,8 @@ The exact validated schema is an implementation concern and may evolve, but the 
 - one or more lesson associations when applicable.
 
 Do not treat YouTube titles, thumbnails, descriptions, or other remotely fetched metadata as application identity.
+
+Playlist order is an explicit non-negative `order` authored for each module video. Values are unique within the module, and the validated catalog sorts by that value. This keeps the learning sequence stable and independent of YAML incidental order or YouTube ranking.
 
 ### Objective associations
 
@@ -181,9 +184,11 @@ Video progress is learner state and therefore follows the authentication boundar
 
 ### Completion semantics
 
-"Completed" should mean that the application has sufficient evidence that the learner watched substantially all of the curated video according to the implemented player behavior. The UI should not imply perfect attention or comprehension.
+The initial completion mechanism is an explicit **Mark watched** action shown only to authenticated learners. YouTube's privacy-enhanced iframe is intentionally treated as playback rather than attention telemetry: Fonzytooter does not infer completion from page presence, elapsed wall time, or brittle embed events.
 
-Manual completion may be appropriate if platform/embed limitations make reliable playback telemetry unavailable. Whatever rule is implemented should be understandable and consistent rather than pretending to measure attention precisely.
+The action replaces the learner's video-progress resource with a completed state. Repeating it is idempotent and does not create duplicate `video_completed` transition activity. The UI describes the state as watched and explicitly avoids implying attention, comprehension, objective progress, or mastery.
+
+Persisted identity is the course/module/video tuple plus the authenticated user. Curriculum identity migrations update `video_progress` and matching activity rows when an authored video ID or owning scope is deliberately renamed. Removed or unknown identities remain preserved and discoverable through the curriculum-state audit until an explicit retirement decision is made.
 
 ## Home-page recommendations
 
@@ -229,6 +234,10 @@ A reasonable initial ordering preference is:
 5. other unwatched videos in the current module.
 
 The exact ranking may evolve with the product, but relevance to learning should dominate novelty or engagement.
+
+The initial implementation derives at most three recommendations on the server. It ranks an unwatched video associated with the next incomplete lesson first, then an unwatched video supporting that lesson's authored prerequisites. A weak-evidence or revisit reason is available only when an objective has at least two checked exercise attempts, no fully passed attempt, and a most recent check within 30 days. Remaining slots may use other unwatched videos from the next lesson's module in authored module/video order. Watched videos are otherwise omitted. Ties use authored course/module/video order and stable video ID, so identical learner state always produces identical results.
+
+This is deliberately a small derived learner resource rather than a generic recommendation framework. It reads only the authenticated learner's aggregate evidence and watched state, returns only curated catalog videos, and sends compact explanations rather than exercise history or numerical confidence to the browser.
 
 ## Curation standards
 

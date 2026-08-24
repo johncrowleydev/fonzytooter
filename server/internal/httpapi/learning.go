@@ -34,6 +34,54 @@ type LessonProgressResponse struct {
 	Body LessonProgressResource
 }
 
+type VideoProgressUpdate struct {
+	Completed bool `json:"completed"`
+}
+
+type PutVideoProgressInput struct {
+	CourseID string `path:"courseId"`
+	ModuleID string `path:"moduleId"`
+	VideoID  string `path:"videoId"`
+	Body     VideoProgressUpdate
+}
+
+type CourseVideoPathInput struct {
+	CourseID string `path:"courseId"`
+	ModuleID string `path:"moduleId"`
+	VideoID  string `path:"videoId"`
+}
+
+type VideoProgressResource struct {
+	CourseID    string     `json:"courseId"`
+	ModuleID    string     `json:"moduleId"`
+	VideoID     string     `json:"videoId"`
+	Completed   bool       `json:"completed"`
+	CompletedAt *time.Time `json:"completedAt,omitempty"`
+}
+
+type VideoProgressResponse struct {
+	Body VideoProgressResource
+}
+
+type VideoRecommendationResource struct {
+	CourseID        string  `json:"courseId"`
+	ModuleID        string  `json:"moduleId"`
+	VideoID         string  `json:"videoId"`
+	YouTubeID       string  `json:"youtubeId"`
+	Title           string  `json:"title"`
+	Channel         string  `json:"channel"`
+	DurationMinutes int     `json:"durationMinutes"`
+	ReasonKind      string  `json:"reasonKind" enum:"current_lesson,next_prerequisite,weak_evidence,revisit,current_module"`
+	Reason          string  `json:"reason"`
+	Watched         bool    `json:"watched"`
+	LessonID        *string `json:"lessonId,omitempty"`
+	LessonTitle     *string `json:"lessonTitle,omitempty"`
+}
+
+type VideoRecommendationListResponse struct {
+	Body []VideoRecommendationResource
+}
+
 type ObjectiveProgressResource struct {
 	CourseID             string                      `json:"courseId"`
 	ModuleID             string                      `json:"moduleId"`
@@ -109,6 +157,8 @@ type ActivityResource struct {
 	LessonTitle   *string   `json:"lessonTitle,omitempty"`
 	ExerciseID    *string   `json:"exerciseId,omitempty"`
 	ExerciseTitle *string   `json:"exerciseTitle,omitempty"`
+	VideoID       *string   `json:"videoId,omitempty"`
+	VideoTitle    *string   `json:"videoTitle,omitempty"`
 	ReviewItemID  *string   `json:"reviewItemId,omitempty"`
 	OccurredAt    time.Time `json:"occurredAt"`
 }
@@ -118,6 +168,83 @@ type ActivityListResponse struct {
 }
 
 func registerLearning(api huma.API, service *learner.Service) {
+	huma.Register[CoursePathInput, VideoRecommendationListResponse](api, authenticatedOperation(huma.Operation{
+		OperationID: "listVideoRecommendations",
+		Method:      http.MethodGet,
+		Path:        "/api/courses/{courseId}/video-recommendations",
+		Summary:     "List learner video recommendations",
+		Tags:        []string{"learner"},
+		Errors:      []int{http.StatusNotFound, http.StatusInternalServerError},
+	}), func(ctx context.Context, input *CoursePathInput) (*VideoRecommendationListResponse, error) {
+		if service == nil {
+			return nil, huma.Error500InternalServerError("learner service is unavailable")
+		}
+		userID, err := requireUserID(ctx)
+		if err != nil {
+			return nil, err
+		}
+		recommendations, err := service.VideoRecommendations(ctx, userID, input.CourseID, learner.MaxVideoRecommendations)
+		if err != nil {
+			return nil, learningError("list video recommendations", err)
+		}
+		body := make([]VideoRecommendationResource, 0, len(recommendations))
+		for _, recommendation := range recommendations {
+			body = append(body, videoRecommendationResource(recommendation))
+		}
+		return &VideoRecommendationListResponse{Body: body}, nil
+	})
+	api.OpenAPI().Components.Schemas.Map()["VideoRecommendationList"] = &huma.Schema{
+		Type:  huma.TypeArray,
+		Items: &huma.Schema{Ref: "#/components/schemas/VideoRecommendationResource"},
+	}
+	api.OpenAPI().Paths["/api/courses/{courseId}/video-recommendations"].Get.Responses["200"].Content["application/json"].Schema = &huma.Schema{
+		Ref: "#/components/schemas/VideoRecommendationList",
+	}
+
+	huma.Register[CourseVideoPathInput, VideoProgressResponse](api, authenticatedOperation(huma.Operation{
+		OperationID: "getVideoProgress",
+		Method:      http.MethodGet,
+		Path:        "/api/courses/{courseId}/modules/{moduleId}/videos/{videoId}/progress",
+		Summary:     "Get video progress",
+		Tags:        []string{"learner"},
+		Errors:      []int{http.StatusNotFound, http.StatusInternalServerError},
+	}), func(ctx context.Context, input *CourseVideoPathInput) (*VideoProgressResponse, error) {
+		if service == nil {
+			return nil, huma.Error500InternalServerError("learner service is unavailable")
+		}
+		userID, err := requireUserID(ctx)
+		if err != nil {
+			return nil, err
+		}
+		progress, err := service.VideoProgress(ctx, userID, input.CourseID, input.ModuleID, input.VideoID)
+		if err != nil {
+			return nil, learningError("get video progress", err)
+		}
+		return &VideoProgressResponse{Body: videoProgressResource(progress)}, nil
+	})
+
+	huma.Register[PutVideoProgressInput, VideoProgressResponse](api, authenticatedOperation(huma.Operation{
+		OperationID: "putVideoProgress",
+		Method:      http.MethodPut,
+		Path:        "/api/courses/{courseId}/modules/{moduleId}/videos/{videoId}/progress",
+		Summary:     "Replace video progress",
+		Tags:        []string{"learner"},
+		Errors:      []int{http.StatusNotFound, http.StatusInternalServerError},
+	}), func(ctx context.Context, input *PutVideoProgressInput) (*VideoProgressResponse, error) {
+		if service == nil {
+			return nil, huma.Error500InternalServerError("learner service is unavailable")
+		}
+		userID, err := requireUserID(ctx)
+		if err != nil {
+			return nil, err
+		}
+		progress, err := service.SetVideoProgress(ctx, userID, input.CourseID, input.ModuleID, input.VideoID, input.Body.Completed)
+		if err != nil {
+			return nil, learningError("put video progress", err)
+		}
+		return &VideoProgressResponse{Body: videoProgressResource(progress)}, nil
+	})
+
 	huma.Register[CourseLessonPathInput, LessonProgressResponse](api, authenticatedOperation(huma.Operation{
 		OperationID: "getLessonProgress",
 		Method:      http.MethodGet,
@@ -250,6 +377,7 @@ func registerLearning(api huma.API, service *learner.Service) {
 				ModuleTitle: activity.ModuleTitle, LessonID: activity.LessonID,
 				LessonTitle: activity.LessonTitle, ExerciseID: activity.ExerciseID,
 				ExerciseTitle: activity.ExerciseTitle, ReviewItemID: activity.ReviewItemID,
+				VideoID: activity.VideoID, VideoTitle: activity.VideoTitle,
 				OccurredAt: activity.OccurredAt,
 			})
 		}
@@ -271,8 +399,26 @@ func lessonProgressResource(progress learner.LessonProgress) LessonProgressResou
 	}
 }
 
+func videoProgressResource(progress learner.VideoProgress) VideoProgressResource {
+	return VideoProgressResource{
+		CourseID: progress.CourseID, ModuleID: progress.ModuleID, VideoID: progress.VideoID,
+		Completed: progress.Completed, CompletedAt: progress.CompletedAt,
+	}
+}
+
+func videoRecommendationResource(recommendation learner.VideoRecommendation) VideoRecommendationResource {
+	video := recommendation.Video
+	return VideoRecommendationResource{
+		CourseID: video.CourseID, ModuleID: video.ModuleID, VideoID: video.ID,
+		YouTubeID: video.YouTubeID, Title: video.Title, Channel: video.Channel,
+		DurationMinutes: video.DurationMinutes, ReasonKind: recommendation.ReasonKind,
+		Reason: recommendation.Reason, Watched: recommendation.Watched,
+		LessonID: recommendation.LessonID, LessonTitle: recommendation.LessonTitle,
+	}
+}
+
 func learningError(operation string, err error) error {
-	if errors.Is(err, learner.ErrCourseNotFound) || errors.Is(err, learner.ErrLessonNotFound) {
+	if errors.Is(err, learner.ErrCourseNotFound) || errors.Is(err, learner.ErrLessonNotFound) || errors.Is(err, learner.ErrVideoNotFound) {
 		return huma.Error404NotFound(err.Error())
 	}
 	log.Printf("%s: %v", operation, err)

@@ -1,9 +1,20 @@
 import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { useGetCourseProgress, useListActivities } from '../../api/generated/endpoints'
+import {
+  useGetCourseProgress,
+  useListActivities,
+  useListVideoRecommendations,
+} from '../../api/generated/endpoints'
 import type { ActivityResource } from '../../api/generated/schemas/activityResource.zod'
 import type { CourseProgressResource } from '../../api/generated/schemas/courseProgressResource.zod'
-import { coursePath, DEFAULT_COURSE_ID, exercisePath, lessonPath } from '../../app/routes'
+import type { VideoRecommendationResource } from '../../api/generated/schemas/videoRecommendationResource.zod'
+import {
+  coursePath,
+  DEFAULT_COURSE_ID,
+  exercisePath,
+  lessonPath,
+  modulePath,
+} from '../../app/routes'
 import { Badge, Card, PageIntro, SectionHeading } from '../../components/ui'
 import { useTutor } from '../tutor/TutorContext'
 import { useAuth } from '../authentication/AuthContext'
@@ -22,6 +33,9 @@ export function Dashboard() {
     { courseId: DEFAULT_COURSE_ID, limit: 6 },
     { query: { enabled: auth.isAuthenticated } },
   )
+  const recommendationQuery = useListVideoRecommendations(DEFAULT_COURSE_ID, {
+    query: { enabled: auth.isAuthenticated },
+  })
 
   useEffect(() => {
     setPageContext({ type: 'dashboard', title: 'Home', courseId: DEFAULT_COURSE_ID })
@@ -48,7 +62,7 @@ export function Dashboard() {
     )
   }
 
-  if (progressQuery.isPending || activityQuery.isPending) {
+  if (progressQuery.isPending || activityQuery.isPending || recommendationQuery.isPending) {
     return <DashboardState intro={intro} title="Loading your learning state" />
   }
   if (progressQuery.isError || activityQuery.isError || !progressQuery.data) {
@@ -66,6 +80,7 @@ export function Dashboard() {
       intro={intro}
       progress={progressQuery.data.data}
       activities={activityQuery.data?.data ?? []}
+      recommendations={recommendationQuery.data?.data ?? []}
     />
   )
 }
@@ -74,10 +89,12 @@ export function DashboardView({
   intro,
   progress,
   activities,
+  recommendations = [],
 }: {
   intro?: React.ReactNode
   progress: CourseProgressResource
   activities: ActivityResource[]
+  recommendations?: VideoRecommendationResource[]
 }) {
   const introducedCount = progress.objectives.filter((objective) => objective.introduced).length
 
@@ -159,6 +176,8 @@ export function DashboardView({
         </div>
       </section>
 
+      <VideoRecommendations recommendations={recommendations} />
+
       <section className="grid grid-cols-[1.05fr_0.95fr] gap-3.5 max-lg:grid-cols-1">
         <Card className="min-h-72">
           <SectionHeading eyebrow="Recent activity" title="A quiet trail of progress" />
@@ -198,6 +217,59 @@ export function DashboardView({
   )
 }
 
+export function VideoRecommendations({
+  recommendations,
+}: {
+  recommendations: VideoRecommendationResource[]
+}) {
+  if (recommendations.length === 0) return null
+
+  return (
+    <section aria-label="Video recommendations">
+      <SectionHeading
+        eyebrow="Watch"
+        title="Useful video explanations"
+        detail="Chosen from this course's curated videos using your recorded learning context."
+      />
+      <div className="grid gap-3 md:grid-cols-3">
+        {recommendations.map((recommendation) => {
+          const destination = recommendation.lessonId
+            ? lessonPath(recommendation.courseId, recommendation.moduleId, recommendation.lessonId)
+            : modulePath(recommendation.courseId, recommendation.moduleId)
+          return (
+            <Card
+              className="flex min-h-52 flex-col"
+              key={`${recommendation.moduleId}/${recommendation.videoId}`}
+            >
+              <div className="flex items-center justify-between gap-3">
+                <Badge tone={recommendation.watched ? 'violet' : 'teal'}>
+                  {recommendation.watched ? 'Revisit' : 'Unwatched'}
+                </Badge>
+                <span className="text-xs font-semibold text-faint">
+                  {recommendation.durationMinutes} min
+                </span>
+              </div>
+              <h3 className="mt-4 text-base font-semibold leading-snug text-ink">
+                {recommendation.title}
+              </h3>
+              <p className="mt-1 text-sm text-muted">{recommendation.channel}</p>
+              <p className="mt-4 text-sm leading-relaxed text-body">{recommendation.reason}</p>
+              <Link
+                className="mt-auto pt-5 text-sm font-bold text-accent-teal no-underline hover:text-ink"
+                to={destination}
+              >
+                {recommendation.lessonTitle
+                  ? `Open ${recommendation.lessonTitle} →`
+                  : 'Open module playlist →'}
+              </Link>
+            </Card>
+          )
+        })}
+      </div>
+    </section>
+  )
+}
+
 export function ActivityList({ activities }: { activities: ActivityResource[] }) {
   if (activities.length === 0) {
     return (
@@ -215,6 +287,7 @@ export function ActivityList({ activities }: { activities: ActivityResource[] })
       {activities.map((activity) => {
         const exerciseChecked = activity.kind === 'exercise_checked' && Boolean(activity.exerciseId)
         const reviewCompleted = activity.kind === 'review_completed'
+        const videoCompleted = activity.kind === 'video_completed' && Boolean(activity.videoId)
         const content = (
           <>
             <span className="grid size-6 place-items-center rounded-lg bg-accent-gold/10 text-sm text-accent-gold">
@@ -224,9 +297,11 @@ export function ActivityList({ activities }: { activities: ActivityResource[] })
               <strong className="block text-sm font-semibold">
                 {reviewCompleted
                   ? `Reviewed ${activity.reviewItemId ?? 'recall prompt'}`
-                  : exerciseChecked
-                    ? `Checked ${activity.exerciseTitle ?? activity.exerciseId}`
-                    : `Completed ${activity.lessonTitle ?? 'lesson'}`}
+                  : videoCompleted
+                    ? `Watched ${activity.videoTitle ?? activity.videoId}`
+                    : exerciseChecked
+                      ? `Checked ${activity.exerciseTitle ?? activity.exerciseId}`
+                      : `Completed ${activity.lessonTitle ?? 'lesson'}`}
               </strong>
               <span className="mt-1 block text-sm text-faint">
                 {activity.moduleTitle ?? activity.courseTitle}
@@ -241,6 +316,14 @@ export function ActivityList({ activities }: { activities: ActivityResource[] })
           'grid grid-cols-[24px_1fr_auto] items-center gap-2.5 border-t border-line py-2.5 text-ink no-underline'
         return reviewCompleted ? (
           <Link className={`${className} hover:text-accent-teal`} key={activity.id} to="/review">
+            {content}
+          </Link>
+        ) : videoCompleted && activity.moduleId ? (
+          <Link
+            className={`${className} hover:text-accent-teal`}
+            key={activity.id}
+            to={modulePath(activity.courseId, activity.moduleId)}
+          >
             {content}
           </Link>
         ) : exerciseChecked && activity.moduleId && activity.exerciseId ? (

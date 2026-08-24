@@ -99,6 +99,10 @@ func applyMigration(ctx context.Context, tx *sql.Tx, migration curriculumidentit
 		for _, table := range []string{"lesson_progress", "activities"} {
 			statements = append(statements, statement{`UPDATE ` + table + ` SET course_id = ?, module_id = ?, lesson_id = ? WHERE course_id = ? AND module_id = ? AND lesson_id = ?`, []any{to[0], to[1], to[2], from[0], from[1], from[2]}})
 		}
+	case curriculumidentity.VideoKind:
+		for _, table := range []string{"video_progress", "activities"} {
+			statements = append(statements, statement{`UPDATE ` + table + ` SET course_id = ?, module_id = ?, video_id = ? WHERE course_id = ? AND module_id = ? AND video_id = ?`, []any{to[0], to[1], to[2], from[0], from[1], from[2]}})
+		}
 	case curriculumidentity.ExerciseKind:
 		for _, table := range []string{"exercise_workspaces", "exercise_attempts", "activities"} {
 			statements = append(statements, statement{`UPDATE ` + table + ` SET course_id = ?, module_id = ?, exercise_id = ? WHERE course_id = ? AND module_id = ? AND exercise_id = ?`, []any{to[0], to[1], to[2], from[0], from[1], from[2]}})
@@ -138,6 +142,7 @@ var identityTables = []string{
 	"exercise_attempts",
 	"exercise_workspaces",
 	"lesson_progress",
+	"video_progress",
 	"review_cards",
 	"review_logs",
 }

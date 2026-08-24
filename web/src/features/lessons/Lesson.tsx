@@ -203,7 +203,11 @@ export function Lesson() {
         ) : null}
 
         <div className="mx-auto mt-12 max-w-3xl text-base leading-loose text-body max-sm:mt-9 max-sm:text-sm max-sm:leading-8">
-          <LessonMdx source={lesson.content} />
+          <LessonMdx
+            source={lesson.content}
+            videos={module.videos}
+            authenticated={auth.isAuthenticated}
+          />
           <LessonSources sources={lesson.sources} />
           <LessonWorksheets
             courseId={course.id}

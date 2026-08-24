@@ -24,12 +24,16 @@ type Objective struct {
 }
 
 type Video struct {
-	CourseID     string
-	ModuleID     string
-	ID           string
-	Title        string
-	URL          string
-	ObjectiveIDs []string
+	CourseID        string
+	ModuleID        string
+	ID              string
+	YouTubeID       string
+	Title           string
+	Channel         string
+	DurationMinutes int
+	Order           int
+	ObjectiveIDs    []string
+	LessonIDs       []string
 }
 
 type Lesson struct {
@@ -213,6 +217,12 @@ func newCatalog(courses []Course, sources map[string]Source) *Catalog {
 		catalog.coursesByID[course.ID] = courseIndex
 		for moduleIndex := range course.Modules {
 			module := &course.Modules[moduleIndex]
+			sort.Slice(module.Videos, func(i, j int) bool {
+				if module.Videos[i].Order != module.Videos[j].Order {
+					return module.Videos[i].Order < module.Videos[j].Order
+				}
+				return module.Videos[i].ID < module.Videos[j].ID
+			})
 			lessonOrder := make(map[string]int, len(module.Lessons))
 			for index, lesson := range module.Lessons {
 				lessonOrder[lesson.ID] = index
@@ -623,6 +633,7 @@ func cloneObjective(objective Objective) Objective {
 func cloneVideo(video Video) Video {
 	cloned := video
 	cloned.ObjectiveIDs = cloneStrings(video.ObjectiveIDs)
+	cloned.LessonIDs = cloneStrings(video.LessonIDs)
 	return cloned
 }
 

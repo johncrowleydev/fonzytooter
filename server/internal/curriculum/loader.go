@@ -37,10 +37,14 @@ type objectiveAuthoring struct {
 }
 
 type videoAuthoring struct {
-	ID           string   `yaml:"id" json:"id" doc:"Stable video ID within this module."`
-	Title        string   `yaml:"title" json:"title" doc:"Video title shown to the learner."`
-	URL          string   `yaml:"url" json:"url" format:"uri" doc:"HTTP or HTTPS URL for the video."`
-	ObjectiveIDs []string `yaml:"objectiveIds" json:"objectiveIds,omitempty" required:"false" nullable:"false" uniqueItems:"true" doc:"Objective IDs supported by this video."`
+	ID              string   `yaml:"id" json:"id" doc:"Stable video ID within this module."`
+	YouTubeID       string   `yaml:"youtubeId" json:"youtubeId" pattern:"^[A-Za-z0-9_-]{11}$" doc:"The 11-character YouTube video ID, not a URL or embed markup."`
+	Title           string   `yaml:"title" json:"title" doc:"Video title shown to the learner."`
+	Channel         string   `yaml:"channel" json:"channel" doc:"Authored YouTube channel or creator name."`
+	DurationMinutes *int     `yaml:"durationMinutes" json:"durationMinutes" nullable:"false" minimum:"1" doc:"Approximate authored duration in whole minutes."`
+	Order           *int     `yaml:"order" json:"order" nullable:"false" minimum:"0" doc:"Canonical non-negative playlist order within this module."`
+	ObjectiveIDs    []string `yaml:"objectiveIds" json:"objectiveIds" nullable:"false" minItems:"1" uniqueItems:"true" doc:"Objective IDs owned by this module and supported by this video."`
+	LessonIDs       []string `yaml:"lessonIds" json:"lessonIds,omitempty" required:"false" nullable:"false" uniqueItems:"true" doc:"Lesson IDs in this module associated with this video."`
 }
 
 type lessonFrontmatter struct {
@@ -206,12 +210,16 @@ func Load(fsys fs.FS) (*Catalog, error) {
 			}
 			for _, video := range module.metadata.Videos {
 				loadedModule.Videos = append(loadedModule.Videos, Video{
-					CourseID:     course.metadata.ID,
-					ModuleID:     module.metadata.ID,
-					ID:           video.ID,
-					Title:        video.Title,
-					URL:          video.URL,
-					ObjectiveIDs: cloneStrings(video.ObjectiveIDs),
+					CourseID:        course.metadata.ID,
+					ModuleID:        module.metadata.ID,
+					ID:              video.ID,
+					YouTubeID:       video.YouTubeID,
+					Title:           video.Title,
+					Channel:         video.Channel,
+					DurationMinutes: *video.DurationMinutes,
+					Order:           *video.Order,
+					ObjectiveIDs:    cloneStrings(video.ObjectiveIDs),
+					LessonIDs:       cloneStrings(video.LessonIDs),
 				})
 			}
 

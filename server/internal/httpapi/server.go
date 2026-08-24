@@ -124,10 +124,16 @@ type ObjectiveResource struct {
 }
 
 type VideoResource struct {
-	ID           string   `json:"id"`
-	Title        string   `json:"title"`
-	URL          string   `json:"url"`
-	ObjectiveIDs []string `json:"objectiveIds" nullable:"false"`
+	CourseID        string   `json:"courseId"`
+	ModuleID        string   `json:"moduleId"`
+	ID              string   `json:"id"`
+	YouTubeID       string   `json:"youtubeId" pattern:"^[A-Za-z0-9_-]{11}$"`
+	Title           string   `json:"title"`
+	Channel         string   `json:"channel"`
+	DurationMinutes int      `json:"durationMinutes" minimum:"1"`
+	Order           int      `json:"order" minimum:"0"`
+	ObjectiveIDs    []string `json:"objectiveIds" nullable:"false" minItems:"1"`
+	LessonIDs       []string `json:"lessonIds" nullable:"false"`
 }
 
 type LessonSummary struct {
@@ -646,10 +652,16 @@ func moduleResource(module curriculum.Module) ModuleResource {
 	videos := make([]VideoResource, 0, len(module.Videos))
 	for _, video := range module.Videos {
 		videos = append(videos, VideoResource{
-			ID:           video.ID,
-			Title:        video.Title,
-			URL:          video.URL,
-			ObjectiveIDs: append([]string{}, video.ObjectiveIDs...),
+			CourseID:        video.CourseID,
+			ModuleID:        video.ModuleID,
+			ID:              video.ID,
+			YouTubeID:       video.YouTubeID,
+			Title:           video.Title,
+			Channel:         video.Channel,
+			DurationMinutes: video.DurationMinutes,
+			Order:           video.Order,
+			ObjectiveIDs:    append([]string{}, video.ObjectiveIDs...),
+			LessonIDs:       append([]string{}, video.LessonIDs...),
 		})
 	}
 

@@ -107,6 +107,8 @@ type Activity struct {
 	LessonTitle   *string
 	ExerciseID    *string
 	ExerciseTitle *string
+	VideoID       *string
+	VideoTitle    *string
 	ReviewItemID  *string
 	OccurredAt    time.Time
 }
@@ -345,7 +347,7 @@ func (s *Service) Activities(ctx context.Context, userID auth.UserID, courseID s
 	}
 
 	rows, err := s.db.QueryContext(ctx, `
-		SELECT id, kind, course_id, module_id, lesson_id, exercise_id, review_item_id, occurred_at
+		SELECT id, kind, course_id, module_id, lesson_id, exercise_id, video_id, review_item_id, occurred_at
 		FROM activities
 		WHERE user_id = ? AND course_id = ?
 		ORDER BY occurred_at DESC, id DESC
@@ -359,15 +361,16 @@ func (s *Service) Activities(ctx context.Context, userID auth.UserID, courseID s
 	activities := make([]Activity, 0)
 	for rows.Next() {
 		var activity Activity
-		var moduleID, lessonID, exerciseID, reviewItemID sql.NullString
+		var moduleID, lessonID, exerciseID, videoID, reviewItemID sql.NullString
 		var occurredAt string
-		if err := rows.Scan(&activity.ID, &activity.Kind, &activity.CourseID, &moduleID, &lessonID, &exerciseID, &reviewItemID, &occurredAt); err != nil {
+		if err := rows.Scan(&activity.ID, &activity.Kind, &activity.CourseID, &moduleID, &lessonID, &exerciseID, &videoID, &reviewItemID, &occurredAt); err != nil {
 			return nil, fmt.Errorf("scan learner activity: %w", err)
 		}
 		activity.CourseTitle = course.Title
 		activity.ModuleID = nullableString(moduleID)
 		activity.LessonID = nullableString(lessonID)
 		activity.ExerciseID = nullableString(exerciseID)
+		activity.VideoID = nullableString(videoID)
 		activity.ReviewItemID = nullableString(reviewItemID)
 		activity.OccurredAt, err = time.Parse(time.RFC3339Nano, occurredAt)
 		if err != nil {
@@ -386,6 +389,16 @@ func (s *Service) Activities(ctx context.Context, userID auth.UserID, courseID s
 		if activity.ModuleID != nil && activity.ExerciseID != nil {
 			if exercise, ok := s.catalog.ExerciseByCourse(courseID, *activity.ModuleID, *activity.ExerciseID); ok {
 				activity.ExerciseTitle = stringPointer(exercise.Title)
+			}
+		}
+		if activity.ModuleID != nil && activity.VideoID != nil {
+			if module, ok := s.catalog.ModuleByCourse(courseID, *activity.ModuleID); ok {
+				for _, video := range module.Videos {
+					if video.ID == *activity.VideoID {
+						activity.VideoTitle = stringPointer(video.Title)
+						break
+					}
+				}
 			}
 		}
 		activities = append(activities, activity)

@@ -53,7 +53,7 @@ Course identity is explicit when modules and lessons are resolved. Module IDs ar
 
 ### Persistence-sensitive identity
 
-Some authored IDs are also stored in SQLite learner history. Treat these qualified identities as stable after they are merged:
+Some authored IDs are stored in SQLite learner history or deliberately protected for imminent persistence. Treat these qualified identities as stable after they are merged:
 
 - course: `courseId`;
 - module: `courseId/moduleId`;
@@ -61,8 +61,9 @@ Some authored IDs are also stored in SQLite learner history. Treat these qualifi
 - exercise: `courseId/moduleId/exerciseId`;
 - exercise test: `courseId/moduleId/exerciseId/testId`;
 - review item: `courseId/moduleId/reviewItemId`.
+- video: `courseId/moduleId/videoId`.
 
-Exercise test IDs are included because test-result history records them. Worksheet and objective IDs are still application identity, but they are not currently persisted as learner-state keys. Extend this policy when a persistence feature begins storing another authored ID.
+Exercise test IDs are included because test-result history records them. Video IDs are protected before learner video state is introduced so authored identity is already stable when persistence arrives. Worksheet and objective IDs are still application identity, but they are not currently persisted as learner-state keys. Extend this policy when a persistence feature begins storing another authored ID.
 
 Pull-request CI derives these identities from both revisions with the authoritative Go curriculum loader. Additions are safe. A rename or removal fails unless it is explicitly recorded in `curriculum/identity-migrations.yaml`; the checker does not guess renames from similar content.
 
@@ -144,10 +145,15 @@ objectives:
     prerequisites: []
 videos:
   - id: linear-algebra-introduction
+    youtubeId: dQw4w9WgXcQ
     title: Example title
-    url: https://example.com/video
+    channel: Example creator
+    durationMinutes: 12
+    order: 0
     objectiveIds:
       - linear-algebra.vectors
+    lessonIds:
+      - 01-vectors
 lessons:
   - 01-vectors
 ```
@@ -155,7 +161,7 @@ lessons:
 Module order is scoped to its owning course. Its ordered `lessons` list is the canonical lesson sequence.
 Course and module order values are explicit and non-negative. Objective descriptions are required authored content, not optional display metadata.
 
-Each module should have a curated YouTube playlist/resource sequence where useful. A video may support one or more objectives.
+Each module should have a curated YouTube playlist/resource sequence where useful. Video `order` values are explicit, non-negative, and unique within the module; they define the canonical playlist sequence. `youtubeId` is the 11-character YouTube video identity, not a URL or embed fragment. Authored title, channel, and positive whole-minute duration metadata are required. Every video supports at least one objective owned by the module, and optional lesson associations must also resolve within the module.
 
 ## Lesson MDX
 
@@ -185,6 +191,16 @@ Vectors ...
 ```
 
 Interactive components should be added when they genuinely improve understanding, not because MDX makes them possible.
+
+Curated module videos are embedded at their pedagogical location with the trusted static component:
+
+```mdx
+<YouTubeVideo id="linear-algebra-introduction">
+  Watch how the basis vectors move. The next example uses the same geometric interpretation.
+</YouTubeVideo>
+```
+
+The `id` must be a static quoted ID from the owning module's `videos` catalog, and that video must associate the lesson in `lessonIds`. Title, channel, duration, and YouTube identity stay in `module.yaml`; the component's child prose is placement-specific viewing guidance. The Go curriculum loader validates these references before startup. Arbitrary iframe markup is not part of the trusted component registry.
 
 ## Worksheets
 
@@ -395,7 +411,7 @@ cd server
 go run ./cmd/curriculum-check ../curriculum
 ```
 
-Current validation includes the curriculum root/course/module structure, strict YAML fields, stable IDs, course/module ordering constraints, lesson declarations/frontmatter, source/objective references, prerequisite references/cycles, duplicate authored identities, and other catalog invariants.
+Current validation includes the curriculum root/course/module structure, strict YAML fields, stable IDs, course/module/video ordering constraints, lesson declarations/frontmatter, source/objective/video references, prerequisite references/cycles, duplicate authored identities, and other catalog invariants.
 
 Authored reference arrays reject duplicate values. A successful check also emits sorted warnings for source-registry entries that no lesson currently references. Unused sources remain valid so a source can be registered before its first lesson is committed; unknown source references remain validation errors.
 
