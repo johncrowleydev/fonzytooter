@@ -2,6 +2,7 @@
 .env
 .env.*
 !.env.example
+api-key.txt
 
 # Go
 server/bin/

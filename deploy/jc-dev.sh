@@ -21,7 +21,7 @@ archive_sha256=$5
 
 release_id="${commit_sha}-${run_id}-${run_attempt}"
 app_root=/opt/helix-academy
-web_root=/var/www/helix-academy.johncrowley.dev/html
+web_root=/var/www/helix.johncrowley.dev/html
 app_release="${app_root}/releases/${release_id}"
 web_release="${web_root}/releases/${release_id}"
 app_incoming="${app_root}/releases/.incoming-${release_id}"

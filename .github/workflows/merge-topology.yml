@@ -97,20 +97,24 @@ jobs:
           # local ref -- which is the very state being detected.
           gh api --paginate \
             "repos/${REPOSITORY}/pulls?state=closed&per_page=100" \
-            --jq '.[] | select(.merged_at != null) | [.number, .head.sha, .title] | @tsv' \
+            --jq '.[] | select(.merged_at != null) | [.number, .head.sha, .merge_commit_sha, .title] | @tsv' \
             > merged.tsv
 
           orphaned=0
           checked=0
           stale_exceptions=0
 
-          while IFS=$'\t' read -r number sha title; do
+          while IFS=$'\t' read -r number head_sha merge_sha title; do
             [ -n "$number" ] || continue
             checked=$((checked + 1))
 
-            status="$(gh api "repos/${REPOSITORY}/compare/main...${sha}" --jq '.status' 2>/dev/null || echo 'unknown')"
+            head_status="$(gh api "repos/${REPOSITORY}/compare/main...${head_sha}" --jq '.status' 2>/dev/null || echo 'unknown')"
+            merge_status="$(gh api "repos/${REPOSITORY}/compare/main...${merge_sha}" --jq '.status' 2>/dev/null || echo 'unknown')"
             contained=no
-            case "$status" in
+            case "$head_status" in
+              identical|behind) contained=yes ;;
+            esac
+            case "$merge_status" in
               identical|behind) contained=yes ;;
             esac
 
@@ -133,7 +137,7 @@ jobs:
             fi
 
             orphaned=$((orphaned + 1))
-            echo "::error::#${number} reports as merged but its head is not reachable from main (compare status: ${status}). ${title}"
+            echo "::error::#${number} reports as merged but neither its head nor merge commit is reachable from main (head status: ${head_status}; merge status: ${merge_status}). ${title}"
           done < merged.tsv
 
           echo "Checked ${checked} merged pull requests; ${stale_exceptions} stale exception(s)."
