@@ -63,7 +63,7 @@ If a template, worksheet, or Tectonic upgrade requires new TeX resources, increm
 
 A module with worksheets also produces a **workbook** and solutions workbook. The workbook is an aggregation of the same worksheet content, not a separately authored curriculum artifact. It is compiled as one structured document with a cover, table of contents, lesson context, page numbering, and page breaks between worksheets. Helix Academy does not render separate PDFs and concatenate them.
 
-Student documents include response space based on each problem's authored `responseLines`. Solutions documents include authored expected answers. Neither solutions output exposes internal rubric criteria, which remain available for future assessment behavior.
+Student documents include ruled response lines based on each problem's authored `responseLines`. Solutions documents include authored expected answers. Neither solutions output exposes internal rubric criteria, which remain available for future assessment behavior.
 
 Worksheet and workbook ordering follows module lesson order, worksheet order within each lesson, and stable worksheet ID as the final deterministic tie-breaker.
 
