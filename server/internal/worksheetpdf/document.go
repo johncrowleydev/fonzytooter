@@ -64,14 +64,9 @@ func BuildMarkdown(worksheet curriculum.Worksheet, variant Variant) (string, err
 	var document strings.Builder
 	document.WriteString("# ")
 	document.WriteString(worksheet.Title)
-	document.WriteString("\n\n")
+	document.WriteString(" {-}\n\n")
 	writeIdentityFields(&document, variant)
-	if worksheet.Instructions != "" {
-		document.WriteString("## Instructions\n\n")
-		document.WriteString(worksheet.Instructions)
-		document.WriteString("\n\n")
-	}
-
+	writeInstructions(&document, worksheet.Instructions)
 	writeProblems(&document, worksheet, variant)
 	return document.String(), nil
 }
@@ -117,11 +112,7 @@ func BuildWorkbookMarkdown(course curriculum.Course, module curriculum.Module, v
 			document.WriteString("*\n\n")
 		}
 		writeIdentityFields(&document, variant)
-		if worksheet.Instructions != "" {
-			document.WriteString("## Instructions\n\n")
-			document.WriteString(worksheet.Instructions)
-			document.WriteString("\n\n")
-		}
+		writeInstructions(&document, worksheet.Instructions)
 		writeProblems(&document, worksheet, variant)
 	}
 	return document.String(), nil
@@ -129,8 +120,19 @@ func BuildWorkbookMarkdown(course curriculum.Course, module curriculum.Module, v
 
 func writeIdentityFields(document *strings.Builder, variant Variant) {
 	if variant == Student {
-		document.WriteString("\\textbf{Name:} \\rule{2.5in}{0.4pt} \\hfill \\textbf{Date:} \\rule{1.75in}{0.4pt}\n\n")
+		document.WriteString("\\identityline\n\n")
 	}
+}
+
+// writeInstructions keeps the instructions heading unnumbered so it stays
+// out of the workbook table of contents, which lists worksheets only.
+func writeInstructions(document *strings.Builder, instructions string) {
+	if instructions == "" {
+		return
+	}
+	document.WriteString("## Instructions {-}\n\n")
+	document.WriteString(instructions)
+	document.WriteString("\n\n")
 }
 
 func writeProblems(document *strings.Builder, worksheet curriculum.Worksheet, variant Variant) {
@@ -139,8 +141,8 @@ func writeProblems(document *strings.Builder, worksheet curriculum.Worksheet, va
 		if writingLines < 1 {
 			writingLines = 1
 		}
-		document.WriteString(fmt.Sprintf("\\Needspace{%d\\baselineskip}\n\n", min(writingLines+5, 16)))
-		document.WriteString(fmt.Sprintf("## %d.\n\n", index+1))
+		document.WriteString(fmt.Sprintf("\\Needspace{%d\\baselineskip}\n\n", min(writingLines*3/2+5, 20)))
+		document.WriteString(fmt.Sprintf("## %d. {-}\n\n", index+1))
 		document.WriteString(problem.Prompt)
 		document.WriteString("\n\n")
 
@@ -151,7 +153,7 @@ func writeProblems(document *strings.Builder, worksheet curriculum.Worksheet, va
 			continue
 		}
 
-		document.WriteString(fmt.Sprintf("\\vspace*{%d\\baselineskip}\n\n", writingLines))
+		document.WriteString(fmt.Sprintf("\\answerlines{%d}\n\n", writingLines))
 	}
 }
 
