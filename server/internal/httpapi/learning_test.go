@@ -8,9 +8,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/johncrowleydev/fonzytooter/server/internal/database"
-	"github.com/johncrowleydev/fonzytooter/server/internal/learner"
-	"github.com/johncrowleydev/fonzytooter/server/internal/tutor"
+	"github.com/johncrowleydev/helix-academy/server/internal/database"
+	"github.com/johncrowleydev/helix-academy/server/internal/learner"
+	"github.com/johncrowleydev/helix-academy/server/internal/tutor"
 )
 
 func TestLearningAPICompletionProgressAndActivity(t *testing.T) {
@@ -183,7 +183,7 @@ func TestLearningOpenAPIContract(t *testing.T) {
 func testLearningAPI(t *testing.T) *API {
 	t.Helper()
 	catalog := testCatalog(t)
-	db, err := database.Open(context.Background(), filepath.Join(t.TempDir(), "fonzytooter.db"))
+	db, err := database.Open(context.Background(), filepath.Join(t.TempDir(), "helix-academy.db"))
 	if err != nil {
 		t.Fatalf("open test database: %v", err)
 	}

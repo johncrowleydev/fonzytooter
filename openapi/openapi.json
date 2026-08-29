@@ -2006,15 +2006,15 @@
     },
     "securitySchemes": {
       "sessionCookie": {
-        "description": "Opaque Fonzytooter authentication session cookie.",
+        "description": "Opaque Helix Academy authentication session cookie.",
         "in": "cookie",
-        "name": "fonzytooter_session",
+        "name": "helix-academy_session",
         "type": "apiKey"
       }
     }
   },
   "info": {
-    "title": "Fonzytooter API",
+    "title": "Helix Academy API",
     "version": "0.1.0"
   },
   "openapi": "3.1.0",

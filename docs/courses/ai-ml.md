@@ -1,6 +1,6 @@
 # AI/ML curriculum plan
 
-This document defines the **high-level philosophy and direction** of Fonzytooter's AI & Machine Learning course.
+This document defines the **high-level philosophy and direction** of Helix Academy's AI & Machine Learning course.
 
 It is intentionally not the canonical lesson sequence. The authoritative core structure lives in [`ai-ml-syllabus.md`](ai-ml-syllabus.md), with lesson-level planning in the four detailed tranche documents.
 
@@ -140,7 +140,7 @@ Recurring tensions worth revisiting include:
 
 The course deliberately uses three different environments for different learning jobs.
 
-### 1. Fonzytooter embedded Python — constrained practice and assessment
+### 1. Helix Academy embedded Python — constrained practice and assessment
 
 Small, focused Python/NumPy exercises belong in the in-app CodeMirror + Pyodide runtime.
 
@@ -157,7 +157,7 @@ Examples:
 
 The purpose is **focused practice and automatically checkable assessment**.
 
-Pyodide is the only Python interpreter built into Fonzytooter. The course should not depend on a hidden backend Python runner.
+Pyodide is the only Python interpreter built into Helix Academy. The course should not depend on a hidden backend Python runner.
 
 ### 2. Jupyter — exploration and visualization
 
@@ -177,7 +177,7 @@ Examples:
 
 The learner should understand notebook state, kernel restarts, clean execution, plotting, Markdown/math, reproducibility, and when reusable logic belongs in normal modules rather than notebook cells.
 
-Fonzytooter should track notebook work but should **not embed or host Jupyter**.
+Helix Academy should track notebook work but should **not embed or host Jupyter**.
 
 ### 3. Git repository + normal IDE — engineering, synthesis, and transfer
 
@@ -194,7 +194,7 @@ Examples:
 - inference/quantization profiling;
 - paper reproduction and capstone research.
 
-Fonzytooter may track the assignment, objective evidence, repository, status, and reflection. The code itself belongs in Git and a normal development environment.
+Helix Academy may track the assignment, objective evidence, repository, status, and reflection. The code itself belongs in Git and a normal development environment.
 
 ## Canonical core architecture
 

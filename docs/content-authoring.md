@@ -105,7 +105,7 @@ Run the learner-state audit after changing persistence-sensitive curriculum IDs,
 
 ```bash
 go run ./cmd/curriculum-state-check audit \
-  --database ./data/fonzytooter.db \
+  --database ./data/helix-academy.db \
   --curriculum ../curriculum
 ```
 
@@ -121,7 +121,7 @@ For intentional renames, first add the explicit mapping to `curriculum/identity-
 
 ```bash
 go run ./cmd/curriculum-state-check migrate \
-  --database ./data/fonzytooter.db \
+  --database ./data/helix-academy.db \
   --curriculum ../curriculum \
   --migrations ../curriculum/identity-migrations.yaml
 ```

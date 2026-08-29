@@ -9,9 +9,9 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"github.com/johncrowleydev/fonzytooter/server/internal/curriculum"
-	"github.com/johncrowleydev/fonzytooter/server/internal/curriculumidentity"
-	"github.com/johncrowleydev/fonzytooter/server/internal/database"
+	"github.com/johncrowleydev/helix-academy/server/internal/curriculum"
+	"github.com/johncrowleydev/helix-academy/server/internal/curriculumidentity"
+	"github.com/johncrowleydev/helix-academy/server/internal/database"
 )
 
 func TestAuditCleanDatabaseHasNoFalsePositives(t *testing.T) {

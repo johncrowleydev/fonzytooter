@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/johncrowleydev/fonzytooter/server/internal/database"
+	"github.com/johncrowleydev/helix-academy/server/internal/database"
 )
 
 func TestConversationStoreCreateReadAndStableList(t *testing.T) {
@@ -459,7 +459,7 @@ func TestConversationStoreAppendIsAtomic(t *testing.T) {
 }
 
 func TestConversationStorePersistsAcrossReopen(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "fonzytooter.db")
+	path := filepath.Join(t.TempDir(), "helix-academy.db")
 	firstDB, err := database.Open(context.Background(), path)
 	if err != nil {
 		t.Fatalf("open first database: %v", err)
@@ -579,7 +579,7 @@ func TestConversationMemoryRequiresKnownConversationAndCascades(t *testing.T) {
 
 func newTestConversationStore(t *testing.T) (*ConversationStore, *sql.DB) {
 	t.Helper()
-	db, err := database.Open(context.Background(), filepath.Join(t.TempDir(), "fonzytooter.db"))
+	db, err := database.Open(context.Background(), filepath.Join(t.TempDir(), "helix-academy.db"))
 	if err != nil {
 		t.Fatalf("open test database: %v", err)
 	}

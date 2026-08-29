@@ -14,7 +14,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: fonzytooter-jc-dev-deploy
+  group: helix-academy-jc-dev-deploy
   cancel-in-progress: false
 
 jobs:
@@ -63,16 +63,16 @@ jobs:
           go build \
             -trimpath \
             -ldflags="-s -w" \
-            -o ../deploy-package/fonzytooter \
-            ./cmd/fonzytooter
+            -o ../deploy-package/helix-academy \
+            ./cmd/helix-academy
 
       - name: Package release
         run: |
           mkdir -p deploy-package/web
           cp -R curriculum deploy-package/curriculum
           cp -R web/dist/. deploy-package/web/
-          tar --create --gzip --file fonzytooter-release.tar.gz deploy-package
-          sha256sum fonzytooter-release.tar.gz
+          tar --create --gzip --file helix-academy-release.tar.gz deploy-package
+          sha256sum helix-academy-release.tar.gz
 
       - name: Configure SSH
         env:
@@ -118,8 +118,8 @@ jobs:
 
       - name: Upload and activate release
         run: |
-          remote_archive="/tmp/fonzytooter-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.tar.gz"
-          archive_sha256="$(sha256sum fonzytooter-release.tar.gz | cut -d ' ' -f 1)"
+          remote_archive="/tmp/helix-academy-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.tar.gz"
+          archive_sha256="$(sha256sum helix-academy-release.tar.gz | cut -d ' ' -f 1)"
           ssh_options=(
             -i ~/.ssh/jc-dev
             -o BatchMode=yes
@@ -128,7 +128,7 @@ jobs:
             -o ServerAliveCountMax=3
             -o StrictHostKeyChecking=yes
           )
-          scp "${ssh_options[@]}" fonzytooter-release.tar.gz \
+          scp "${ssh_options[@]}" helix-academy-release.tar.gz \
             "${DEPLOY_USER}@${DEPLOY_HOST}:${remote_archive}"
           ssh "${ssh_options[@]}" "${DEPLOY_USER}@${DEPLOY_HOST}" \
             bash -s -- \
@@ -143,7 +143,7 @@ jobs:
         run: |
           curl --fail --location --silent --show-error \
             --retry 5 --retry-delay 2 \
-            https://fonzytooter.johncrowley.dev/healthz
+            https://helix-academy.johncrowley.dev/healthz
 
       - name: Remove runner SSH ingress
         if: ${{ always() && steps.ssh_ingress.outputs.opened == 'true' }}

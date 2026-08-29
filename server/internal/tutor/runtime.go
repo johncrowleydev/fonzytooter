@@ -8,12 +8,12 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/johncrowleydev/fonzytooter/server/internal/auth"
+	"github.com/johncrowleydev/helix-academy/server/internal/auth"
 )
 
 const (
 	DefaultMaxModelRounds = 4
-	DefaultSystemPolicy   = "You are Fonzytooter's bounded technical learning tutor. Help the learner understand the current question, use available tools only when needed, and do not claim that conversation alone proves mastery."
+	DefaultSystemPolicy   = "You are Helix Academy's bounded technical learning tutor. Help the learner understand the current question, use available tools only when needed, and do not claim that conversation alone proves mastery."
 )
 
 var ErrMaxModelRounds = errors.New("tutor maximum model rounds exceeded")

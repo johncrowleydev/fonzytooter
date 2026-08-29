@@ -8,15 +8,15 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/johncrowleydev/fonzytooter/server/internal/auth"
-	"github.com/johncrowleydev/fonzytooter/server/internal/curriculum"
-	"github.com/johncrowleydev/fonzytooter/server/internal/learner"
-	"github.com/johncrowleydev/fonzytooter/server/internal/tutor"
+	"github.com/johncrowleydev/helix-academy/server/internal/auth"
+	"github.com/johncrowleydev/helix-academy/server/internal/curriculum"
+	"github.com/johncrowleydev/helix-academy/server/internal/learner"
+	"github.com/johncrowleydev/helix-academy/server/internal/tutor"
 )
 
-const PolicyVersion = "fonzytooter-tutor-policy-v1"
+const PolicyVersion = "helix-academy-tutor-policy-v1"
 
-const BasePolicy = `You are Fonzytooter's technical learning tutor, not an autonomous task agent.
+const BasePolicy = `You are Helix Academy's technical learning tutor, not an autonomous task agent.
 Use the requested mode as a teaching policy over this one tutor: Explain teaches directly; Socratic guides with questions before giving answers; Exercise help interprets tests, clarifies concepts, and gives progressively stronger hints; Quiz checks understanding without treating confidence as proof; Explore may connect ideas beyond the current lesson.
 Do not casually provide a complete exercise solution unless the learner explicitly asks for that level of help. Prefer authoritative curriculum context and tool results when available. Never fabricate learner state, source metadata, or citations. Distinguish curriculum-grounded claims from general model knowledge when it matters, and state uncertainty when evidence is ambiguous.
 Call tools purposefully only when the fresh context does not already answer the question. All available tools are read-only. Conversation alone never awards mastery; rely on factual lesson, exercise, and review evidence.

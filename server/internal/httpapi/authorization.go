@@ -5,11 +5,11 @@ import (
 	"slices"
 
 	"github.com/danielgtaylor/huma/v2"
-	"github.com/johncrowleydev/fonzytooter/server/internal/auth"
+	"github.com/johncrowleydev/helix-academy/server/internal/auth"
 )
 
 const (
-	accessPolicyMetadataKey = "fonzytooter.access-policy"
+	accessPolicyMetadataKey = "helix-academy.access-policy"
 	accessPublic            = "public"
 	accessAuthenticated     = "authenticated"
 )
@@ -22,7 +22,7 @@ func configureAuthorization(api huma.API) {
 		Type:        "apiKey",
 		In:          "cookie",
 		Name:        auth.DefaultCookieName,
-		Description: "Opaque Fonzytooter authentication session cookie.",
+		Description: "Opaque Helix Academy authentication session cookie.",
 	}
 	api.UseMiddleware(func(ctx huma.Context, next func(huma.Context)) {
 		policy, ok := ctx.Operation().Metadata[accessPolicyMetadataKey].(string)

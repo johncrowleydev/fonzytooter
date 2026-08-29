@@ -1,4 +1,4 @@
-module github.com/johncrowleydev/fonzytooter/server
+module github.com/johncrowleydev/helix-academy/server
 
 go 1.26
 

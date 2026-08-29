@@ -5,8 +5,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/johncrowleydev/fonzytooter/server/internal/curriculum"
-	"github.com/johncrowleydev/fonzytooter/server/internal/curriculumidentity"
+	"github.com/johncrowleydev/helix-academy/server/internal/curriculum"
+	"github.com/johncrowleydev/helix-academy/server/internal/curriculumidentity"
 )
 
 type resolvedMigration struct {

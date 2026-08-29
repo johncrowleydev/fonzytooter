@@ -11,7 +11,7 @@ import (
 
 	"github.com/danielgtaylor/huma/v2"
 
-	"github.com/johncrowleydev/fonzytooter/server/internal/review"
+	"github.com/johncrowleydev/helix-academy/server/internal/review"
 )
 
 type ReviewCardQueryInput struct {

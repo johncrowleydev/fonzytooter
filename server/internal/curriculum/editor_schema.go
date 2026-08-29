@@ -32,13 +32,13 @@ type editorSchemaDocument struct {
 }
 
 var editorSchemaDefinitions = []editorSchemaDefinition{
-	{filename: "course.schema.json", title: "Fonzytooter course metadata", authoringTy: reflect.TypeFor[courseAuthoring]()},
-	{filename: "exercise.schema.json", title: "Fonzytooter exercise", authoringTy: reflect.TypeFor[exerciseAuthoring]()},
-	{filename: "lesson-frontmatter.schema.json", title: "Fonzytooter lesson frontmatter", authoringTy: reflect.TypeFor[lessonFrontmatter]()},
-	{filename: "module.schema.json", title: "Fonzytooter module metadata", authoringTy: reflect.TypeFor[moduleAuthoring]()},
-	{filename: "review-item.schema.json", title: "Fonzytooter review item", authoringTy: reflect.TypeFor[reviewItemAuthoring]()},
-	{filename: "sources.schema.json", title: "Fonzytooter source registry", authoringTy: reflect.TypeFor[sourceRegistry]()},
-	{filename: "worksheet.schema.json", title: "Fonzytooter worksheet", authoringTy: reflect.TypeFor[worksheetAuthoring]()},
+	{filename: "course.schema.json", title: "Helix Academy course metadata", authoringTy: reflect.TypeFor[courseAuthoring]()},
+	{filename: "exercise.schema.json", title: "Helix Academy exercise", authoringTy: reflect.TypeFor[exerciseAuthoring]()},
+	{filename: "lesson-frontmatter.schema.json", title: "Helix Academy lesson frontmatter", authoringTy: reflect.TypeFor[lessonFrontmatter]()},
+	{filename: "module.schema.json", title: "Helix Academy module metadata", authoringTy: reflect.TypeFor[moduleAuthoring]()},
+	{filename: "review-item.schema.json", title: "Helix Academy review item", authoringTy: reflect.TypeFor[reviewItemAuthoring]()},
+	{filename: "sources.schema.json", title: "Helix Academy source registry", authoringTy: reflect.TypeFor[sourceRegistry]()},
+	{filename: "worksheet.schema.json", title: "Helix Academy worksheet", authoringTy: reflect.TypeFor[worksheetAuthoring]()},
 }
 
 // GenerateEditorSchemas derives deterministic JSON Schema documents directly

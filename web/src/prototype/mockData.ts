@@ -370,7 +370,7 @@ export const projects: Project[] = [
     description:
       'A repository-based lab that turns the pieces of this module into a small, inspectable implementation.',
     status: 'in-progress',
-    repository: 'github.com/fonzytooter/neural-net-from-scratch',
+    repository: 'github.com/helix-academy/neural-net-from-scratch',
     objectives: [
       { label: 'Forward propagation', state: 'done' },
       { label: 'Gradient computation', state: 'working' },
@@ -379,14 +379,14 @@ export const projects: Project[] = [
     ],
     deliverables: ['implementation', 'tests', 'experiment notes', 'short reflection'],
     boundaryNote:
-      'This is deliberate project work: the code belongs in a real repository and IDE, while Fonzytooter keeps the objectives, prompts, and reflection visible.',
+      'This is deliberate project work: the code belongs in a real repository and IDE, while Helix Academy keeps the objectives, prompts, and reflection visible.',
   },
   {
     id: 'linear-regression-lab',
     title: 'Linear Regression Lab',
     description: 'A small guided lab for comparing analytical and iterative solutions.',
     status: 'not-started',
-    repository: 'github.com/fonzytooter/linear-regression-lab',
+    repository: 'github.com/helix-academy/linear-regression-lab',
     objectives: [
       { label: 'Fit a linear model', state: 'todo' },
       { label: 'Compare loss curves', state: 'todo' },

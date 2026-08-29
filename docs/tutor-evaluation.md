@@ -2,12 +2,12 @@
 
 ## Purpose
 
-Fonzytooter should select and tune its tutor model by evaluating models through the real production tutor harness, not by comparing isolated chat responses or relying primarily on general-purpose leaderboards.
+Helix Academy should select and tune its tutor model by evaluating models through the real production tutor harness, not by comparing isolated chat responses or relying primarily on general-purpose leaderboards.
 
 The evaluation should answer two different questions:
 
 1. **Is this model good enough to be a technical tutor?**
-2. **Does this model work well inside Fonzytooter's actual context and tool system at an acceptable cost and latency?**
+2. **Does this model work well inside Helix Academy's actual context and tool system at an acceptable cost and latency?**
 
 The first production comparison should run after the OpenRouter provider, application-owned conversation persistence, context builder, bounded agent loop, and initial read-only toolset described in `docs/tutor.md` are implemented.
 
@@ -126,7 +126,7 @@ Use a compact 1–5 score for the dimensions that require judgment.
 
 ## Initial scenario catalog
 
-The scenarios below define behavior to test. They are not intended to freeze exact prompt wording forever. When practical, bind them to real Fonzytooter curriculum/objective/exercise fixtures so the evaluation exercises actual application data.
+The scenarios below define behavior to test. They are not intended to freeze exact prompt wording forever. When practical, bind them to real Helix Academy curriculum/objective/exercise fixtures so the evaluation exercises actual application data.
 
 ### A. Explanation and pedagogy
 
@@ -625,7 +625,7 @@ A model that behaves well with six tools may behave differently with a larger de
 
 ## What this evaluation should not become
 
-Avoid turning model selection into a giant synthetic benchmark project disconnected from the product. The scenario set exists to protect actual Fonzytooter behavior.
+Avoid turning model selection into a giant synthetic benchmark project disconnected from the product. The scenario set exists to protect actual Helix Academy behavior.
 
 Likewise, do not optimize solely for a composite score. A cheap model with occasional catastrophic teaching/tool failures may be worse than a slightly more expensive model with consistently reliable behavior, while an expensive model that is only marginally more polished may not justify its cost.
 

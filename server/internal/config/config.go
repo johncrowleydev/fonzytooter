@@ -41,23 +41,23 @@ func (c OpenRouterConfig) Configured() bool {
 
 func FromEnv() Config {
 	return Config{
-		Address:        valueOrDefault("FONZYTOOTER_ADDR", ":8080"),
-		DatabasePath:   valueOrDefault("FONZYTOOTER_DB_PATH", "./data/fonzytooter.db"),
-		CurriculumPath: valueOrDefault("FONZYTOOTER_CURRICULUM_PATH", "../curriculum"),
+		Address:        valueOrDefault("HELIX_ACADEMY_ADDR", ":8080"),
+		DatabasePath:   valueOrDefault("HELIX_ACADEMY_DB_PATH", "./data/helix-academy.db"),
+		CurriculumPath: valueOrDefault("HELIX_ACADEMY_CURRICULUM_PATH", "../curriculum"),
 		Authentication: AuthenticationConfig{
-			Username:     os.Getenv("FONZYTOOTER_AUTH_USERNAME"),
-			Password:     os.Getenv("FONZYTOOTER_AUTH_PASSWORD"),
-			DisplayName:  valueOrDefault("FONZYTOOTER_AUTH_DISPLAY_NAME", "Owner"),
-			SecureCookie: boolOrDefault("FONZYTOOTER_AUTH_SECURE_COOKIE", true),
-			SessionTTL:   durationOrDefault("FONZYTOOTER_AUTH_SESSION_TTL", 24*time.Hour),
+			Username:     os.Getenv("HELIX_ACADEMY_AUTH_USERNAME"),
+			Password:     os.Getenv("HELIX_ACADEMY_AUTH_PASSWORD"),
+			DisplayName:  valueOrDefault("HELIX_ACADEMY_AUTH_DISPLAY_NAME", "Owner"),
+			SecureCookie: boolOrDefault("HELIX_ACADEMY_AUTH_SECURE_COOKIE", true),
+			SessionTTL:   durationOrDefault("HELIX_ACADEMY_AUTH_SESSION_TTL", 24*time.Hour),
 		},
 		TutorAccess: TutorAccessConfig{
-			Entitled:         boolOrDefault("FONZYTOOTER_TUTOR_ENTITLED", false),
-			MonthlyTurnLimit: intOrDefault("FONZYTOOTER_TUTOR_MONTHLY_TURN_LIMIT", 0),
+			Entitled:         boolOrDefault("HELIX_ACADEMY_TUTOR_ENTITLED", false),
+			MonthlyTurnLimit: intOrDefault("HELIX_ACADEMY_TUTOR_MONTHLY_TURN_LIMIT", 0),
 		},
 		OpenRouter: OpenRouterConfig{
 			APIKey:  os.Getenv("OPENROUTER_API_KEY"),
-			Model:   os.Getenv("FONZYTOOTER_TUTOR_MODEL"),
+			Model:   os.Getenv("HELIX_ACADEMY_TUTOR_MODEL"),
 			BaseURL: valueOrDefault("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1"),
 			Timeout: durationOrDefault("OPENROUTER_HTTP_TIMEOUT", 90*time.Second),
 		},

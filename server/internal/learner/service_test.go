@@ -10,9 +10,9 @@ import (
 	"testing/fstest"
 	"time"
 
-	"github.com/johncrowleydev/fonzytooter/server/internal/auth"
-	"github.com/johncrowleydev/fonzytooter/server/internal/curriculum"
-	"github.com/johncrowleydev/fonzytooter/server/internal/database"
+	"github.com/johncrowleydev/helix-academy/server/internal/auth"
+	"github.com/johncrowleydev/helix-academy/server/internal/curriculum"
+	"github.com/johncrowleydev/helix-academy/server/internal/database"
 )
 
 var testUserID = auth.BootstrapUserID
@@ -153,7 +153,7 @@ func TestCourseProgressIntroducesEarlierModuleObjectiveFromLaterCompletedLesson(
 	if err != nil {
 		t.Fatalf("load cross-module curriculum: %v", err)
 	}
-	db, err := database.Open(context.Background(), filepath.Join(t.TempDir(), "fonzytooter.db"))
+	db, err := database.Open(context.Background(), filepath.Join(t.TempDir(), "helix-academy.db"))
 	if err != nil {
 		t.Fatalf("open test database: %v", err)
 	}
@@ -217,7 +217,7 @@ func testService(t *testing.T) (*Service, *sql.DB, *curriculum.Catalog) {
 	if err != nil {
 		t.Fatalf("load test curriculum: %v", err)
 	}
-	db, err := database.Open(context.Background(), filepath.Join(t.TempDir(), "fonzytooter.db"))
+	db, err := database.Open(context.Background(), filepath.Join(t.TempDir(), "helix-academy.db"))
 	if err != nil {
 		t.Fatalf("open test database: %v", err)
 	}

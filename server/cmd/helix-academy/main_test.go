@@ -11,10 +11,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/johncrowleydev/fonzytooter/server/internal/config"
-	"github.com/johncrowleydev/fonzytooter/server/internal/database"
-	"github.com/johncrowleydev/fonzytooter/server/internal/tutor"
-	openrouterprovider "github.com/johncrowleydev/fonzytooter/server/internal/tutor/openrouter"
+	"github.com/johncrowleydev/helix-academy/server/internal/config"
+	"github.com/johncrowleydev/helix-academy/server/internal/database"
+	"github.com/johncrowleydev/helix-academy/server/internal/tutor"
+	openrouterprovider "github.com/johncrowleydev/helix-academy/server/internal/tutor/openrouter"
 )
 
 func TestPrepareServerFailsWhenDatabaseMigrationFails(t *testing.T) {
@@ -73,7 +73,7 @@ func TestRunClosesDatabaseOnShutdown(t *testing.T) {
 	}
 	cfg := config.Config{
 		Address:        address,
-		DatabasePath:   filepath.Join(t.TempDir(), "fonzytooter.db"),
+		DatabasePath:   filepath.Join(t.TempDir(), "helix-academy.db"),
 		CurriculumPath: filepath.Join("..", "..", "..", "curriculum"),
 	}
 	var opened *sql.DB

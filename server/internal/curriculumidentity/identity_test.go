@@ -5,7 +5,7 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"github.com/johncrowleydev/fonzytooter/server/internal/curriculum"
+	"github.com/johncrowleydev/helix-academy/server/internal/curriculum"
 )
 
 func TestSnapshotContainsPersistenceSensitiveAuthoredIDs(t *testing.T) {

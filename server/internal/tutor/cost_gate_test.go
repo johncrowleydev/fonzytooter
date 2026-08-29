@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/johncrowleydev/fonzytooter/server/internal/auth"
-	"github.com/johncrowleydev/fonzytooter/server/internal/database"
+	"github.com/johncrowleydev/helix-academy/server/internal/auth"
+	"github.com/johncrowleydev/helix-academy/server/internal/database"
 )
 
 var fixedUsageTime = time.Date(2026, time.August, 23, 12, 0, 0, 0, time.UTC)

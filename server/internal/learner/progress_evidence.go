@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/johncrowleydev/fonzytooter/server/internal/auth"
-	"github.com/johncrowleydev/fonzytooter/server/internal/curriculum"
+	"github.com/johncrowleydev/helix-academy/server/internal/auth"
+	"github.com/johncrowleydev/helix-academy/server/internal/curriculum"
 )
 
 func (s *Service) addCourseEvidence(ctx context.Context, userID auth.UserID, course curriculum.Course, objectiveIndex map[string]int, result *CourseProgress) error {

@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/johncrowleydev/fonzytooter/server/internal/curriculum"
+	"github.com/johncrowleydev/helix-academy/server/internal/curriculum"
 )
 
 func TestBuildMarkdownSeparatesStudentAndSolutionContent(t *testing.T) {

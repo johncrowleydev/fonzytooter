@@ -1,6 +1,6 @@
 # AI/ML core syllabus skeleton
 
-This document defines the canonical **core teaching sequence** for Fonzytooter's AI & Machine Learning course.
+This document defines the canonical **core teaching sequence** for Helix Academy's AI & Machine Learning course.
 
 It sits one level below [`ai-ml.md`](ai-ml.md). That document defines the course's long-range philosophy, learning model, environments, and broad subject areas. This document defines the mandatory deep-primer spine: the modules every learner on this course path should complete before choosing a specialization.
 
@@ -36,7 +36,7 @@ The recommended teaching order is Modules 00 through 23. The numbering is a curr
 
 #### 00 — Orientation
 
-**Purpose:** Establish how Fonzytooter teaches, how mastery evidence works, and when to use embedded exercises, worksheets, Jupyter, repositories, and AI assistance.
+**Purpose:** Establish how Helix Academy teaches, how mastery evidence works, and when to use embedded exercises, worksheets, Jupyter, repositories, and AI assistance.
 
 Core ideas:
 

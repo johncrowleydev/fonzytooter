@@ -13,7 +13,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/johncrowleydev/fonzytooter/server/internal/tutor"
+	"github.com/johncrowleydev/helix-academy/server/internal/tutor"
 )
 
 const (

@@ -2,7 +2,7 @@
 
 This directory contains authored curriculum content. It is version controlled and separate from learner state.
 
-Fonzytooter uses an explicit multi-course catalog. **AI & Machine Learning** (`ai-ml`) remains the initial/default course. See [`../docs/multi-course.md`](../docs/multi-course.md) for the platform ownership model and [`../docs/courses/ai-ml.md`](../docs/courses/ai-ml.md) for the high-level AI/ML curriculum plan.
+Helix Academy uses an explicit multi-course catalog. **AI & Machine Learning** (`ai-ml`) remains the initial/default course. See [`../docs/multi-course.md`](../docs/multi-course.md) for the platform ownership model and [`../docs/courses/ai-ml.md`](../docs/courses/ai-ml.md) for the high-level AI/ML curriculum plan.
 
 ## Layout
 
@@ -17,7 +17,7 @@ curriculum/
 └── sources.yaml
 ```
 
-`FONZYTOOTER_CURRICULUM_PATH` points at this curriculum root. The loader discovers and validates authored courses beneath `courses/`.
+`HELIX_ACADEMY_CURRICULUM_PATH` points at this curriculum root. The loader discovers and validates authored courses beneath `courses/`.
 
 ## Conventions
 
@@ -35,7 +35,7 @@ curriculum/
 - Optional `worksheets/`, `exercises/`, and `reviews/` directories are closed-world: every direct child must be a regular `.yaml` file.
 - Reference arrays do not allow duplicate IDs.
 - Technical lesson content must cite reputable sources from the shared `sources.yaml` registry.
-- Larger labs/projects reference external Git repositories rather than embedding a second execution environment into Fonzytooter.
+- Larger labs/projects reference external Git repositories rather than embedding a second execution environment into Helix Academy.
 
 The authoring schemas are intentionally small. Validate curriculum changes with:
 

@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/johncrowleydev/fonzytooter/server/internal/auth"
+	"github.com/johncrowleydev/helix-academy/server/internal/auth"
 )
 
 const secondTutorUserID auth.UserID = "00000000-0000-4000-8000-000000000002"

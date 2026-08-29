@@ -8,10 +8,10 @@ import (
 	"io"
 	"os"
 
-	"github.com/johncrowleydev/fonzytooter/server/internal/config"
-	"github.com/johncrowleydev/fonzytooter/server/internal/curriculum"
-	"github.com/johncrowleydev/fonzytooter/server/internal/curriculumidentity"
-	"github.com/johncrowleydev/fonzytooter/server/internal/curriculumstate"
+	"github.com/johncrowleydev/helix-academy/server/internal/config"
+	"github.com/johncrowleydev/helix-academy/server/internal/curriculum"
+	"github.com/johncrowleydev/helix-academy/server/internal/curriculumidentity"
+	"github.com/johncrowleydev/helix-academy/server/internal/curriculumstate"
 )
 
 func main() {
@@ -27,7 +27,7 @@ func run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	cfg := config.FromEnv()
 	flags := flag.NewFlagSet("curriculum-state-check "+mode, flag.ContinueOnError)
 	flags.SetOutput(stderr)
-	databasePath := flags.String("database", cfg.DatabasePath, "path to an existing Fonzytooter SQLite database")
+	databasePath := flags.String("database", cfg.DatabasePath, "path to an existing Helix Academy SQLite database")
 	curriculumPath := flags.String("curriculum", cfg.CurriculumPath, "path to the current curriculum")
 	migrationsPath := flags.String("migrations", cfg.CurriculumPath+"/identity-migrations.yaml", "path to the identity migration ledger")
 	if err := flags.Parse(args[1:]); err != nil {

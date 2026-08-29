@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/johncrowleydev/fonzytooter/server/internal/curriculum"
+	"github.com/johncrowleydev/helix-academy/server/internal/curriculum"
 )
 
 func main() {

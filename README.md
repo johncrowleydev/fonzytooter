@@ -1,6 +1,6 @@
-# Fonzytooter
+# Helix Academy
 
-Fonzytooter is a deliberately small, single-user learning system for self-paced technical courses. **AI & Machine Learning** (`ai-ml`) is the initial/default course and the current content focus, while the implemented curriculum model supports additional authored courses without turning the application into a general-purpose LMS.
+Helix Academy is a deliberately small, single-user learning system for self-paced technical courses. **AI & Machine Learning** (`ai-ml`) is the initial/default course and the current content focus, while the implemented curriculum model supports additional authored courses without turning the application into a general-purpose LMS.
 
 It is not intended to become a general-purpose LMS. The system exists to support one learning loop:
 
@@ -69,11 +69,11 @@ Time matters to spaced-repetition scheduling, but the curriculum itself has no w
 
 ### One in-app Python runtime
 
-Pyodide is the only Python interpreter built into Fonzytooter. Small learning exercises run in-browser.
+Pyodide is the only Python interpreter built into Helix Academy. Small learning exercises run in-browser.
 
 If an exercise becomes large enough to require a server-side Python runtime, GPU, large dataset, complex environment, or multi-file project, it is no longer an in-app exercise. It becomes a Git-based lab/project completed in a normal editor or IDE.
 
-Jupyter notebooks sit between those two modes: they are used outside Fonzytooter for exploratory experiments, plots, data inspection, and intuition-building. Fonzytooter does not embed or host Jupyter.
+Jupyter notebooks sit between those two modes: they are used outside Helix Academy for exploratory experiments, plots, data inspection, and intuition-building. Helix Academy does not embed or host Jupyter.
 
 ### Tutor everywhere
 
@@ -94,7 +94,7 @@ The tutor is mounted at the application-shell level and can be opened from any s
 │   └── courses/
 ├── openapi/
 ├── server/
-│   ├── cmd/fonzytooter/
+│   ├── cmd/helix-academy/
 │   └── internal/
 └── web/
     └── src/
@@ -144,28 +144,28 @@ document resources when either tool is missing.
 
 ```bash
 cd server
-go run ./cmd/fonzytooter
+go run ./cmd/helix-academy
 ```
 
-The API listens on `:8080` by default. Override it with `FONZYTOOTER_ADDR`.
+The API listens on `:8080` by default. Override it with `HELIX_ACADEMY_ADDR`.
 The development default loads Git-authored curriculum from `../curriculum`;
-override it with `FONZYTOOTER_CURRICULUM_PATH`. The path is the curriculum root, not an individual course. Invalid curriculum prevents the server from starting. To validate it without starting the API:
+override it with `HELIX_ACADEMY_CURRICULUM_PATH`. The path is the curriculum root, not an individual course. Invalid curriculum prevents the server from starting. To validate it without starting the API:
 
 ```bash
 cd server
 go run ./cmd/curriculum-check ../curriculum
 ```
 
-Learner state is stored in SQLite at `./data/fonzytooter.db` by default. Override
-the location with `FONZYTOOTER_DB_PATH`; production deployments should use an
+Learner state is stored in SQLite at `./data/helix-academy.db` by default. Override
+the location with `HELIX_ACADEMY_DB_PATH`; production deployments should use an
 absolute path on persistent storage. The server creates the parent directory and
 runs embedded migrations before it begins serving HTTP. Back up the database
 file as part of the deployment backup policy (including a SQLite-safe checkpoint
 or backup procedure while WAL mode is active).
 
 Curriculum access remains public. To provision the personal deployment's
-authenticated owner, set `FONZYTOOTER_AUTH_USERNAME` and
-`FONZYTOOTER_AUTH_PASSWORD` together before starting the server. The password
+authenticated owner, set `HELIX_ACADEMY_AUTH_USERNAME` and
+`HELIX_ACADEMY_AUTH_PASSWORD` together before starting the server. The password
 must contain at least 12 characters and is stored only as a bcrypt hash. The
 owner has the stable application ID `00000000-0000-4000-8000-000000000001`;
 restarting or changing the configured credentials updates that same identity
@@ -177,14 +177,14 @@ runs while sign-in is unavailable.
 Authentication uses an opaque, database-backed session cookie that is
 `HttpOnly`, `SameSite=Strict`, and secure by default. Production must terminate
 HTTPS in front of the application and leave
-`FONZYTOOTER_AUTH_SECURE_COOKIE=true`. For local HTTP development only, set it
-to `false`. `FONZYTOOTER_AUTH_SESSION_TTL` defaults to `24h`; signing out deletes
+`HELIX_ACADEMY_AUTH_SECURE_COOKIE=true`. For local HTTP development only, set it
+to `false`. `HELIX_ACADEMY_AUTH_SESSION_TTL` defaults to `24h`; signing out deletes
 the server-side session immediately. Keep real credentials in the process or
 service environment and never in tracked `.env` files.
 
 Metered tutor access is denied by default, even for an authenticated owner. To
-enable it, set `FONZYTOOTER_TUTOR_ENTITLED=true` and configure a positive
-`FONZYTOOTER_TUTOR_MONTHLY_TURN_LIMIT`. The allowance is stored per user and UTC
+enable it, set `HELIX_ACADEMY_TUTOR_ENTITLED=true` and configure a positive
+`HELIX_ACADEMY_TUTOR_MONTHLY_TURN_LIMIT`. The allowance is stored per user and UTC
 calendar month in SQLite. A slot is reserved atomically before conversation
 writes or provider execution and remains counted when a provider fails, so
 retries cannot bypass the spending boundary. The allowance counts tutor turns,

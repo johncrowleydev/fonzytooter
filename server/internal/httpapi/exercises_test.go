@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/johncrowleydev/fonzytooter/server/internal/learner"
+	"github.com/johncrowleydev/helix-academy/server/internal/learner"
 )
 
 const exercisePath = "/api/courses/ai-ml/modules/python/exercises/python.example"
