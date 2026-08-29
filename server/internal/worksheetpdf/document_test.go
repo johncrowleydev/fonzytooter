@@ -20,7 +20,7 @@ func TestBuildMarkdownSeparatesStudentAndSolutionContent(t *testing.T) {
 			t.Fatalf("student Markdown contains %q:\n%s", forbidden, student)
 		}
 	}
-	for _, expected := range []string{"\\textbf{Name:}", "```python", "print(f(3))", "$f(3)$", "\\vspace*{4\\baselineskip}"} {
+	for _, expected := range []string{"\\identityline", "```python", "print(f(3))", "$f(3)$", "\\answerlines{4}"} {
 		if !strings.Contains(student, expected) {
 			t.Fatalf("student Markdown does not contain %q:\n%s", expected, student)
 		}
@@ -33,7 +33,7 @@ func TestBuildMarkdownSeparatesStudentAndSolutionContent(t *testing.T) {
 	if !strings.Contains(solutions, "The answer is 7.") {
 		t.Fatalf("solution Markdown omitted expected answer:\n%s", solutions)
 	}
-	for _, forbidden := range []string{"Give one point", "\\textbf{Name:}"} {
+	for _, forbidden := range []string{"Give one point", "\\identityline"} {
 		if strings.Contains(solutions, forbidden) {
 			t.Fatalf("solution Markdown contains %q:\n%s", forbidden, solutions)
 		}
@@ -83,9 +83,9 @@ func TestBuildWorkbookMarkdownOrdersWorksheetsAndSeparatesSolutions(t *testing.T
 		`title: "Scientific Python Worksheet Workbook"`,
 		`subtitle: "AI & Machine Learning"`,
 		"*Lesson: First lesson*",
-		"\\textbf{Name:}",
+		"\\identityline",
 		"\\clearpage",
-		"\\vspace*{4\\baselineskip}",
+		"\\answerlines{4}",
 	} {
 		if !strings.Contains(student, expected) {
 			t.Fatalf("student workbook omitted %q:\n%s", expected, student)
@@ -109,7 +109,7 @@ func TestBuildWorkbookMarkdownOrdersWorksheetsAndSeparatesSolutions(t *testing.T
 			t.Fatalf("solutions workbook omitted %q:\n%s", expected, solutions)
 		}
 	}
-	for _, forbidden := range []string{"Private rubric", "\\textbf{Name:}"} {
+	for _, forbidden := range []string{"Private rubric", "\\identityline"} {
 		if strings.Contains(solutions, forbidden) {
 			t.Fatalf("solutions workbook contains %q:\n%s", forbidden, solutions)
 		}
