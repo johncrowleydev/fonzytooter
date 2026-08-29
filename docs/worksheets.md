@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Fonzytooter may attach one or more optional worksheets to a lesson when repeated pencil-and-paper practice is useful.
+Helix Academy may attach one or more optional worksheets to a lesson when repeated pencil-and-paper practice is useful.
 
 Worksheets are especially important for mathematics, where understanding an explanation is not the same as being able to perform the operations reliably. They may also be useful for other concepts that benefit from tracing, calculation, diagramming, or written reasoning.
 
@@ -51,17 +51,17 @@ Printability is an explicit product goal. Some learning work is better done away
 
 ## Worksheet and workbook output
 
-Each worksheet is available on demand as a printable student PDF and a solutions PDF. Fonzytooter converts the validated structured worksheet to Markdown with authored LaTeX preserved, uses Pandoc to produce LaTeX, and uses Tectonic to typeset PDF bytes. Generated PDFs are temporary responses; they are not stored in Git, SQLite, or a PDF cache.
+Each worksheet is available on demand as a printable student PDF and a solutions PDF. Helix Academy converts the validated structured worksheet to Markdown with authored LaTeX preserved, uses Pandoc to produce LaTeX, and uses Tectonic to typeset PDF bytes. Generated PDFs are temporary responses; they are not stored in Git, SQLite, or a PDF cache.
 
 ### Tectonic resources in CI
 
 GitHub Actions stores Tectonic's downloaded bundle metadata and TeX resources in the explicit `TECTONIC_CACHE_DIR` configured by the Server job. The cache key `tectonic-${{ runner.os }}-0.15.0-bundle-v33-v1` records the runner platform, pinned Tectonic version, upstream bundle generation, and a repository-controlled cache schema revision. There is intentionally no broad restore key: a different resource universe must be primed and saved under a new exact key.
 
-On a cache miss, CI renders the real worksheet and workbook corpus with network access and bounded retries, then immediately saves the populated cache. The subsequent Go PDF integration tests and worksheet render check set `FONZYTOOTER_TECTONIC_ONLY_CACHED=1`, which requires the explicit cache to contain Tectonic's primed bundle metadata and resource directories before launching Tectonic and then passes `--only-cached`. The preflight is necessary because Tectonic 0.15.0 may resolve its default bundle URL even with `--only-cached` when that metadata is completely absent. Actual validation therefore fails deterministically when the cache is unprimed or a resource is absent instead of contacting the public bundle service.
+On a cache miss, CI renders the real worksheet and workbook corpus with network access and bounded retries, then immediately saves the populated cache. The subsequent Go PDF integration tests and worksheet render check set `HELIX_ACADEMY_TECTONIC_ONLY_CACHED=1`, which requires the explicit cache to contain Tectonic's primed bundle metadata and resource directories before launching Tectonic and then passes `--only-cached`. The preflight is necessary because Tectonic 0.15.0 may resolve its default bundle URL even with `--only-cached` when that metadata is completely absent. Actual validation therefore fails deterministically when the cache is unprimed or a resource is absent instead of contacting the public bundle service.
 
 If a template, worksheet, or Tectonic upgrade requires new TeX resources, increment the final cache schema revision in `.github/workflows/ci.yml` (for example, `v1` to `v2`). The next run will prime the new cache with network access; validation after that priming step remains offline. Local and production rendering stay network-capable unless the cache-only environment variable is explicitly set to `1`.
 
-A module with worksheets also produces a **workbook** and solutions workbook. The workbook is an aggregation of the same worksheet content, not a separately authored curriculum artifact. It is compiled as one structured document with a cover, table of contents, lesson context, page numbering, and page breaks between worksheets. Fonzytooter does not render separate PDFs and concatenate them.
+A module with worksheets also produces a **workbook** and solutions workbook. The workbook is an aggregation of the same worksheet content, not a separately authored curriculum artifact. It is compiled as one structured document with a cover, table of contents, lesson context, page numbering, and page breaks between worksheets. Helix Academy does not render separate PDFs and concatenate them.
 
 Student documents include ruled response lines based on each problem's authored `responseLines`. Solutions documents include authored expected answers. Neither solutions output exposes internal rubric criteria, which remain available for future assessment behavior.
 

@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/johncrowleydev/fonzytooter/server/internal/curriculum"
-	"github.com/johncrowleydev/fonzytooter/server/internal/httpapi"
-	"github.com/johncrowleydev/fonzytooter/server/internal/tutor"
+	"github.com/johncrowleydev/helix-academy/server/internal/curriculum"
+	"github.com/johncrowleydev/helix-academy/server/internal/httpapi"
+	"github.com/johncrowleydev/helix-academy/server/internal/tutor"
 )
 
 func main() {

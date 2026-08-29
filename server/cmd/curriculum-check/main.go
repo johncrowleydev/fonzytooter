@@ -5,8 +5,8 @@ import (
 	"io"
 	"os"
 
-	"github.com/johncrowleydev/fonzytooter/server/internal/config"
-	"github.com/johncrowleydev/fonzytooter/server/internal/curriculum"
+	"github.com/johncrowleydev/helix-academy/server/internal/config"
+	"github.com/johncrowleydev/helix-academy/server/internal/curriculum"
 )
 
 func main() {

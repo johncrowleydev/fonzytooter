@@ -9,8 +9,8 @@ import (
 	"testing/fstest"
 	"time"
 
-	"github.com/johncrowleydev/fonzytooter/server/internal/curriculum"
-	"github.com/johncrowleydev/fonzytooter/server/internal/database"
+	"github.com/johncrowleydev/helix-academy/server/internal/curriculum"
+	"github.com/johncrowleydev/helix-academy/server/internal/database"
 )
 
 func TestExerciseWorkspaceDefaultsAndPersists(t *testing.T) {
@@ -137,7 +137,7 @@ func TestCreateExerciseAttemptRejectsUnknownDuplicateAndIncompleteTests(t *testi
 func exerciseTestService(t *testing.T) (*Service, *sql.DB) {
 	t.Helper()
 	catalog := exerciseCatalog(t)
-	db, err := database.Open(context.Background(), filepath.Join(t.TempDir(), "fonzytooter.db"))
+	db, err := database.Open(context.Background(), filepath.Join(t.TempDir(), "helix-academy.db"))
 	if err != nil {
 		t.Fatalf("open exercise test database: %v", err)
 	}

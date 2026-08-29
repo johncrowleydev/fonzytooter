@@ -9,11 +9,11 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"github.com/johncrowleydev/fonzytooter/server/internal/auth"
+	"github.com/johncrowleydev/helix-academy/server/internal/auth"
 )
 
 func TestOpenCreatesParentAndMigratesFreshDatabase(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "nested", "fonzytooter.db")
+	path := filepath.Join(t.TempDir(), "nested", "helix-academy.db")
 
 	db, err := Open(context.Background(), path)
 	if err != nil {
@@ -61,7 +61,7 @@ func TestOpenCreatesParentAndMigratesFreshDatabase(t *testing.T) {
 }
 
 func TestOpenEnforcesForeignKeys(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "fonzytooter.db")
+	path := filepath.Join(t.TempDir(), "helix-academy.db")
 	db, err := Open(context.Background(), path)
 	if err != nil {
 		t.Fatalf("open database: %v", err)
@@ -81,7 +81,7 @@ func TestOpenEnforcesForeignKeys(t *testing.T) {
 
 func TestOpenConfiguresReplacementConnections(t *testing.T) {
 	ctx := context.Background()
-	db, err := Open(ctx, filepath.Join(t.TempDir(), "fonzytooter.db"))
+	db, err := Open(ctx, filepath.Join(t.TempDir(), "helix-academy.db"))
 	if err != nil {
 		t.Fatalf("open database: %v", err)
 	}
@@ -121,7 +121,7 @@ func TestOpenConfiguresReplacementConnections(t *testing.T) {
 }
 
 func TestOpenMigratesIdempotently(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "fonzytooter.db")
+	path := filepath.Join(t.TempDir(), "helix-academy.db")
 
 	first, err := Open(context.Background(), path)
 	if err != nil {
@@ -148,7 +148,7 @@ func TestOpenMigratesIdempotently(t *testing.T) {
 
 func TestUserScopedMigrationPreservesExistingLearnerState(t *testing.T) {
 	ctx := context.Background()
-	path := filepath.Join(t.TempDir(), "fonzytooter.db")
+	path := filepath.Join(t.TempDir(), "helix-academy.db")
 	legacyMigrations := fstest.MapFS{}
 	entries, err := fs.ReadDir(embeddedMigrations, "migrations")
 	if err != nil {
@@ -222,7 +222,7 @@ func TestUserScopedMigrationPreservesExistingLearnerState(t *testing.T) {
 
 func TestOpenNormalizesLegacyHistoryTimestamps(t *testing.T) {
 	ctx := context.Background()
-	path := filepath.Join(t.TempDir(), "fonzytooter.db")
+	path := filepath.Join(t.TempDir(), "helix-academy.db")
 	legacyMigrations := fstest.MapFS{}
 	entries, err := fs.ReadDir(embeddedMigrations, "migrations")
 	if err != nil {
@@ -287,7 +287,7 @@ func TestOpenRejectsInvalidPath(t *testing.T) {
 		t.Fatalf("create parent file: %v", err)
 	}
 
-	_, err := Open(context.Background(), filepath.Join(parentFile, "fonzytooter.db"))
+	_, err := Open(context.Background(), filepath.Join(parentFile, "helix-academy.db"))
 	if err == nil || !strings.Contains(err.Error(), "create database directory") {
 		t.Fatalf("expected directory creation error, got %v", err)
 	}
@@ -298,14 +298,14 @@ func TestOpenFailsForInvalidMigration(t *testing.T) {
 		"00001_invalid.sql": {Data: []byte("-- +goose Up\nTHIS IS NOT SQL;")},
 	}
 
-	_, err := open(context.Background(), filepath.Join(t.TempDir(), "fonzytooter.db"), migrations)
+	_, err := open(context.Background(), filepath.Join(t.TempDir(), "helix-academy.db"), migrations)
 	if err == nil || !strings.Contains(err.Error(), "apply SQLite migrations") {
 		t.Fatalf("expected migration error, got %v", err)
 	}
 }
 
 func TestClosedDatabaseRejectsPing(t *testing.T) {
-	db, err := Open(context.Background(), filepath.Join(t.TempDir(), "fonzytooter.db"))
+	db, err := Open(context.Background(), filepath.Join(t.TempDir(), "helix-academy.db"))
 	if err != nil {
 		t.Fatalf("open database: %v", err)
 	}

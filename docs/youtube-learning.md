@@ -2,11 +2,11 @@
 
 ## Purpose
 
-YouTube is a first-class learning medium in Fonzytooter.
+YouTube is a first-class learning medium in Helix Academy.
 
 Curated videos are not bibliography entries, footnotes, or an undifferentiated list of external resources. A good video can explain, visualize, demonstrate, motivate, or synthesize a concept in a way that complements authored prose, interactive components, exercises, worksheets, reviews, and projects.
 
-Fonzytooter should therefore use YouTube in three related ways:
+Helix Academy should therefore use YouTube in three related ways:
 
 1. embed selected videos at the exact point in a lesson where they improve understanding;
 2. expose the curated videos for a module as a browsable module playlist;
@@ -20,7 +20,7 @@ The same curated video entity should support all three experiences. Do not creat
 
 A curated video is part of the authored curriculum. It should have stable curriculum identity, objective associations, and enough metadata for the application to present it consistently.
 
-The authoritative curriculum remains Git-authored. YouTube supplies the media; Fonzytooter supplies the pedagogical placement, curation, objective mapping, progress context, and surrounding learning experience.
+The authoritative curriculum remains Git-authored. YouTube supplies the media; Helix Academy supplies the pedagogical placement, curation, objective mapping, progress context, and surrounding learning experience.
 
 ### Placement must be pedagogical
 
@@ -40,7 +40,7 @@ Some lessons should have no video. Difficult lessons may justify more than one. 
 
 ### Curated beats algorithmic
 
-Fonzytooter should recommend from its authored curriculum collection, not surface arbitrary YouTube recommendations.
+Helix Academy should recommend from its authored curriculum collection, not surface arbitrary YouTube recommendations.
 
 The platform knows what the learner is studying, which objectives a video supports, what has already been watched, and what learning evidence exists. That curriculum context is more valuable than a generic engagement-oriented recommendation graph.
 
@@ -155,7 +155,7 @@ The author should choose the placement intentionally.
 
 Every module with curated videos should expose a module-level video collection derived from the same authored `videos` metadata.
 
-This is a Fonzytooter playlist view, not a requirement to create or synchronize an actual YouTube playlist.
+This is a Helix Academy playlist view, not a requirement to create or synchronize an actual YouTube playlist.
 
 The view should make the module's video curriculum easy to browse and revisit. Useful presentation includes:
 
@@ -184,7 +184,7 @@ Video progress is learner state and therefore follows the authentication boundar
 
 ### Completion semantics
 
-The initial completion mechanism is an explicit **Mark watched** action shown only to authenticated learners. YouTube's privacy-enhanced iframe is intentionally treated as playback rather than attention telemetry: Fonzytooter does not infer completion from page presence, elapsed wall time, or brittle embed events.
+The initial completion mechanism is an explicit **Mark watched** action shown only to authenticated learners. YouTube's privacy-enhanced iframe is intentionally treated as playback rather than attention telemetry: Helix Academy does not infer completion from page presence, elapsed wall time, or brittle embed events.
 
 The action replaces the learner's video-progress resource with a completed state. Repeating it is idempotent and does not create duplicate `video_completed` transition activity. The UI describes the state as watched and explicitly avoids implying attention, comprehension, objective progress, or mastery.
 

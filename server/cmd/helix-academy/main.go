@@ -12,16 +12,16 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/johncrowleydev/fonzytooter/server/internal/auth"
-	"github.com/johncrowleydev/fonzytooter/server/internal/config"
-	"github.com/johncrowleydev/fonzytooter/server/internal/curriculum"
-	"github.com/johncrowleydev/fonzytooter/server/internal/database"
-	"github.com/johncrowleydev/fonzytooter/server/internal/httpapi"
-	"github.com/johncrowleydev/fonzytooter/server/internal/learner"
-	"github.com/johncrowleydev/fonzytooter/server/internal/review"
-	"github.com/johncrowleydev/fonzytooter/server/internal/tutor"
-	openrouterprovider "github.com/johncrowleydev/fonzytooter/server/internal/tutor/openrouter"
-	"github.com/johncrowleydev/fonzytooter/server/internal/tutorlearning"
+	"github.com/johncrowleydev/helix-academy/server/internal/auth"
+	"github.com/johncrowleydev/helix-academy/server/internal/config"
+	"github.com/johncrowleydev/helix-academy/server/internal/curriculum"
+	"github.com/johncrowleydev/helix-academy/server/internal/database"
+	"github.com/johncrowleydev/helix-academy/server/internal/httpapi"
+	"github.com/johncrowleydev/helix-academy/server/internal/learner"
+	"github.com/johncrowleydev/helix-academy/server/internal/review"
+	"github.com/johncrowleydev/helix-academy/server/internal/tutor"
+	openrouterprovider "github.com/johncrowleydev/helix-academy/server/internal/tutor/openrouter"
+	"github.com/johncrowleydev/helix-academy/server/internal/tutorlearning"
 )
 
 func main() {
@@ -48,7 +48,7 @@ func run(ctx context.Context, cfg config.Config, openDatabase databaseOpener) er
 
 	serveErr := make(chan error, 1)
 	go func() {
-		log.Printf("fonzytooter API listening on %s", cfg.Address)
+		log.Printf("Helix Academy API listening on %s", cfg.Address)
 		serveErr <- server.ListenAndServe()
 	}()
 

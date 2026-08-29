@@ -1,6 +1,6 @@
 # API contract and full-stack type safety
 
-Fonzytooter treats the Go API contract as generated infrastructure, not as a set of shapes that the frontend manually re-describes.
+Helix Academy treats the Go API contract as generated infrastructure, not as a set of shapes that the frontend manually re-describes.
 
 The intended flow is:
 
@@ -98,7 +98,7 @@ A representative configuration shape is:
 import { defineConfig } from 'orval'
 
 export default defineConfig({
-  fonzytooter: {
+  helixAcademy: {
     input: {
       target: '../openapi/openapi.json',
       filters: {
@@ -381,7 +381,7 @@ Do not start by writing a TypeScript DTO or frontend request and then work backw
 
 ## Why this direction
 
-This gives Fonzytooter four complementary protections:
+This gives Helix Academy four complementary protections:
 
 - Go compiler checks the server models and handlers;
 - OpenAPI makes the cross-language contract explicit and reviewable;

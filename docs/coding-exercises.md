@@ -2,20 +2,20 @@
 
 ## Boundary
 
-Fonzytooter has one in-app Python execution environment: Pyodide in the browser.
+Helix Academy has one in-app Python execution environment: Pyodide in the browser.
 
 There is intentionally no backend Python runner.
 
 Small, constrained practice and assessment exercises belong in the embedded CodeMirror + Pyodide experience.
 
-Jupyter notebooks are a separate **external learning format** used for exploratory scientific/ML work. They are not embedded in Fonzytooter and do not create a second in-app Python runtime.
+Jupyter notebooks are a separate **external learning format** used for exploratory scientific/ML work. They are not embedded in Helix Academy and do not create a second in-app Python runtime.
 
 When work becomes substantial, multi-file, GPU-dependent, data-heavy, or otherwise uncomfortable in Pyodide, it should become a repository-based lab/project completed with normal development tools.
 
 The intended progression is:
 
 ```text
-Fonzytooter embedded exercise
+Helix Academy embedded exercise
     -> practice and assessment
 
 Jupyter notebook
@@ -151,7 +151,7 @@ Examples include:
 - inspect activations or attention patterns;
 - explore numerical stability or quantization error.
 
-Notebook files should live in Git repositories and be opened using normal Jupyter-compatible tooling. Fonzytooter may link to the lab and track its objectives/status, but should not become a Jupyter server or notebook host.
+Notebook files should live in Git repositories and be opened using normal Jupyter-compatible tooling. Helix Academy may link to the lab and track its objectives/status, but should not become a Jupyter server or notebook host.
 
 ## Graduation to real projects
 

@@ -8,10 +8,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/johncrowleydev/fonzytooter/server/internal/auth"
-	"github.com/johncrowleydev/fonzytooter/server/internal/curriculum"
-	"github.com/johncrowleydev/fonzytooter/server/internal/database"
-	"github.com/johncrowleydev/fonzytooter/server/internal/tutor"
+	"github.com/johncrowleydev/helix-academy/server/internal/auth"
+	"github.com/johncrowleydev/helix-academy/server/internal/curriculum"
+	"github.com/johncrowleydev/helix-academy/server/internal/database"
+	"github.com/johncrowleydev/helix-academy/server/internal/tutor"
 )
 
 func TestTutorCostGateRejectsBeforeProviderInvocation(t *testing.T) {

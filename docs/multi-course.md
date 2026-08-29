@@ -2,11 +2,11 @@
 
 ## Decision
 
-Fonzytooter is a single-user learning system with an explicitly multi-course curriculum model.
+Helix Academy is a single-user learning system with an explicitly multi-course curriculum model.
 
 The **AI & Machine Learning** course (`ai-ml`) is currently the only authored course, the default course, and the product's immediate content focus. It is not a platform-wide singleton: course identity is explicit in authored content ownership, catalog lookup, HTTP resources, frontend routes, and curriculum-related tutor context.
 
-This does **not** turn Fonzytooter into a generic LMS. The existing simplicity constraints still apply: one user, one Go service, one React app, one SQLite database, Git-authored curriculum, and no speculative enrollment, tenancy, marketplace, classroom, CMS, or enterprise infrastructure.
+This does **not** turn Helix Academy into a generic LMS. The existing simplicity constraints still apply: one user, one Go service, one React app, one SQLite database, Git-authored curriculum, and no speculative enrollment, tenancy, marketplace, classroom, CMS, or enterprise infrastructure.
 
 A likely future course is computer science for experienced working programmers who did not study computer science formally. That is useful design pressure, but no computer-science course content is currently authored.
 
@@ -87,7 +87,7 @@ order: 0
 
 Course metadata exists to identify, order, and present authored courses. It is not an LMS enrollment or administration schema.
 
-The loader validates the curriculum root, course metadata, module/lesson/objective/source references, ordering constraints, prerequisite relationships, and other authored invariants before constructing the immutable in-memory catalog. `FONZYTOOTER_CURRICULUM_PATH` points to the curriculum root, not to one course.
+The loader validates the curriculum root, course metadata, module/lesson/objective/source references, ordering constraints, prerequisite relationships, and other authored invariants before constructing the immutable in-memory catalog. `HELIX_ACADEMY_CURRICULUM_PATH` points to the curriculum root, not to one course.
 
 See [`../curriculum/README.md`](../curriculum/README.md) and [`content-authoring.md`](content-authoring.md) for authoring conventions.
 
@@ -222,4 +222,4 @@ Do not use multi-course support as justification to build:
 - a generic cross-course dependency/knowledge graph;
 - separate services or databases per course.
 
-Fonzytooter remains a small personal learning application. The architecture is **multi-course**, not **general-purpose LMS**.
+Helix Academy remains a small personal learning application. The architecture is **multi-course**, not **general-purpose LMS**.

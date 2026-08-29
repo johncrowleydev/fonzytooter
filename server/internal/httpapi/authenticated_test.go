@@ -7,12 +7,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/johncrowleydev/fonzytooter/server/internal/auth"
-	"github.com/johncrowleydev/fonzytooter/server/internal/curriculum"
-	"github.com/johncrowleydev/fonzytooter/server/internal/database"
-	"github.com/johncrowleydev/fonzytooter/server/internal/learner"
-	"github.com/johncrowleydev/fonzytooter/server/internal/review"
-	"github.com/johncrowleydev/fonzytooter/server/internal/tutor"
+	"github.com/johncrowleydev/helix-academy/server/internal/auth"
+	"github.com/johncrowleydev/helix-academy/server/internal/curriculum"
+	"github.com/johncrowleydev/helix-academy/server/internal/database"
+	"github.com/johncrowleydev/helix-academy/server/internal/learner"
+	"github.com/johncrowleydev/helix-academy/server/internal/review"
+	"github.com/johncrowleydev/helix-academy/server/internal/tutor"
 )
 
 func newAuthenticatedTestAPI(t *testing.T, tutorService *tutor.Service, catalog *curriculum.Catalog, learnerService *learner.Service, reviewService *review.Service) *API {

@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/johncrowleydev/fonzytooter/server/internal/tutor"
+	"github.com/johncrowleydev/helix-academy/server/internal/tutor"
 )
 
 func TestNewRequiresConfiguration(t *testing.T) {

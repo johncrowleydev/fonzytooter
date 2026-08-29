@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/johncrowleydev/fonzytooter/server/internal/curriculum"
-	"github.com/johncrowleydev/fonzytooter/server/internal/worksheetpdf"
+	"github.com/johncrowleydev/helix-academy/server/internal/curriculum"
+	"github.com/johncrowleydev/helix-academy/server/internal/worksheetpdf"
 )
 
 type documentRenderer interface {

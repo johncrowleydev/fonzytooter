@@ -10,9 +10,9 @@ import (
 
 	fsrs "github.com/open-spaced-repetition/go-fsrs/v4"
 
-	"github.com/johncrowleydev/fonzytooter/server/internal/auth"
-	"github.com/johncrowleydev/fonzytooter/server/internal/curriculum"
-	"github.com/johncrowleydev/fonzytooter/server/internal/learner"
+	"github.com/johncrowleydev/helix-academy/server/internal/auth"
+	"github.com/johncrowleydev/helix-academy/server/internal/curriculum"
+	"github.com/johncrowleydev/helix-academy/server/internal/learner"
 )
 
 const ActivityReviewCompleted = "review_completed"

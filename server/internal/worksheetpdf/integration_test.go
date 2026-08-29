@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/johncrowleydev/fonzytooter/server/internal/curriculum"
+	"github.com/johncrowleydev/helix-academy/server/internal/curriculum"
 )
 
 func TestRealWorksheetRendering(t *testing.T) {
@@ -107,7 +107,7 @@ func requirePDFTools(t *testing.T) {
 	t.Helper()
 	for _, tool := range []string{"pandoc", "tectonic"} {
 		if _, err := exec.LookPath(tool); err != nil {
-			if os.Getenv("FONZYTOOTER_REQUIRE_PDF_TOOLS") == "1" {
+			if os.Getenv("HELIX_ACADEMY_REQUIRE_PDF_TOOLS") == "1" {
 				t.Fatalf("required PDF tool %s is unavailable: %v", tool, err)
 			}
 			t.Skipf("PDF tool %s is unavailable", tool)

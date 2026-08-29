@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/johncrowleydev/fonzytooter/server/internal/curriculum"
+	"github.com/johncrowleydev/helix-academy/server/internal/curriculum"
 )
 
 type Variant string

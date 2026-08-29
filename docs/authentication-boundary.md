@@ -1,6 +1,6 @@
 # Public Curriculum and Authenticated Learner Features
 
-Fonzytooter separates **public curriculum access** from **authenticated learner features**.
+Helix Academy separates **public curriculum access** from **authenticated learner features**.
 
 The curriculum is intended to remain openly readable. Authentication is not a gate around the site or the course content. It is a gate around capabilities that create or expose learner-specific state, mutate persistent application data, or consume metered external services.
 

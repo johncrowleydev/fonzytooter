@@ -1,7 +1,7 @@
 import { defineConfig } from 'orval'
 
 export default defineConfig({
-  fonzytooter: {
+  helixAcademy: {
     input: {
       target: '../openapi/openapi.json',
       filters: {

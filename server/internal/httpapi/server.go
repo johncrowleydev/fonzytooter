@@ -12,12 +12,12 @@ import (
 
 	"github.com/danielgtaylor/huma/v2"
 	"github.com/danielgtaylor/huma/v2/adapters/humago"
-	"github.com/johncrowleydev/fonzytooter/server/internal/auth"
-	"github.com/johncrowleydev/fonzytooter/server/internal/curriculum"
-	"github.com/johncrowleydev/fonzytooter/server/internal/learner"
-	"github.com/johncrowleydev/fonzytooter/server/internal/review"
-	"github.com/johncrowleydev/fonzytooter/server/internal/tutor"
-	"github.com/johncrowleydev/fonzytooter/server/internal/worksheetpdf"
+	"github.com/johncrowleydev/helix-academy/server/internal/auth"
+	"github.com/johncrowleydev/helix-academy/server/internal/curriculum"
+	"github.com/johncrowleydev/helix-academy/server/internal/learner"
+	"github.com/johncrowleydev/helix-academy/server/internal/review"
+	"github.com/johncrowleydev/helix-academy/server/internal/tutor"
+	"github.com/johncrowleydev/helix-academy/server/internal/worksheetpdf"
 )
 
 type API struct {
@@ -292,7 +292,7 @@ func newAPIWithAuth(tutorService *tutor.Service, catalog *curriculum.Catalog, le
 		panic("httpapi.NewAPI: nil curriculum catalog")
 	}
 	mux := http.NewServeMux()
-	config := huma.DefaultConfig("Fonzytooter API", "0.1.0")
+	config := huma.DefaultConfig("Helix Academy API", "0.1.0")
 	config.OpenAPIPath = ""
 	config.DocsPath = ""
 	config.SchemasPath = ""

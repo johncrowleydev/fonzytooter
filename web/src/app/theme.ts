@@ -4,7 +4,7 @@ export type Theme = 'dark' | 'light'
  * Read by the inline bootstrap script in `index.html` before first paint, so this key is part of
  * the app's external contract. Changing it silently resets everyone's saved theme.
  */
-export const THEME_STORAGE_KEY = 'fonzytooter.theme'
+export const THEME_STORAGE_KEY = 'helix-academy.theme'
 
 /** Kept in step with `--ft-canvas` so mobile browser chrome matches the page background. */
 const themeColors: Record<Theme, string> = {

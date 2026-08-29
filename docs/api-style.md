@@ -1,6 +1,6 @@
 # API style
 
-Fonzytooter's HTTP API should be boring, predictable, and resource-oriented.
+Helix Academy's HTTP API should be boring, predictable, and resource-oriented.
 
 The API is not an RPC façade over Go methods. URLs identify resources and collections; HTTP methods express what happens to those resources. Similar operations should look and behave similarly across the entire API.
 

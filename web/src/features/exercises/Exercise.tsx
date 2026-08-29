@@ -30,7 +30,7 @@ type LocalDraft = {
 }
 
 function localDraftKey(courseId: string, moduleId: string, exerciseId: string) {
-  return `fonzytooter:exercise:${courseId}:${moduleId}:${exerciseId}`
+  return `helix-academy:exercise:${courseId}:${moduleId}:${exerciseId}`
 }
 
 function readLocalDraft(key: string): LocalDraft | undefined {

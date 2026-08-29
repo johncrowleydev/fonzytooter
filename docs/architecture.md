@@ -2,7 +2,7 @@
 
 ## Design target
 
-Fonzytooter is a single-user personal learning application that may host multiple authored courses. It is not a multi-tenant LMS product. Simplicity is a feature.
+Helix Academy is a single-user personal learning application that may host multiple authored courses. It is not a multi-tenant LMS product. Simplicity is a feature.
 
 The **AI & Machine Learning** course (`ai-ml`) is the initial/default course, not a permanent singleton baked into the platform. The course-aware catalog, API, frontend routes, and tutor context are implemented. See [`multi-course.md`](multi-course.md) for the ownership and routing model, and [`courses/`](courses/) for course-specific curriculum plans.
 

@@ -18,7 +18,7 @@ async function importTypeScriptModule(relativePath) {
     },
     fileName: sourcePath,
   }).outputText
-  const tempDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'fonzytooter-workbook-test-'))
+  const tempDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'helix-academy-workbook-test-'))
   const outputPath = path.join(tempDirectory, 'module.mjs')
   fs.writeFileSync(outputPath, output)
   try {

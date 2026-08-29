@@ -2,9 +2,9 @@
 
 ## Purpose
 
-The embedded tutor is the next major product subsystem after the core learn, practice, and recall flows. It should make Fonzytooter feel like a learning system rather than a collection of course pages by helping the learner explain, reflect, recover from mistakes, and decide what to do next.
+The embedded tutor is the next major product subsystem after the core learn, practice, and recall flows. It should make Helix Academy feel like a learning system rather than a collection of course pages by helping the learner explain, reflect, recover from mistakes, and decide what to do next.
 
-The tutor is not intended to be an unconstrained autonomous agent. Fonzytooter should continue to prefer deterministic application logic wherever ordinary software can make a reliable decision. The model supplies language understanding, explanation, multimodal interpretation, and judgment where those capabilities are actually useful.
+The tutor is not intended to be an unconstrained autonomous agent. Helix Academy should continue to prefer deterministic application logic wherever ordinary software can make a reliable decision. The model supplies language understanding, explanation, multimodal interpretation, and judgment where those capabilities are actually useful.
 
 ## UX requirement
 
@@ -16,7 +16,7 @@ A dedicated tutor/history page may exist later, but it is not the primary access
 
 ## Initial implementation decision
 
-Build the tutor around a small Go-native agent harness owned by Fonzytooter.
+Build the tutor around a small Go-native agent harness owned by Helix Academy.
 
 Do not introduce LangChain, LangGraph, or another general agent framework for the initial implementation. The required orchestration is intentionally straightforward and is easier to understand, test, and evolve as ordinary Go code.
 
@@ -72,22 +72,22 @@ The provider boundary is responsible for:
 - decoding streamed text and tool calls;
 - preserving provider-required reasoning state across turns when necessary;
 - reporting usage, latency-relevant metadata, and errors;
-- mapping a provider's reasoning controls onto Fonzytooter's internal reasoning policy.
+- mapping a provider's reasoning controls onto Helix Academy's internal reasoning policy.
 
 ### OpenRouter configuration
 
-The server enables the OpenRouter adapter only when both `OPENROUTER_API_KEY` and an exact `FONZYTOOTER_TUTOR_MODEL` ID are set. There is deliberately no production model default: if either value is absent, the existing not-configured tutor response remains active. `OPENROUTER_BASE_URL` may override the default `https://openrouter.ai/api/v1` endpoint for deterministic local testing, and `OPENROUTER_HTTP_TIMEOUT` accepts a positive Go duration such as `90s`.
+The server enables the OpenRouter adapter only when both `OPENROUTER_API_KEY` and an exact `HELIX_ACADEMY_TUTOR_MODEL` ID are set. There is deliberately no production model default: if either value is absent, the existing not-configured tutor response remains active. `OPENROUTER_BASE_URL` may override the default `https://openrouter.ai/api/v1` endpoint for deterministic local testing, and `OPENROUTER_HTTP_TIMEOUT` accepts a positive Go duration such as `90s`.
 
 ### Metered access policy
 
 Authentication identifies the learner but does not authorize metered tutor
-use. The server denies tutor use unless `FONZYTOOTER_TUTOR_ENTITLED=true` and
-`FONZYTOOTER_TUTOR_MONTHLY_TURN_LIMIT` is a positive integer. This intentionally
+use. The server denies tutor use unless `HELIX_ACADEMY_TUTOR_ENTITLED=true` and
+`HELIX_ACADEMY_TUTOR_MONTHLY_TURN_LIMIT` is a positive integer. This intentionally
 small personal-deployment policy keeps entitlement separate from quota without
 introducing plans or billing infrastructure.
 
 The allowance is a per-user count of accepted tutor turns in each UTC calendar
-month. Fonzytooter does not claim that this is an exact monetary cost: provider
+month. Helix Academy does not claim that this is an exact monetary cost: provider
 usage events include token counts but no reliable normalized price. Each turn
 is atomically reserved in SQLite before conversation persistence or provider
 execution, so concurrent requests cannot cross the configured turn limit.
@@ -114,7 +114,7 @@ The tutor service is responsible for:
 
 ## Model selection
 
-Do not choose the production tutor model before the production harness exists. Models should be evaluated through the same Fonzytooter context, tools, prompts, conversation persistence, and multimodal message format that the shipped tutor will use.
+Do not choose the production tutor model before the production harness exists. Models should be evaluated through the same Helix Academy context, tools, prompts, conversation persistence, and multimodal message format that the shipped tutor will use.
 
 The initial candidate set is:
 
@@ -129,7 +129,7 @@ This list is an evaluation set, not a commitment to any model family. Exact mode
 
 Prices, discounts, provider availability, latency, and routing quality change too quickly to encode as architectural constants. Each evaluation run should record the actual model, provider/routing mode, token usage, latency, and cost observed at that time.
 
-The production model does not need to be a frontier flagship. The target is the least expensive model that meets Fonzytooter's quality bar for technical accuracy, pedagogy, conversation, vision, and tool use.
+The production model does not need to be a frontier flagship. The target is the least expensive model that meets Helix Academy's quality bar for technical accuracy, pedagogy, conversation, vision, and tool use.
 
 See `docs/tutor-evaluation.md` for the initial evaluation dimensions and scenarios.
 
@@ -143,7 +143,7 @@ The evaluation should measure both quality and the cost/latency effects of reaso
 
 ## Conversation ownership and persistence
 
-Fonzytooter owns conversation state. Do not make a provider thread ID the authoritative record of a tutor conversation.
+Helix Academy owns conversation state. Do not make a provider thread ID the authoritative record of a tutor conversation.
 
 Persist the canonical conversation in SQLite so that providers can be changed without losing history or coupling the application to one vendor's state model. The exact schema may evolve, but it will likely need explicit records for conversations, messages, tool calls/results, and later attachments.
 
@@ -215,7 +215,7 @@ Do not send every possible field on every turn. Include data relevant to what th
 
 Information the application already knows and expects the model to need should generally be injected as context rather than exposed as a tool the model must discover and call.
 
-For example, when the learner asks for help from an exercise page, Fonzytooter already knows the exercise ID, current code, latest execution result, objective IDs, and relevant lesson. The model should not need to call tools such as `get_current_page` merely to reconstruct state the application already possesses.
+For example, when the learner asks for help from an exercise page, Helix Academy already knows the exercise ID, current code, latest execution result, objective IDs, and relevant lesson. The model should not need to call tools such as `get_current_page` merely to reconstruct state the application already possesses.
 
 This is both cheaper and more reliable than forcing the model to retrieve obvious context through tool calls.
 
@@ -270,9 +270,9 @@ Return previous saved attempts, checks, and failure information for an exercise 
 
 Return relevant spaced-repetition history for one or more objectives/review items.
 
-## Implemented Fonzytooter context and tools
+## Implemented Helix Academy context and tools
 
-The backend runtime now uses a versioned Fonzytooter policy and an authoritative context builder. Client page labels are treated as hints only: course, module, lesson, exercise, objective, and source ownership is resolved against the immutable curriculum catalog, with current selected text, code, and execution state kept as bounded ephemeral input. Current lesson excerpts, source metadata, relevant objective evidence, and compact course progress are injected when predictable, so the model does not need a `get_current_page` tool.
+The backend runtime now uses a versioned Helix Academy policy and an authoritative context builder. Client page labels are treated as hints only: course, module, lesson, exercise, objective, and source ownership is resolved against the immutable curriculum catalog, with current selected text, code, and execution state kept as bounded ephemeral input. Current lesson excerpts, source metadata, relevant objective evidence, and compact course progress are injected when predictable, so the model does not need a `get_current_page` tool.
 
 The six initial tools above are implemented as typed, validated, read-only capabilities. Search uses a deterministic normalized text score and stable tie-breaking; content retrieval and learner histories are course-scoped and size-limited; worksheet answer keys and hidden exercise tests are never returned. Source-bearing curriculum results expose only registered source IDs and metadata, and the runtime emits normalized citation events for those retrieved IDs. No tool mutates learner state, runs server-side Python, performs web search, or awards mastery.
 

@@ -21,7 +21,7 @@ type UserID string
 
 const (
 	BootstrapUserID       UserID = "00000000-0000-4000-8000-000000000001"
-	DefaultCookieName            = "fonzytooter_session"
+	DefaultCookieName            = "helix-academy_session"
 	minimumPasswordLength        = 12
 )
 

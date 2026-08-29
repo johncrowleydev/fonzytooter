@@ -59,8 +59,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
-      TECTONIC_CACHE_DIR: ${{ github.workspace }}/.cache/tectonic-fonzytooter
-      FONZYTOOTER_TECTONIC_ONLY_CACHED: "1"
+      TECTONIC_CACHE_DIR: ${{ github.workspace }}/.cache/tectonic-helix-academy
+      HELIX_ACADEMY_TECTONIC_ONLY_CACHED: "1"
     defaults:
       run:
         working-directory: server
@@ -97,7 +97,7 @@ jobs:
         if: steps.tectonic-cache.outputs.cache-hit != 'true'
         shell: bash
         env:
-          FONZYTOOTER_TECTONIC_ONLY_CACHED: "0"
+          HELIX_ACADEMY_TECTONIC_ONLY_CACHED: "0"
         run: |
           delays=(10 30)
           for attempt in 1 2 3; do
@@ -132,7 +132,7 @@ jobs:
       - name: Test
         run: go test ./...
         env:
-          FONZYTOOTER_REQUIRE_PDF_TOOLS: "1"
+          HELIX_ACADEMY_REQUIRE_PDF_TOOLS: "1"
       - name: Validate curriculum
         run: go run ./cmd/curriculum-check ../curriculum
       - name: Check curriculum identity compatibility

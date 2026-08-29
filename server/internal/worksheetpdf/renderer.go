@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/johncrowleydev/fonzytooter/server/internal/curriculum"
+	"github.com/johncrowleydev/helix-academy/server/internal/curriculum"
 )
 
 //go:embed template.tex
@@ -18,7 +18,7 @@ var latexTemplate string
 
 var ErrToolUnavailable = errors.New("worksheet PDF tool unavailable")
 
-const tectonicOnlyCachedEnvironment = "FONZYTOOTER_TECTONIC_ONLY_CACHED"
+const tectonicOnlyCachedEnvironment = "HELIX_ACADEMY_TECTONIC_ONLY_CACHED"
 
 const tectonicCacheDirectoryEnvironment = "TECTONIC_CACHE_DIR"
 
@@ -99,7 +99,7 @@ func (renderer *Renderer) renderMarkdown(ctx context.Context, markdown string, t
 		return nil, &ToolUnavailableError{Tool: "tectonic", Err: err}
 	}
 
-	directory, err := os.MkdirTemp(renderer.tempRoot, "fonzytooter-worksheet-*")
+	directory, err := os.MkdirTemp(renderer.tempRoot, "helix-academy-worksheet-*")
 	if err != nil {
 		return nil, fmt.Errorf("create worksheet PDF workspace: %w", err)
 	}

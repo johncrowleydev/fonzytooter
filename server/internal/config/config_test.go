@@ -6,18 +6,18 @@ import (
 )
 
 func TestFromEnvUsesDefaultDatabasePath(t *testing.T) {
-	t.Setenv("FONZYTOOTER_DB_PATH", "")
+	t.Setenv("HELIX_ACADEMY_DB_PATH", "")
 
 	cfg := FromEnv()
 
-	if cfg.DatabasePath != "./data/fonzytooter.db" {
+	if cfg.DatabasePath != "./data/helix-academy.db" {
 		t.Fatalf("expected default database path, got %q", cfg.DatabasePath)
 	}
 }
 
 func TestFromEnvConfiguresOpenRouterExplicitly(t *testing.T) {
 	t.Setenv("OPENROUTER_API_KEY", "test-secret")
-	t.Setenv("FONZYTOOTER_TUTOR_MODEL", "vendor/exact-model")
+	t.Setenv("HELIX_ACADEMY_TUTOR_MODEL", "vendor/exact-model")
 	t.Setenv("OPENROUTER_BASE_URL", "http://openrouter.test/v1")
 	t.Setenv("OPENROUTER_HTTP_TIMEOUT", "12s")
 
@@ -33,7 +33,7 @@ func TestFromEnvConfiguresOpenRouterExplicitly(t *testing.T) {
 
 func TestFromEnvLeavesOpenRouterUnconfiguredWithoutKeyOrModel(t *testing.T) {
 	t.Setenv("OPENROUTER_API_KEY", "")
-	t.Setenv("FONZYTOOTER_TUTOR_MODEL", "")
+	t.Setenv("HELIX_ACADEMY_TUTOR_MODEL", "")
 	t.Setenv("OPENROUTER_BASE_URL", "")
 	t.Setenv("OPENROUTER_HTTP_TIMEOUT", "not-a-duration")
 
@@ -48,21 +48,21 @@ func TestFromEnvLeavesOpenRouterUnconfiguredWithoutKeyOrModel(t *testing.T) {
 }
 
 func TestFromEnvUsesExplicitDatabasePath(t *testing.T) {
-	t.Setenv("FONZYTOOTER_DB_PATH", `C:\learner-data\fonzytooter.db`)
+	t.Setenv("HELIX_ACADEMY_DB_PATH", `C:\learner-data\helix-academy.db`)
 
 	cfg := FromEnv()
 
-	if cfg.DatabasePath != `C:\learner-data\fonzytooter.db` {
+	if cfg.DatabasePath != `C:\learner-data\helix-academy.db` {
 		t.Fatalf("expected explicit database path, got %q", cfg.DatabasePath)
 	}
 }
 
 func TestFromEnvUsesSecureAuthenticationDefaults(t *testing.T) {
-	t.Setenv("FONZYTOOTER_AUTH_USERNAME", "")
-	t.Setenv("FONZYTOOTER_AUTH_PASSWORD", "")
-	t.Setenv("FONZYTOOTER_AUTH_DISPLAY_NAME", "")
-	t.Setenv("FONZYTOOTER_AUTH_SECURE_COOKIE", "")
-	t.Setenv("FONZYTOOTER_AUTH_SESSION_TTL", "")
+	t.Setenv("HELIX_ACADEMY_AUTH_USERNAME", "")
+	t.Setenv("HELIX_ACADEMY_AUTH_PASSWORD", "")
+	t.Setenv("HELIX_ACADEMY_AUTH_DISPLAY_NAME", "")
+	t.Setenv("HELIX_ACADEMY_AUTH_SECURE_COOKIE", "")
+	t.Setenv("HELIX_ACADEMY_AUTH_SESSION_TTL", "")
 
 	cfg := FromEnv()
 
@@ -75,11 +75,11 @@ func TestFromEnvUsesSecureAuthenticationDefaults(t *testing.T) {
 }
 
 func TestFromEnvConfiguresAuthenticationExplicitly(t *testing.T) {
-	t.Setenv("FONZYTOOTER_AUTH_USERNAME", "learner@example.test")
-	t.Setenv("FONZYTOOTER_AUTH_PASSWORD", "a-long-test-password")
-	t.Setenv("FONZYTOOTER_AUTH_DISPLAY_NAME", "Learner")
-	t.Setenv("FONZYTOOTER_AUTH_SECURE_COOKIE", "false")
-	t.Setenv("FONZYTOOTER_AUTH_SESSION_TTL", "8h")
+	t.Setenv("HELIX_ACADEMY_AUTH_USERNAME", "learner@example.test")
+	t.Setenv("HELIX_ACADEMY_AUTH_PASSWORD", "a-long-test-password")
+	t.Setenv("HELIX_ACADEMY_AUTH_DISPLAY_NAME", "Learner")
+	t.Setenv("HELIX_ACADEMY_AUTH_SECURE_COOKIE", "false")
+	t.Setenv("HELIX_ACADEMY_AUTH_SESSION_TTL", "8h")
 
 	cfg := FromEnv()
 
@@ -92,8 +92,8 @@ func TestFromEnvConfiguresAuthenticationExplicitly(t *testing.T) {
 }
 
 func TestFromEnvDefaultsTutorAccessToDenied(t *testing.T) {
-	t.Setenv("FONZYTOOTER_TUTOR_ENTITLED", "")
-	t.Setenv("FONZYTOOTER_TUTOR_MONTHLY_TURN_LIMIT", "")
+	t.Setenv("HELIX_ACADEMY_TUTOR_ENTITLED", "")
+	t.Setenv("HELIX_ACADEMY_TUTOR_MONTHLY_TURN_LIMIT", "")
 
 	cfg := FromEnv()
 
@@ -103,8 +103,8 @@ func TestFromEnvDefaultsTutorAccessToDenied(t *testing.T) {
 }
 
 func TestFromEnvConfiguresTutorTurnAllowance(t *testing.T) {
-	t.Setenv("FONZYTOOTER_TUTOR_ENTITLED", "true")
-	t.Setenv("FONZYTOOTER_TUTOR_MONTHLY_TURN_LIMIT", "25")
+	t.Setenv("HELIX_ACADEMY_TUTOR_ENTITLED", "true")
+	t.Setenv("HELIX_ACADEMY_TUTOR_MONTHLY_TURN_LIMIT", "25")
 
 	cfg := FromEnv()
 

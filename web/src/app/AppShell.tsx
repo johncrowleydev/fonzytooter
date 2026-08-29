@@ -37,7 +37,7 @@ export function AppShell({ children }: PropsWithChildren) {
       <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col overflow-hidden border-r border-line bg-shell px-4 py-6 lg:flex">
         <Link className="mb-14 flex items-center gap-3 px-2 text-left text-ink no-underline" to="/">
           <BrandMark />
-          <strong className="text-base tracking-tight">Fonzytooter</strong>
+          <strong className="text-base tracking-tight">Helix Academy</strong>
         </Link>
 
         <div className="mb-2 px-3 text-xs font-bold uppercase tracking-widest text-faint">
@@ -58,7 +58,7 @@ export function AppShell({ children }: PropsWithChildren) {
         <header className="flex items-center justify-between border-b border-line px-4 py-4 lg:hidden">
           <Link className="flex items-center gap-2.5 text-ink no-underline" to="/">
             <BrandMark />
-            <strong className="text-base tracking-tight">Fonzytooter</strong>
+            <strong className="text-base tracking-tight">Helix Academy</strong>
           </Link>
           <div className="flex items-center gap-2">
             <MobileAccountControl />
@@ -158,8 +158,15 @@ function MobileAccountControl() {
 
 function BrandMark() {
   return (
-    <span className="grid size-7 place-items-center rounded-[9px_9px_9px_3px] bg-brand-teal font-serif text-xl font-bold text-brand-ink">
-      ƒ
+    <span className="grid size-7 place-items-center rounded-[9px_9px_9px_3px] bg-brand-teal text-brand-ink">
+      <svg aria-hidden="true" className="size-5" fill="none" viewBox="0 0 24 24">
+        <path
+          d="M7 2c0 5.5 10 5.5 10 11s-10 5.5-10 9M17 2c0 5.5-10 5.5-10 11s10 5.5 10 9"
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeWidth="2"
+        />
+      </svg>
     </span>
   )
 }

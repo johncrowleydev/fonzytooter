@@ -16,25 +16,25 @@ archive_sha256=$5
 [[ $commit_sha =~ ^[0-9a-f]{40}$ ]]
 [[ $run_id =~ ^[0-9]+$ ]]
 [[ $run_attempt =~ ^[0-9]+$ ]]
-[[ $archive =~ ^/tmp/fonzytooter-[0-9]+-[0-9]+\.tar\.gz$ ]]
+[[ $archive =~ ^/tmp/helix-academy-[0-9]+-[0-9]+\.tar\.gz$ ]]
 [[ $archive_sha256 =~ ^[0-9a-f]{64}$ ]]
 
 release_id="${commit_sha}-${run_id}-${run_attempt}"
-app_root=/opt/fonzytooter
-web_root=/var/www/fonzytooter.johncrowley.dev/html
+app_root=/opt/helix-academy
+web_root=/var/www/helix-academy.johncrowley.dev/html
 app_release="${app_root}/releases/${release_id}"
 web_release="${web_root}/releases/${release_id}"
 app_incoming="${app_root}/releases/.incoming-${release_id}"
 web_incoming="${web_root}/releases/.incoming-${release_id}"
-stage=$(mktemp -d /tmp/fonzytooter-deploy.XXXXXX)
+stage=$(mktemp -d /tmp/helix-academy-deploy.XXXXXX)
 activated=false
 
 cleanup() {
   case $stage in
-    /tmp/fonzytooter-deploy.*) rm -rf -- "$stage" ;;
+    /tmp/helix-academy-deploy.*) rm -rf -- "$stage" ;;
   esac
   case $archive in
-    /tmp/fonzytooter-[0-9]*-[0-9]*.tar.gz) rm -f -- "$archive" ;;
+    /tmp/helix-academy-[0-9]*-[0-9]*.tar.gz) rm -f -- "$archive" ;;
   esac
 }
 
@@ -60,7 +60,7 @@ rollback() {
     echo "Deployment failed after activation; restoring the previous release." >&2
     restore_link "$app_root" "$previous_app"
     restore_link "$web_root" "$previous_web"
-    sudo systemctl restart fonzytooter.service
+    sudo systemctl restart helix-academy.service
   fi
   sudo rm -rf -- "$app_incoming" "$web_incoming"
   exit "$status"
@@ -73,7 +73,7 @@ echo "${archive_sha256}  ${archive}" | sha256sum --check --strict
 tar --extract --gzip --file "$archive" --directory "$stage"
 
 package="${stage}/deploy-package"
-test -x "${package}/fonzytooter"
+test -x "${package}/helix-academy"
 test -f "${package}/web/index.html"
 test -f "${package}/curriculum/sources.yaml"
 test ! -e "$app_release"
@@ -86,8 +86,8 @@ sudo install -d -o root -g root -m 0755 \
   "${app_incoming}/curriculum" \
   "$web_incoming"
 sudo install -o root -g root -m 0755 \
-  "${package}/fonzytooter" \
-  "${app_incoming}/fonzytooter"
+  "${package}/helix-academy" \
+  "${app_incoming}/helix-academy"
 sudo cp -a "${package}/curriculum/." "${app_incoming}/curriculum/"
 sudo cp -a "${package}/web/." "$web_incoming/"
 sudo chown -R root:root "$app_incoming" "$web_incoming"
@@ -104,7 +104,7 @@ activated=true
 sudo mv -Tf "${app_root}/current.next" "${app_root}/current"
 sudo mv -Tf "${web_root}/current.next" "${web_root}/current"
 
-sudo systemctl restart fonzytooter.service
+sudo systemctl restart helix-academy.service
 healthy=false
 for _ in $(seq 1 30); do
   if curl --fail --silent --show-error http://127.0.0.1:18082/api/health >/dev/null; then
@@ -114,17 +114,17 @@ for _ in $(seq 1 30); do
   sleep 1
 done
 if [[ $healthy != true ]]; then
-  sudo systemctl --no-pager --full status fonzytooter.service >&2 || true
-  sudo journalctl -u fonzytooter.service -n 100 --no-pager >&2 || true
+  sudo systemctl --no-pager --full status helix-academy.service >&2 || true
+  sudo journalctl -u helix-academy.service -n 100 --no-pager >&2 || true
   false
 fi
 
 activated=false
 trap - ERR
 
-if [[ -d /srv/jc-dev/apps/fonzytooter/.git ]]; then
-  git -C /srv/jc-dev/apps/fonzytooter fetch --quiet origin "$commit_sha" &&
-    git -C /srv/jc-dev/apps/fonzytooter checkout --quiet --detach "$commit_sha" ||
+if [[ -d /srv/jc-dev/apps/helix-academy/.git ]]; then
+  git -C /srv/jc-dev/apps/helix-academy fetch --quiet origin "$commit_sha" &&
+    git -C /srv/jc-dev/apps/helix-academy checkout --quiet --detach "$commit_sha" ||
     echo "Warning: deployed successfully, but the server source checkout was not updated." >&2
 fi
 

@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/johncrowleydev/fonzytooter/server/internal/auth"
+	"github.com/johncrowleydev/helix-academy/server/internal/auth"
 )
 
 const (
