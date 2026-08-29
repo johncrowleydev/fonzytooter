@@ -6,12 +6,36 @@
 
 \setlength{\parindent}{0pt}
 \setlength{\parskip}{0.55em}
+\setcounter{tocdepth}{1}
 \pagestyle{plain}
+% Name/Date identity line. Kept as a single macro so Pandoc passes it
+% through as one raw LaTeX block instead of splitting it into paragraphs.
+\newcommand{\identityline}{%
+  \par\noindent
+  \textbf{Name:}\ \rule{2.5in}{0.4pt}\hfill
+  \textbf{Date:}\ \rule{1.75in}{0.4pt}%
+  \par}
+% Ruled writing lines for handwritten answers, one per authored response line.
+% The loop counter must never be \count0: that register is the page number.
+\newcount\answerlinecount
+\newcommand{\answerlines}[1]{%
+  \par
+  \begingroup
+  \setlength{\parskip}{0pt}%
+  \answerlinecount=#1\relax
+  \loop\ifnum\answerlinecount>0
+    \vspace{1.35\baselineskip}%
+    \noindent\hrulefill\par
+    \advance\answerlinecount by -1
+  \repeat
+  \endgroup
+  \par}
 \providecommand{\tightlist}{%
   \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
 \newcommand{\passthrough}[1]{#1}
 \begin{document}
 $if(title)$
+\pagenumbering{roman}
 \begin{titlepage}
 \centering
 \vspace*{\fill}
@@ -26,6 +50,7 @@ $endif$
 $if(toc)$
 \tableofcontents
 \clearpage
+\pagenumbering{arabic}
 $endif$
 $body$
 \end{document}
